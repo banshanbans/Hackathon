@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SoloShotSession",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "session_id",
+    "state",
+    "source_channel",
+    "mode",
+    "reference_asset",
+    "user_constraints",
+    "selected_skills",
+    "shot_plan",
+    "capture_rounds",
+    "evaluation",
+    "publish_package",
+    "analytics_context",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+    "state": {
+      "type": "string",
+      "enum": [
+        "created",
+        "reference_ready",
+        "analyzing",
+        "shot_plan_ready",
+        "handoff_ready",
+        "capturing",
+        "evaluating",
+        "coaching",
+        "completed",
+        "failed",
+        "deleted"
+      ]
+    },
+    "source_channel": { "$ref": "common.schema.json#/$defs/SourceChannel" },
+    "mode": { "type": "string", "enum": ["original_replication", "scene_adaptation"] },
+    "reference_asset": { "$ref": "reference.schema.json#/$defs/ReferenceAsset" },
+    "user_constraints": { "$ref": "common.schema.json#/$defs/UserConstraints" },
+    "selected_skills": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/SkillRef" },
+      "uniqueItems": true
+    },
+    "shot_plan": {
+      "anyOf": [
+        { "$ref": "shot-plan.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "capture_rounds": {
+      "type": "array",
+      "items": { "$ref": "capture.schema.json" },
+      "maxItems": 10
+    },
+    "evaluation": {
+      "anyOf": [
+        { "$ref": "evaluation.schema.json" },
+        { "type": "null" }
+      ]
+    },
+    "publish_package": {
+      "anyOf": [
+        { "$ref": "post.schema.json#/$defs/PostJob" },
+        { "type": "null" }
+      ]
+    },
+    "analytics_context": {
+      "type": "object",
+      "required": ["client"],
+      "properties": {
+        "client": { "$ref": "common.schema.json#/$defs/Client" },
+        "campaign": { "type": ["string", "null"], "maxLength": 100 }
+      },
+      "additionalProperties": false
+    },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

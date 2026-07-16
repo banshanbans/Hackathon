@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HandoffTask",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "handoff_id",
+    "code",
+    "session_id",
+    "status",
+    "expires_at",
+    "claimed_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "handoff_id": { "type": "string", "pattern": "^handoff_[A-Za-z0-9_-]+$" },
+    "code": { "type": "string", "pattern": "^[A-Z0-9]{6}$" },
+    "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+    "status": { "type": "string", "enum": ["created", "claimed", "completed", "revoked", "expired"] },
+    "expires_at": { "type": "string", "format": "date-time" },
+    "claimed_at": { "type": ["string", "null"], "format": "date-time" }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "IssueCode": {
+      "type": "string",
+      "enum": [
+        "person_too_large",
+        "person_too_small",
+        "person_too_left",
+        "person_too_right",
+        "head_cut",
+        "feet_cut",
+        "background_blocked",
+        "pose_direction_wrong",
+        "arm_position_wrong",
+        "camera_too_high",
+        "camera_too_low",
+        "camera_angle_wrong",
+        "motion_timing_wrong"
+      ]
+    }
+  },
+  "title": "ResultEvaluation",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "evaluation_id",
+    "capture_id",
+    "needs_retake",
+    "goal_satisfied",
+    "publish_readiness",
+    "confidence"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "evaluation_id": { "type": "string", "pattern": "^eval_[A-Za-z0-9_-]+$" },
+    "capture_id": { "type": "string", "pattern": "^cap_[A-Za-z0-9_-]+$" },
+    "issue_code": { "$ref": "#/$defs/IssueCode" },
+    "top_issue": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "next_instruction": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "needs_retake": { "type": "boolean" },
+    "goal_satisfied": { "type": "boolean" },
+    "publish_readiness": { "type": "number", "minimum": 0, "maximum": 1 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "goal_satisfied": { "const": true } }, "required": ["goal_satisfied"] },
+      "then": {
+        "not": { "required": ["issue_code"] },
+        "properties": {
+          "needs_retake": { "const": false }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

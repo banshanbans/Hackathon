@@ -1,0 +1,40 @@
+name: SoloShot
+options:
+  bundleIdPrefix: ai.soloshot
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+packages:
+  SoloShotContracts:
+    path: ../../packages/contracts/generated/swift
+targets:
+  SoloShot:
+    type: application
+    platform: iOS
+    sources:
+      - path: SoloShot
+    dependencies:
+      - package: SoloShotContracts
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.soloshot.app
+        PRODUCT_NAME: SoloShot
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: SoloShot
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  SoloShot:
+    build:
+      targets:
+        SoloShot: all
+    run:
+      config: Debug
+    archive:
+      config: Release
+

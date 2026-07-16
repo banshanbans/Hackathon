@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "TargetLayout": {
+      "type": "object",
+      "required": [
+        "center_x",
+        "center_y",
+        "width",
+        "height",
+        "head_point",
+        "foot_line_y",
+        "body_direction",
+        "pose_template"
+      ],
+      "properties": {
+        "center_x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "center_y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "width": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "height": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+        "head_point": { "$ref": "common.schema.json#/$defs/NormalizedPoint" },
+        "foot_line_y": { "type": "number", "minimum": 0, "maximum": 1 },
+        "body_direction": {
+          "type": "string",
+          "enum": ["front", "back", "left", "right", "slightly_left", "slightly_right"]
+        },
+        "pose_template": { "type": "string", "minLength": 1, "maxLength": 100 }
+      },
+      "additionalProperties": false
+    },
+    "ActionStep": {
+      "type": "object",
+      "required": ["sequence", "instruction", "duration_seconds"],
+      "properties": {
+        "sequence": { "type": "integer", "minimum": 1 },
+        "instruction": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "duration_seconds": { "type": "number", "exclusiveMinimum": 0, "maximum": 30 }
+      },
+      "additionalProperties": false
+    },
+    "ExecutionPlan": {
+      "type": "object",
+      "required": ["supported", "instruction"],
+      "properties": {
+        "supported": { "type": "boolean" },
+        "instruction": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "requires_realtime_alignment": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    }
+  },
+  "title": "ShotPlan",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "camera_height",
+    "camera_angle",
+    "lens",
+    "capture_mode",
+    "phone_setup_instruction",
+    "target_layout",
+    "action_script",
+    "safety_notes",
+    "h5_execution",
+    "ios_execution",
+    "confidence"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "plan_id": { "type": "string", "pattern": "^sp_[A-Za-z0-9_-]+$" },
+    "camera_height": {
+      "type": "string",
+      "enum": ["ground", "knee", "waist", "chest", "eye", "overhead"]
+    },
+    "camera_angle": { "type": "string", "enum": ["level", "slight_up", "slight_down"] },
+    "lens": { "type": "string", "enum": ["0.5x", "1x", "2x"] },
+    "capture_mode": { "type": "string", "enum": ["photo", "short_video"] },
+    "phone_setup_instruction": { "type": "string", "minLength": 1, "maxLength": 300 },
+    "target_layout": { "$ref": "#/$defs/TargetLayout" },
+    "action_script": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "$ref": "#/$defs/ActionStep" }
+    },
+    "safety_notes": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 1, "maxLength": 200 }
+    },
+    "h5_execution": { "$ref": "#/$defs/ExecutionPlan" },
+    "ios_execution": { "$ref": "#/$defs/ExecutionPlan" },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}

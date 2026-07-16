@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  contracts-api-h5:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: services/api/requirements.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Bootstrap
+        run: make bootstrap
+      - name: Validate Compose
+        run: docker compose -f infra/docker-compose.yml --env-file .env.example config --quiet
+      - name: Regenerate contracts
+        run: make generate
+      - name: Verify generated code is current
+        run: git diff --exit-code
+      - name: Lint
+        run: make lint
+      - name: Type check
+        run: make typecheck
+      - name: API and contract tests
+        run: PYTHONPATH=services/api .venv/bin/pytest services/api/tests
+      - name: H5 contract test
+        run: npm run test:contracts --workspace @soloshot/h5
+      - name: H5 tests and build
+        run: make test-h5
+
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Decode shared fixture
+        run: swift test --package-path packages/contracts/generated/swift
+      - name: Generate Xcode project
+        run: xcodegen generate --spec apps/ios/project.yml --project apps/ios
+      - name: Build iOS skeleton
+        run: >-
+          xcodebuild
+          -project apps/ios/SoloShot.xcodeproj
+          -scheme SoloShot
+          -destination 'generic/platform=iOS Simulator'
+          CODE_SIGNING_ALLOWED=NO
+          build

@@ -1,0 +1,101 @@
+{
+  "schema_version": "1.0",
+  "session_id": "ss_w0_fixture",
+  "state": "shot_plan_ready",
+  "source_channel": "h5_qr",
+  "mode": "original_replication",
+  "reference_asset": {
+    "schema_version": "1.0",
+    "reference_id": "ref_w0_fixture",
+    "media_type": "image",
+    "source_type": "preset",
+    "width": 1320,
+    "height": 1749,
+    "selected_box": {
+      "x": 0.6,
+      "y": 0.2,
+      "width": 0.24,
+      "height": 0.68
+    },
+    "attribution": {
+      "source_label": "SoloShot W0 contract fixture",
+      "creator_label": null,
+      "source_url": null
+    }
+  },
+  "user_constraints": {
+    "solo_traveler": true,
+    "tripod_available": false,
+    "has_luggage": true,
+    "notes": "Fixture only; not a live model result."
+  },
+  "selected_skills": [
+    {
+      "name": "reference_understanding",
+      "version": "1.0.0"
+    },
+    {
+      "name": "shooting_plan",
+      "version": "1.0.0"
+    }
+  ],
+  "shot_plan": {
+    "schema_version": "1.0",
+    "plan_id": "sp_w0_fixture",
+    "camera_height": "waist",
+    "camera_angle": "slight_up",
+    "lens": "1x",
+    "capture_mode": "short_video",
+    "phone_setup_instruction": "将手机竖直固定在稳定支撑物上，确认不会滑落。",
+    "target_layout": {
+      "center_x": 0.72,
+      "center_y": 0.54,
+      "width": 0.24,
+      "height": 0.68,
+      "head_point": {
+        "x": 0.72,
+        "y": 0.2
+      },
+      "foot_line_y": 0.88,
+      "body_direction": "slightly_left",
+      "pose_template": "walking_turn"
+    },
+    "action_script": [
+      {
+        "sequence": 1,
+        "instruction": "从画面左侧缓慢走向目标位置。",
+        "duration_seconds": 3
+      },
+      {
+        "sequence": 2,
+        "instruction": "到达目标位置后轻轻向风景方向回头。",
+        "duration_seconds": 2
+      }
+    ],
+    "safety_notes": [
+      "只在平整、允许停留且远离车辆的区域拍摄。",
+      "手机必须放在稳定支撑物上。"
+    ],
+    "h5_execution": {
+      "supported": true,
+      "instruction": "使用静态轮廓预览，并通过文件上传提交结果。",
+      "requires_realtime_alignment": false
+    },
+    "ios_execution": {
+      "supported": true,
+      "instruction": "使用本地 Vision 与屏幕空间轮廓进行实时对齐。",
+      "requires_realtime_alignment": true
+    },
+    "confidence": 0.86
+  },
+  "capture_rounds": [],
+  "evaluation": null,
+  "publish_package": null,
+  "analytics_context": {
+    "client": "h5",
+    "campaign": "w0_contract_fixture"
+  },
+  "created_at": "2026-07-16T14:00:00+06:00",
+  "updated_at": "2026-07-16T14:00:00+06:00"
+}
+

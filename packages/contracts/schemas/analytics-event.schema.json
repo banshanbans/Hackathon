@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AnalyticsEvent",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "event_name",
+    "session_id",
+    "source_channel",
+    "client",
+    "timestamp",
+    "properties"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "event_id": { "type": "string", "format": "uuid" },
+    "event_name": {
+      "type": "string",
+      "enum": [
+        "page_view",
+        "reference_select",
+        "reference_upload",
+        "circle_complete",
+        "replicate_click",
+        "mode_select",
+        "agent_start",
+        "agent_success",
+        "agent_fail",
+        "shot_plan_view",
+        "h5_capture_start",
+        "result_upload",
+        "result_evaluated",
+        "handoff_qr_create",
+        "handoff_claimed",
+        "share_click",
+        "publish_preview"
+      ]
+    },
+    "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+    "source_channel": { "$ref": "common.schema.json#/$defs/SourceChannel" },
+    "client": { "$ref": "common.schema.json#/$defs/Client" },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "properties": {
+      "type": "object",
+      "description": "Non-sensitive event attributes only. Media bytes, tokens, and signed URLs are forbidden by policy.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

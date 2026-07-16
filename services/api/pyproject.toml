@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soloshot-api"
+version = "0.1.0"
+description = "SoloShot AI API skeleton"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.116.1",
+  "pydantic==2.11.7",
+  "uvicorn==0.35.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx==0.28.1",
+  "jsonschema==4.25.0",
+  "mypy==1.17.1",
+  "openapi-spec-validator==0.7.2",
+  "pytest==8.4.1",
+  "pytest-cov==6.2.1",
+  "PyYAML==6.0.2",
+  "ruff==0.12.9",
+  "types-jsonschema==4.26.0.20260518",
+  "types-PyYAML==6.0.12.20260518",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-config --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]

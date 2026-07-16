@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "PostJob": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "post_id",
+        "session_id",
+        "status",
+        "output_asset_id",
+        "publish_mode",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+        "post_id": { "type": "string", "pattern": "^post_[A-Za-z0-9_-]+$" },
+        "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+        "status": { "type": "string", "enum": ["queued", "rendering", "ready", "failed"] },
+        "output_asset_id": {
+          "type": ["string", "null"],
+          "pattern": "^media_[A-Za-z0-9_-]+$"
+        },
+        "publish_mode": { "type": "string", "const": "preview_only" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "Share": {
+      "type": "object",
+      "required": ["schema_version", "share_id", "session_id", "expires_at"],
+      "properties": {
+        "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+        "share_id": { "type": "string", "pattern": "^share_[A-Za-z0-9_-]+$" },
+        "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+        "expires_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

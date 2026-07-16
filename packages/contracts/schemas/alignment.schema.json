@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CurrentAlignment",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "person_detected",
+    "multiple_people",
+    "full_body_visible",
+    "position_status",
+    "scale_status",
+    "pose_status",
+    "instruction_code",
+    "ready_to_capture",
+    "stability_score"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "person_detected": { "type": "boolean" },
+    "multiple_people": { "type": "boolean" },
+    "full_body_visible": { "type": "boolean" },
+    "position_status": {
+      "type": "string",
+      "enum": ["move_left", "move_right", "centered", "unknown"]
+    },
+    "scale_status": {
+      "type": "string",
+      "enum": ["move_forward", "move_backward", "correct", "unknown"]
+    },
+    "pose_status": { "type": "string", "enum": ["acceptable", "adjust", "unknown"] },
+    "instruction_code": {
+      "type": "string",
+      "enum": [
+        "no_person",
+        "multiple_people",
+        "move_left",
+        "move_right",
+        "move_forward",
+        "move_backward",
+        "feet_outside",
+        "head_outside",
+        "adjust_body_direction",
+        "adjust_arm",
+        "hold_still",
+        "ready_to_capture"
+      ]
+    },
+    "ready_to_capture": { "type": "boolean" },
+    "stability_score": { "type": "number", "minimum": 0, "maximum": 1 }
+  },
+  "additionalProperties": false
+}

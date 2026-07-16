@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "RunStatus": {
+      "type": "string",
+      "enum": ["queued", "running", "completed", "failed", "cancelled"]
+    },
+    "AgentIntent": {
+      "type": "string",
+      "enum": [
+        "original_replication",
+        "scene_adaptation",
+        "result_evaluation",
+        "continue_coaching",
+        "content_generation",
+        "creator_template_generation"
+      ]
+    },
+    "SkillRun": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "skill_run_id",
+        "skill",
+        "status",
+        "latency_ms",
+        "estimated_cost_usd",
+        "confidence",
+        "fallback_used",
+        "error_code"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+        "skill_run_id": { "type": "string", "pattern": "^skr_[A-Za-z0-9_-]+$" },
+        "skill": { "$ref": "common.schema.json#/$defs/SkillRef" },
+        "status": { "$ref": "#/$defs/RunStatus" },
+        "latency_ms": { "type": "integer", "minimum": 0 },
+        "estimated_cost_usd": { "type": "number", "minimum": 0 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "fallback_used": { "type": "boolean" },
+        "error_code": {
+          "anyOf": [
+            { "$ref": "common.schema.json#/$defs/ErrorCode" },
+            { "type": "null" }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "title": "AgentRun",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "run_id",
+    "session_id",
+    "intent",
+    "selected_skills",
+    "provider",
+    "model",
+    "status",
+    "latency_ms",
+    "estimated_cost_usd",
+    "confidence",
+    "fallback_used",
+    "error_code",
+    "trace_id",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+    "run_id": { "type": "string", "pattern": "^run_[A-Za-z0-9_-]+$" },
+    "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+    "intent": { "$ref": "#/$defs/AgentIntent" },
+    "selected_skills": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/SkillRef" },
+      "uniqueItems": true
+    },
+    "provider": { "type": "string", "minLength": 1, "maxLength": 100 },
+    "model": { "type": ["string", "null"], "maxLength": 100 },
+    "status": { "$ref": "#/$defs/RunStatus" },
+    "latency_ms": { "type": "integer", "minimum": 0 },
+    "estimated_cost_usd": { "type": "number", "minimum": 0 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "fallback_used": { "type": "boolean" },
+    "error_code": {
+      "anyOf": [
+        { "$ref": "common.schema.json#/$defs/ErrorCode" },
+        { "type": "null" }
+      ]
+    },
+    "trace_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "created_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": false
+}

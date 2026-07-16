@@ -1,0 +1,1396 @@
+openapi: 3.1.0
+info:
+  title: SoloShot AI API
+  version: 1.0.0
+  description: >-
+    Contract-first API for SoloShot AI. All normalized coordinates use the [0,1]
+    range with a top-left origin; x grows right and y grows down. W0 implements
+    only /health even though later work-package operations are specified here.
+servers:
+  - url: http://localhost:8000
+    description: Local development
+tags:
+  - name: system
+  - name: sessions
+  - name: references
+  - name: agent
+  - name: skills
+  - name: captures
+  - name: evaluations
+  - name: handoffs
+  - name: content
+  - name: analytics
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [system]
+      summary: Process liveness
+      responses:
+        "200":
+          description: API process is alive
+          headers:
+            X-Request-ID:
+              $ref: "#/components/headers/RequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/v1/sessions:
+    post:
+      operationId: createSession
+      tags: [sessions]
+      summary: Create a versioned SoloShot session
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/SessionCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/sessions/{session_id}:
+    parameters:
+      - $ref: "#/components/parameters/SessionId"
+    get:
+      operationId: getSession
+      tags: [sessions]
+      summary: Retrieve a session
+      responses:
+        "200":
+          $ref: "#/components/responses/SessionOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: deleteSession
+      tags: [sessions]
+      summary: Delete a session and schedule owned temporary media for deletion
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/Deleted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/references/analyze:
+    post:
+      operationId: analyzeReference
+      tags: [references]
+      summary: Analyze a selected reference subject
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeReferenceRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/ReferenceAnalysisAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/references/adapt:
+    post:
+      operationId: adaptReference
+      tags: [references]
+      summary: Adapt reference composition to a current scene
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdaptReferenceRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/ReferenceAnalysisAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/references/validate-box:
+    post:
+      operationId: validateReferenceBox
+      tags: [references]
+      summary: Validate a normalized subject selection box
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ValidateReferenceBoxRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/ReferenceBoxValidationOk"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/references/{reference_id}:
+    get:
+      operationId: getReference
+      tags: [references]
+      summary: Retrieve reference metadata
+      parameters:
+        - $ref: "#/components/parameters/ReferenceId"
+      responses:
+        "200":
+          $ref: "#/components/responses/ReferenceOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/agent/runs:
+    post:
+      operationId: createAgentRun
+      tags: [agent]
+      summary: Start a versioned Agent run
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentRunRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AgentRunAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/agent/runs/{run_id}:
+    get:
+      operationId: getAgentRun
+      tags: [agent]
+      summary: Retrieve Agent run state
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentRunOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/agent/runs/{run_id}/continue:
+    post:
+      operationId: continueAgentRun
+      tags: [agent]
+      summary: Continue a multi-round Agent run
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContinueAgentRunRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/AgentRunAccepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/agent/runs/{run_id}/trace:
+    get:
+      operationId: getAgentRunTrace
+      tags: [agent]
+      summary: Retrieve the safe Agent and Skill trace
+      parameters:
+        - $ref: "#/components/parameters/RunId"
+      responses:
+        "200":
+          $ref: "#/components/responses/AgentTraceOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/skills/{skill_name}/invoke:
+    post:
+      operationId: invokeSkill
+      tags: [skills]
+      summary: Invoke one registered Skill through the backend
+      parameters:
+        - $ref: "#/components/parameters/SkillName"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvokeSkillRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/SkillRunAccepted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/captures:
+    post:
+      operationId: createCapture
+      tags: [captures]
+      summary: Register an uploaded capture
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCaptureRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/CaptureCreated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/captures/{capture_id}:
+    get:
+      operationId: getCapture
+      tags: [captures]
+      summary: Retrieve capture processing state
+      parameters:
+        - $ref: "#/components/parameters/CaptureId"
+      responses:
+        "200":
+          $ref: "#/components/responses/CaptureOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/captures/{capture_id}/select-frame:
+    post:
+      operationId: selectCaptureFrame
+      tags: [captures]
+      summary: Select one candidate frame
+      parameters:
+        - $ref: "#/components/parameters/CaptureId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectFrameRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/CaptureOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/evaluations:
+    post:
+      operationId: createEvaluation
+      tags: [evaluations]
+      summary: Compare a capture with its reference and plan
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEvaluationRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/EvaluationAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/handoffs:
+    post:
+      operationId: createHandoff
+      tags: [handoffs]
+      summary: Create a short-lived handoff code
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateHandoffRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/HandoffCreated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/handoffs/{code}:
+    parameters:
+      - $ref: "#/components/parameters/HandoffCode"
+    get:
+      operationId: getHandoff
+      tags: [handoffs]
+      summary: Retrieve safe handoff metadata
+      responses:
+        "200":
+          $ref: "#/components/responses/HandoffOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "410":
+          $ref: "#/components/responses/Gone"
+    delete:
+      operationId: revokeHandoff
+      tags: [handoffs]
+      summary: Revoke a handoff
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          $ref: "#/components/responses/Deleted"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/handoffs/{code}/claim:
+    post:
+      operationId: claimHandoff
+      tags: [handoffs]
+      summary: Claim a handoff once
+      parameters:
+        - $ref: "#/components/parameters/HandoffCode"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimHandoffRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/HandoffOk"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+
+  /api/v1/handoffs/{code}/complete:
+    post:
+      operationId: completeHandoff
+      tags: [handoffs]
+      summary: Mark a claimed handoff complete
+      parameters:
+        - $ref: "#/components/parameters/HandoffCode"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteHandoffRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/HandoffOk"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "410":
+          $ref: "#/components/responses/Gone"
+
+  /api/v1/posts/render:
+    post:
+      operationId: renderPost
+      tags: [content]
+      summary: Queue deterministic Before/After and 9:16 content rendering
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenderPostRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/PostAccepted"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/posts/{post_id}:
+    get:
+      operationId: getPost
+      tags: [content]
+      summary: Retrieve content render state
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+      responses:
+        "200":
+          $ref: "#/components/responses/PostOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/v1/posts/{post_id}/publish-preview:
+    post:
+      operationId: createPublishPreview
+      tags: [content]
+      summary: Create a preview package without claiming publication
+      parameters:
+        - $ref: "#/components/parameters/PostId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublishPreviewRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/PostOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/shares/{share_id}:
+    get:
+      operationId: getShare
+      tags: [content]
+      summary: Retrieve an expiring share record
+      parameters:
+        - $ref: "#/components/parameters/ShareId"
+      responses:
+        "200":
+          $ref: "#/components/responses/ShareOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "410":
+          $ref: "#/components/responses/Gone"
+
+  /api/v1/events/batch:
+    post:
+      operationId: recordEventBatch
+      tags: [analytics]
+      summary: Record a deduplicated batch of privacy-safe events
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EventBatchRequest"
+      responses:
+        "202":
+          $ref: "#/components/responses/EventBatchAccepted"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/internal/metrics/funnel:
+    get:
+      operationId: getFunnelMetrics
+      tags: [analytics]
+      summary: Retrieve authenticated funnel aggregates
+      security:
+        - internalBearer: []
+      responses:
+        "200":
+          $ref: "#/components/responses/FunnelMetricsOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/internal/metrics/costs:
+    get:
+      operationId: getCostMetrics
+      tags: [analytics]
+      summary: Retrieve authenticated cost aggregates
+      security:
+        - internalBearer: []
+      responses:
+        "200":
+          $ref: "#/components/responses/CostMetricsOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+components:
+  securitySchemes:
+    internalBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+
+  headers:
+    RequestId:
+      description: Correlation id for this request
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Opaque key used to deduplicate retryable writes
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    SessionId:
+      name: session_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^ss_[A-Za-z0-9_-]+$
+    ReferenceId:
+      name: reference_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^ref_[A-Za-z0-9_-]+$
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^run_[A-Za-z0-9_-]+$
+    CaptureId:
+      name: capture_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^cap_[A-Za-z0-9_-]+$
+    HandoffCode:
+      name: code
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[A-Z0-9]{6}$
+    PostId:
+      name: post_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^post_[A-Za-z0-9_-]+$
+    ShareId:
+      name: share_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^share_[A-Za-z0-9_-]+$
+    SkillName:
+      name: skill_name
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - reference_understanding
+          - shooting_plan
+          - scene_adaptation
+          - result_evaluation
+          - coaching_decision
+          - content_composer
+          - growth_analytics
+
+  schemas:
+    SoloShotSession:
+      $ref: ./schemas/session.schema.json
+    ReferenceAsset:
+      $ref: ./schemas/reference.schema.json#/$defs/ReferenceAsset
+    ReferenceAnalysis:
+      $ref: ./schemas/reference.schema.json#/$defs/ReferenceAnalysis
+    TargetLayout:
+      $ref: ./schemas/shot-plan.schema.json#/$defs/TargetLayout
+    ShotPlan:
+      $ref: ./schemas/shot-plan.schema.json
+    CurrentAlignment:
+      $ref: ./schemas/alignment.schema.json
+    ResultEvaluation:
+      $ref: ./schemas/evaluation.schema.json
+    AgentRun:
+      $ref: ./schemas/agent-run.schema.json
+    SkillRun:
+      $ref: ./schemas/agent-run.schema.json#/$defs/SkillRun
+    Capture:
+      $ref: ./schemas/capture.schema.json
+    HandoffTask:
+      $ref: ./schemas/handoff.schema.json
+    PostJob:
+      $ref: ./schemas/post.schema.json#/$defs/PostJob
+    Share:
+      $ref: ./schemas/post.schema.json#/$defs/Share
+    AnalyticsEvent:
+      $ref: ./schemas/analytics-event.schema.json
+    ApiError:
+      $ref: ./schemas/common.schema.json#/$defs/ApiError
+
+    HealthResponse:
+      type: object
+      required: [schema_version, request_id, status, service, version]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        request_id:
+          type: string
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+          const: soloshot-api
+        version:
+          type: string
+      additionalProperties: false
+
+    CreateSessionRequest:
+      type: object
+      required: [schema_version, source_channel, mode, user_constraints]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        source_channel:
+          $ref: ./schemas/common.schema.json#/$defs/SourceChannel
+        mode:
+          type: string
+          enum: [original_replication, scene_adaptation]
+        user_constraints:
+          $ref: ./schemas/common.schema.json#/$defs/UserConstraints
+      additionalProperties: false
+
+    AnalyzeReferenceRequest:
+      type: object
+      required: [schema_version, session_id, reference_asset]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        reference_asset:
+          $ref: "#/components/schemas/ReferenceAsset"
+      additionalProperties: false
+
+    AdaptReferenceRequest:
+      type: object
+      required: [schema_version, session_id, reference_id, scene_asset_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        reference_id:
+          type: string
+          pattern: ^ref_[A-Za-z0-9_-]+$
+        scene_asset_id:
+          type: string
+          pattern: ^media_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    ValidateReferenceBoxRequest:
+      type: object
+      required: [schema_version, reference_id, selected_box]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        reference_id:
+          type: string
+          pattern: ^ref_[A-Za-z0-9_-]+$
+        selected_box:
+          $ref: ./schemas/common.schema.json#/$defs/NormalizedBoundingBox
+      additionalProperties: false
+
+    CreateAgentRunRequest:
+      type: object
+      required: [schema_version, session_id, intent]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        intent:
+          $ref: ./schemas/agent-run.schema.json#/$defs/AgentIntent
+      additionalProperties: false
+
+    ContinueAgentRunRequest:
+      type: object
+      required: [schema_version, session_id, capture_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        capture_id:
+          type: string
+          pattern: ^cap_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    InvokeSkillRequest:
+      type: object
+      required: [schema_version, session_id, skill_version, input]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        skill_version:
+          type: string
+          pattern: ^[0-9]+\.[0-9]+\.[0-9]+$
+        input:
+          type: object
+          description: Must conform to the selected Skill input schema.
+          additionalProperties: true
+      additionalProperties: false
+
+    CreateCaptureRequest:
+      type: object
+      required: [schema_version, session_id, round_index, media_asset_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        round_index:
+          type: integer
+          minimum: 1
+          maximum: 10
+        media_asset_id:
+          type: string
+          pattern: ^media_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    SelectFrameRequest:
+      type: object
+      required: [schema_version, frame_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        frame_id:
+          type: string
+          pattern: ^frame_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    CreateEvaluationRequest:
+      type: object
+      required: [schema_version, session_id, capture_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        capture_id:
+          type: string
+          pattern: ^cap_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    CreateHandoffRequest:
+      type: object
+      required: [schema_version, session_id, ttl_seconds]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        ttl_seconds:
+          type: integer
+          minimum: 60
+          maximum: 3600
+      additionalProperties: false
+
+    ClaimHandoffRequest:
+      type: object
+      required: [schema_version, client_instance_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        client_instance_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+      additionalProperties: false
+
+    CompleteHandoffRequest:
+      type: object
+      required: [schema_version, client_instance_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        client_instance_id:
+          type: string
+          minLength: 8
+          maxLength: 128
+      additionalProperties: false
+
+    RenderPostRequest:
+      type: object
+      required: [schema_version, session_id, format]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        format:
+          type: string
+          enum: [before_after_image, vertical_video, both]
+      additionalProperties: false
+
+    PublishPreviewRequest:
+      type: object
+      required: [schema_version, user_consent]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        user_consent:
+          type: boolean
+          description: Must be true; the service rejects false because preview generation requires consent.
+      additionalProperties: false
+
+    EventBatchRequest:
+      type: object
+      required: [schema_version, events]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        events:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/AnalyticsEvent"
+      additionalProperties: false
+
+    ReferenceBoxValidation:
+      type: object
+      required: [schema_version, valid, warnings]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        valid:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: string
+      additionalProperties: false
+
+    AgentTrace:
+      type: object
+      required: [schema_version, agent_run, skill_runs]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        agent_run:
+          $ref: "#/components/schemas/AgentRun"
+        skill_runs:
+          type: array
+          items:
+            $ref: "#/components/schemas/SkillRun"
+      additionalProperties: false
+
+    DeletedResource:
+      type: object
+      required: [schema_version, deleted]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        deleted:
+          type: boolean
+          description: True when deletion or revocation has been accepted.
+      additionalProperties: false
+
+    EventBatchReceipt:
+      type: object
+      required: [schema_version, accepted_count]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        accepted_count:
+          type: integer
+          minimum: 0
+      additionalProperties: false
+
+    FunnelMetrics:
+      type: object
+      required: [schema_version, generated_at, counts]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        generated_at:
+          type: string
+          format: date-time
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+      additionalProperties: false
+
+    CostMetrics:
+      type: object
+      required: [schema_version, generated_at, total_cost_usd]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        generated_at:
+          type: string
+          format: date-time
+        total_cost_usd:
+          type: number
+          minimum: 0
+      additionalProperties: false
+
+    SessionResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/SoloShotSession"
+    ReferenceResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/ReferenceAsset"
+    ReferenceAnalysisResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/ReferenceAnalysis"
+    ReferenceBoxValidationResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/ReferenceBoxValidation"
+    AgentRunResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/AgentRun"
+    AgentTraceResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/AgentTrace"
+    SkillRunResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/SkillRun"
+    CaptureResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/Capture"
+    EvaluationResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/ResultEvaluation"
+    HandoffResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/HandoffTask"
+    PostResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/PostJob"
+    ShareResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/Share"
+    DeletedResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/DeletedResource"
+    EventBatchResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/EventBatchReceipt"
+    FunnelMetricsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/FunnelMetrics"
+    CostMetricsResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/CostMetrics"
+    ResponseMetadata:
+      type: object
+      required: [schema_version, request_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        request_id:
+          type: string
+          minLength: 1
+          maxLength: 128
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          $ref: "#/components/schemas/ApiError"
+      additionalProperties: false
+
+  responses:
+    SessionCreated:
+      description: Session created
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SessionResponse"
+    SessionOk:
+      description: Session retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SessionResponse"
+    ReferenceOk:
+      description: Reference retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ReferenceResponse"
+    ReferenceAnalysisAccepted:
+      description: Reference analysis accepted or returned from cache
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ReferenceAnalysisResponse"
+    ReferenceBoxValidationOk:
+      description: Selection box validation completed
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ReferenceBoxValidationResponse"
+    AgentRunAccepted:
+      description: Agent run accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentRunResponse"
+    AgentRunOk:
+      description: Agent run retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentRunResponse"
+    AgentTraceOk:
+      description: Safe trace retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/AgentTraceResponse"
+    SkillRunAccepted:
+      description: Skill run accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SkillRunResponse"
+    CaptureCreated:
+      description: Capture registered
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CaptureResponse"
+    CaptureOk:
+      description: Capture retrieved or updated
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CaptureResponse"
+    EvaluationAccepted:
+      description: Evaluation accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EvaluationResponse"
+    HandoffCreated:
+      description: Handoff created
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HandoffResponse"
+    HandoffOk:
+      description: Handoff retrieved or updated
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HandoffResponse"
+    PostAccepted:
+      description: Render job accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PostResponse"
+    PostOk:
+      description: Post job or preview retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PostResponse"
+    ShareOk:
+      description: Share record retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ShareResponse"
+    Deleted:
+      description: Resource deletion or revocation accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/DeletedResponse"
+    EventBatchAccepted:
+      description: Event batch accepted
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EventBatchResponse"
+    FunnelMetricsOk:
+      description: Funnel metrics retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/FunnelMetricsResponse"
+    CostMetricsOk:
+      description: Cost metrics retrieved
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CostMetricsResponse"
+    BadRequest:
+      description: Invalid request
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: Authentication required
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: Resource state conflicts with this operation
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Gone:
+      description: Expiring resource is no longer available
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ValidationError:
+      description: Input failed schema or domain validation
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    InternalError:
+      description: Unexpected server error
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
