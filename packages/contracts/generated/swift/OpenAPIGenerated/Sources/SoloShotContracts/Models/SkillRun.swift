@@ -30,10 +30,25 @@ public struct SkillRun: Sendable, Codable, Hashable {
         case compareFailed = "COMPARE_FAILED"
         case videoRenderFailed = "VIDEO_RENDER_FAILED"
         case handoffExpired = "HANDOFF_EXPIRED"
+        case handoffRevoked = "HANDOFF_REVOKED"
         case handoffAlreadyClaimed = "HANDOFF_ALREADY_CLAIMED"
+        case handoffInvalidToken = "HANDOFF_INVALID_TOKEN"
+        case handoffRateLimited = "HANDOFF_RATE_LIMITED"
         case sessionExpired = "SESSION_EXPIRED"
         case unsupportedMedia = "UNSUPPORTED_MEDIA"
+        case mediaTooLarge = "MEDIA_TOO_LARGE"
+        case mediaNotReady = "MEDIA_NOT_READY"
+        case mediaIntegrityFailed = "MEDIA_INTEGRITY_FAILED"
+        case mediaAccessDenied = "MEDIA_ACCESS_DENIED"
+        case providerRejected = "PROVIDER_REJECTED"
+        case consentRequired = "CONSENT_REQUIRED"
+        case unsafeInstruction = "UNSAFE_INSTRUCTION"
         case schemaVersionUnsupported = "SCHEMA_VERSION_UNSUPPORTED"
+        case idempotencyConflict = "IDEMPOTENCY_CONFLICT"
+        case skillNotFound = "SKILL_NOT_FOUND"
+        case skillVersionUnsupported = "SKILL_VERSION_UNSUPPORTED"
+        case providerUnavailable = "PROVIDER_UNAVAILABLE"
+        case invalidState = "INVALID_STATE"
         case validationFailed = "VALIDATION_FAILED"
         case notFound = "NOT_FOUND"
         case internalError = "INTERNAL_ERROR"
@@ -42,6 +57,10 @@ public struct SkillRun: Sendable, Codable, Hashable {
     public static let latencyMsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let estimatedCostUsdRule = NumericRule<Double>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let confidenceRule = NumericRule<Double>(minimum: 0, exclusiveMinimum: false, maximum: 1, exclusiveMaximum: false, multipleOf: nil)
+    public static let providerRule = StringRule(minLength: 1, maxLength: 100, pattern: nil)
+    public static let modelRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
+    public static let warningsRule = ArrayRule(minItems: nil, maxItems: 20, uniqueItems: false)
+    public static let repairCountRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: 1, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var skillRunId: String
     public var skill: SoloShotSessionSelectedSkillsInner
@@ -50,9 +69,13 @@ public struct SkillRun: Sendable, Codable, Hashable {
     public var estimatedCostUsd: Double
     public var confidence: Double
     public var fallbackUsed: Bool
+    public var provider: String
+    public var model: String?
+    public var warnings: [String]
+    public var repairCount: Int
     public var errorCode: ErrorCode?
 
-    public init(schemaVersion: SchemaVersion, skillRunId: String, skill: SoloShotSessionSelectedSkillsInner, status: Status, latencyMs: Int, estimatedCostUsd: Double, confidence: Double, fallbackUsed: Bool, errorCode: ErrorCode?) {
+    public init(schemaVersion: SchemaVersion, skillRunId: String, skill: SoloShotSessionSelectedSkillsInner, status: Status, latencyMs: Int, estimatedCostUsd: Double, confidence: Double, fallbackUsed: Bool, provider: String, model: String?, warnings: [String], repairCount: Int, errorCode: ErrorCode?) {
         self.schemaVersion = schemaVersion
         self.skillRunId = skillRunId
         self.skill = skill
@@ -61,6 +84,10 @@ public struct SkillRun: Sendable, Codable, Hashable {
         self.estimatedCostUsd = estimatedCostUsd
         self.confidence = confidence
         self.fallbackUsed = fallbackUsed
+        self.provider = provider
+        self.model = model
+        self.warnings = warnings
+        self.repairCount = repairCount
         self.errorCode = errorCode
     }
 
@@ -73,6 +100,10 @@ public struct SkillRun: Sendable, Codable, Hashable {
         case estimatedCostUsd = "estimated_cost_usd"
         case confidence
         case fallbackUsed = "fallback_used"
+        case provider
+        case model
+        case warnings
+        case repairCount = "repair_count"
         case errorCode = "error_code"
     }
 
@@ -88,6 +119,10 @@ public struct SkillRun: Sendable, Codable, Hashable {
         try container.encode(estimatedCostUsd, forKey: .estimatedCostUsd)
         try container.encode(confidence, forKey: .confidence)
         try container.encode(fallbackUsed, forKey: .fallbackUsed)
+        try container.encode(provider, forKey: .provider)
+        try container.encode(model, forKey: .model)
+        try container.encode(warnings, forKey: .warnings)
+        try container.encode(repairCount, forKey: .repairCount)
         try container.encode(errorCode, forKey: .errorCode)
     }
 }

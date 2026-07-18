@@ -7,6 +7,7 @@
 
 import Foundation
 
+/** Safe public handoff status. Session data is returned only after a successful claim. */
 public struct HandoffTask: Sendable, Codable, Hashable {
 
     public enum SchemaVersion: String, Sendable, Codable, CaseIterable {
@@ -19,35 +20,44 @@ public struct HandoffTask: Sendable, Codable, Hashable {
         case revoked = "revoked"
         case expired = "expired"
     }
+    public enum Mode: String, Sendable, Codable, CaseIterable {
+        case originalReplication = "original_replication"
+        case sceneAdaptation = "scene_adaptation"
+    }
     public static let handoffIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^handoff_[A-Za-z0-9_-]+$/")
-    public static let codeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[A-Z0-9]{6}$/")
-    public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
+    public static let codeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/")
     public var schemaVersion: SchemaVersion
     public var handoffId: String
     public var code: String
-    public var sessionId: String
     public var status: Status
+    public var mode: Mode
+    public var createdAt: Date
     public var expiresAt: Date
     public var claimedAt: Date?
+    public var completedAt: Date?
 
-    public init(schemaVersion: SchemaVersion, handoffId: String, code: String, sessionId: String, status: Status, expiresAt: Date, claimedAt: Date?) {
+    public init(schemaVersion: SchemaVersion, handoffId: String, code: String, status: Status, mode: Mode, createdAt: Date, expiresAt: Date, claimedAt: Date?, completedAt: Date?) {
         self.schemaVersion = schemaVersion
         self.handoffId = handoffId
         self.code = code
-        self.sessionId = sessionId
         self.status = status
+        self.mode = mode
+        self.createdAt = createdAt
         self.expiresAt = expiresAt
         self.claimedAt = claimedAt
+        self.completedAt = completedAt
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case handoffId = "handoff_id"
         case code
-        case sessionId = "session_id"
         case status
+        case mode
+        case createdAt = "created_at"
         case expiresAt = "expires_at"
         case claimedAt = "claimed_at"
+        case completedAt = "completed_at"
     }
 
     // Encodable protocol methods
@@ -57,10 +67,12 @@ public struct HandoffTask: Sendable, Codable, Hashable {
         try container.encode(schemaVersion, forKey: .schemaVersion)
         try container.encode(handoffId, forKey: .handoffId)
         try container.encode(code, forKey: .code)
-        try container.encode(sessionId, forKey: .sessionId)
         try container.encode(status, forKey: .status)
+        try container.encode(mode, forKey: .mode)
+        try container.encode(createdAt, forKey: .createdAt)
         try container.encode(expiresAt, forKey: .expiresAt)
         try container.encode(claimedAt, forKey: .claimedAt)
+        try container.encode(completedAt, forKey: .completedAt)
     }
 }
 

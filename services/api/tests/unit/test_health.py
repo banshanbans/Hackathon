@@ -34,3 +34,18 @@ def test_health_replaces_oversized_request_id() -> None:
 
     assert response.status_code == 200
     assert response.headers["X-Request-ID"] != "x" * 129
+
+
+def test_h5_origin_can_preflight_mock_api_requests() -> None:
+    response = client.options(
+        "/api/v1/sessions",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type,idempotency-key",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "Idempotency-Key" in response.headers["access-control-allow-headers"]

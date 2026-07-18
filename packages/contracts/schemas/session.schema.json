@@ -40,12 +40,24 @@
     },
     "source_channel": { "$ref": "common.schema.json#/$defs/SourceChannel" },
     "mode": { "type": "string", "enum": ["original_replication", "scene_adaptation"] },
-    "reference_asset": { "$ref": "reference.schema.json#/$defs/ReferenceAsset" },
+    "reference_asset": {
+      "anyOf": [
+        { "$ref": "reference.schema.json#/$defs/ReferenceAsset" },
+        { "type": "null" }
+      ]
+    },
+    "scene_asset_id": {
+      "type": ["string", "null"],
+      "pattern": "^media_[A-Za-z0-9_-]+$"
+    },
+    "active_reference_analysis_id": {
+      "type": ["string", "null"],
+      "pattern": "^ra_[A-Za-z0-9_-]+$"
+    },
     "user_constraints": { "$ref": "common.schema.json#/$defs/UserConstraints" },
     "selected_skills": {
       "type": "array",
-      "items": { "$ref": "common.schema.json#/$defs/SkillRef" },
-      "uniqueItems": true
+      "items": { "$ref": "common.schema.json#/$defs/SkillRef" }
     },
     "shot_plan": {
       "anyOf": [
@@ -56,13 +68,23 @@
     "capture_rounds": {
       "type": "array",
       "items": { "$ref": "capture.schema.json" },
-      "maxItems": 10
+      "maxItems": 2
     },
     "evaluation": {
       "anyOf": [
         { "$ref": "evaluation.schema.json" },
         { "type": "null" }
       ]
+    },
+    "evaluations": {
+      "type": "array",
+      "items": { "$ref": "evaluation.schema.json" },
+      "maxItems": 2,
+      "default": []
+    },
+    "external_ai_consent_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
     },
     "publish_package": {
       "anyOf": [

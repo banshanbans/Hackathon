@@ -1,0 +1,10 @@
+[
+  {"case_id":"doorway_coffee_fullbody_round_1","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_doorway_coffee_fullbody_round_1","expects":{"issue_code":"person_too_small","needs_retake":true,"goal_satisfied":false}},
+  {"case_id":"doorway_coffee_fullbody_round_2","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_doorway_coffee_fullbody_round_2","expects":{"needs_retake":false,"goal_satisfied":true}},
+  {"case_id":"stone_village_lean_round_1","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_stone_village_lean_round_1","expects":{"issue_code":"person_too_left","needs_retake":true,"goal_satisfied":false}},
+  {"case_id":"stone_village_lean_round_2","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_stone_village_lean_round_2","expects":{"needs_retake":false,"goal_satisfied":true}},
+  {"case_id":"storefront_profile_round_1","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_storefront_profile_round_1","expects":{"issue_code":"pose_direction_wrong","needs_retake":true,"goal_satisfied":false}},
+  {"case_id":"storefront_profile_round_2","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_storefront_profile_round_2","expects":{"needs_retake":false,"goal_satisfied":true}},
+  {"case_id":"cafe_seated_drink_round_1","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_cafe_seated_drink_round_1","expects":{"issue_code":"feet_cut","needs_retake":true,"goal_satisfied":false}},
+  {"case_id":"cafe_seated_drink_round_2","fixture":"packages/evals/test-image-v1/manifest.json","media_asset_id":"media_fixture_cafe_seated_drink_round_2","expects":{"needs_retake":false,"goal_satisfied":true}}
+]

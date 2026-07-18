@@ -13,21 +13,17 @@ public struct CreateHandoffRequest: Sendable, Codable, Hashable {
         case _10 = "1.0"
     }
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
-    public static let ttlSecondsRule = NumericRule<Int>(minimum: 60, exclusiveMinimum: false, maximum: 3600, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var sessionId: String
-    public var ttlSeconds: Int
 
-    public init(schemaVersion: SchemaVersion, sessionId: String, ttlSeconds: Int) {
+    public init(schemaVersion: SchemaVersion, sessionId: String) {
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
-        self.ttlSeconds = ttlSeconds
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case sessionId = "session_id"
-        case ttlSeconds = "ttl_seconds"
     }
 
     // Encodable protocol methods
@@ -36,7 +32,6 @@ public struct CreateHandoffRequest: Sendable, Codable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(schemaVersion, forKey: .schemaVersion)
         try container.encode(sessionId, forKey: .sessionId)
-        try container.encode(ttlSeconds, forKey: .ttlSeconds)
     }
 }
 

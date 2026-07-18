@@ -16,7 +16,7 @@
     "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
     "capture_id": { "type": "string", "pattern": "^cap_[A-Za-z0-9_-]+$" },
     "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
-    "round_index": { "type": "integer", "minimum": 1, "maximum": 10 },
+    "round_index": { "type": "integer", "minimum": 1, "maximum": 2 },
     "media_asset_id": { "type": "string", "pattern": "^media_[A-Za-z0-9_-]+$" },
     "status": { "type": "string", "enum": ["uploaded", "processing", "ready", "failed"] },
     "selected_frame_id": {

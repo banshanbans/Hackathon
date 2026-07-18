@@ -1,0 +1,1 @@
+{"$schema":"https://json-schema.org/draft/2020-12/schema","$defs":{"input":{"type":"object","required":["reference_asset"],"properties":{"reference_asset":{"$ref":"../../../contracts/schemas/reference.schema.json#/$defs/ReferenceAsset"}},"additionalProperties":false},"output":{"$ref":"../../../contracts/schemas/reference.schema.json#/$defs/ReferenceAnalysis"}}}

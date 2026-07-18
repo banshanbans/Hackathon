@@ -4,25 +4,38 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "assets:test-image": "node ../../scripts/generate-test-image-assets.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "tsc --noEmit --pretty false",
-    "typecheck": "tsc --noEmit --pretty false",
-    "test": "vitest run --exclude tests/contracts/**",
-    "test:contracts": "vitest run tests/contracts"
+    "lint": "tsc -b --pretty false",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run --exclude tests/contracts/** --exclude tests/e2e/**",
+    "test:contracts": "vitest run tests/contracts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@tanstack/react-query": "^5.101.2",
     "@vitejs/plugin-react": "4.7.0",
-    "vite": "7.3.6",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4",
     "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react-dom": "19.1.1",
+    "react-router-dom": "^7.18.1",
+    "vite": "7.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "24.3.0",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
+    "jsdom": "^29.1.1",
+    "sharp": "^0.35.3",
     "typescript": "5.9.2",
     "vitest": "3.2.7"
   }

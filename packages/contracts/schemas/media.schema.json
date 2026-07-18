@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "MediaPurpose": {
+      "type": "string",
+      "enum": ["reference", "scene", "capture"]
+    },
+    "MediaAsset": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "media_asset_id",
+        "session_id",
+        "purpose",
+        "content_type",
+        "byte_size",
+        "sha256",
+        "status",
+        "width",
+        "height",
+        "expires_at",
+        "created_at"
+      ],
+      "properties": {
+        "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
+        "media_asset_id": { "type": "string", "pattern": "^media_[A-Za-z0-9_-]+$" },
+        "session_id": { "type": "string", "pattern": "^ss_[A-Za-z0-9_-]+$" },
+        "purpose": { "$ref": "#/$defs/MediaPurpose" },
+        "content_type": {
+          "type": "string",
+          "enum": ["image/jpeg", "image/png", "image/webp"]
+        },
+        "byte_size": { "type": "integer", "minimum": 1, "maximum": 8000000 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "status": {
+          "type": "string",
+          "enum": ["pending_upload", "ready", "failed", "deleted"]
+        },
+        "width": { "type": ["integer", "null"], "minimum": 1, "maximum": 2048 },
+        "height": { "type": ["integer", "null"], "minimum": 1, "maximum": 2048 },
+        "expires_at": { "type": "string", "format": "date-time" },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$ref": "#/$defs/MediaAsset"
+}

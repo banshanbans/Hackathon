@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Test Image Dataset Manifest",
+  "type": "object",
+  "required": ["schema_version", "dataset_version", "description", "rights", "cases"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "dataset_version": {"const": "test-image-v1"},
+    "description": {"type": "string", "minLength": 1},
+    "rights": {
+      "type": "object",
+      "required": ["status", "source_label", "creator_label", "source_url"],
+      "properties": {
+        "status": {"const": "public_authorized"},
+        "source_label": {"type": "string", "minLength": 1},
+        "creator_label": {"type": ["string", "null"]},
+        "source_url": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": {"$ref": "#/$defs/case"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "box": {
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "properties": {
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1},
+        "width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "layout": {
+      "type": "object",
+      "required": ["center_x", "center_y", "width", "height", "head_point", "foot_line_y", "body_direction", "pose_template"],
+      "properties": {
+        "center_x": {"type": "number", "minimum": 0, "maximum": 1},
+        "center_y": {"type": "number", "minimum": 0, "maximum": 1},
+        "width": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "height": {"type": "number", "exclusiveMinimum": 0, "maximum": 1},
+        "head_point": {"$ref": "#/$defs/point"},
+        "foot_line_y": {"type": "number", "minimum": 0, "maximum": 1},
+        "body_direction": {"enum": ["front", "back", "left", "right", "slightly_left", "slightly_right"]},
+        "pose_template": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "action": {
+      "type": "object",
+      "required": ["sequence", "instruction", "duration_seconds"],
+      "properties": {
+        "sequence": {"type": "integer", "minimum": 1},
+        "instruction": {"type": "string", "minLength": 1},
+        "duration_seconds": {"type": "number", "exclusiveMinimum": 0, "maximum": 30}
+      },
+      "additionalProperties": false
+    },
+    "evaluation": {
+      "type": "object",
+      "required": ["round_index", "fixture_status", "needs_retake", "goal_satisfied", "publish_readiness", "confidence"],
+      "properties": {
+        "round_index": {"type": "integer", "minimum": 1, "maximum": 2},
+        "fixture_status": {"const": "awaiting_real_pair"},
+        "issue_code": {"type": "string"},
+        "top_issue": {"type": "string"},
+        "next_instruction": {"type": "string"},
+        "needs_retake": {"type": "boolean"},
+        "goal_satisfied": {"type": "boolean"},
+        "publish_readiness": {"type": "number", "minimum": 0, "maximum": 1},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "case": {
+      "type": "object",
+      "required": ["case_id", "reference_id", "title", "subtitle", "original_filename", "source_path", "sha256", "width", "height", "public_preset", "difficulty", "tags", "mode", "reference_asset", "expected_reference", "shot_plan_fixture", "result_evaluations"],
+      "properties": {
+        "case_id": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "reference_id": {"type": "string", "pattern": "^ref_[A-Za-z0-9_-]+$"},
+        "title": {"type": "string", "minLength": 1},
+        "subtitle": {"type": "string", "minLength": 1},
+        "original_filename": {"type": "string", "minLength": 1},
+        "source_path": {"type": "string", "pattern": "^assets/references/.+\\.jpg$"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "width": {"type": "integer", "minimum": 1},
+        "height": {"type": "integer", "minimum": 1},
+        "public_preset": {"type": "boolean"},
+        "difficulty": {"enum": ["baseline", "coverage", "hard"]},
+        "tags": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+        "mode": {"const": "original_replication"},
+        "public_assets": {
+          "type": "object",
+          "required": ["thumbnail", "detail"],
+          "properties": {
+            "thumbnail": {"type": "string", "pattern": "^/presets/test-image-v1/.+-thumb\\.webp$"},
+            "detail": {"type": "string", "pattern": "^/presets/test-image-v1/.+-detail\\.webp$"}
+          },
+          "additionalProperties": false
+        },
+        "reference_asset": {
+          "type": "object",
+          "required": ["schema_version", "reference_id", "media_type", "source_type", "width", "height", "selected_box", "attribution"],
+          "properties": {
+            "schema_version": {"const": "1.0"},
+            "reference_id": {"type": "string"},
+            "media_type": {"const": "image"},
+            "source_type": {"const": "preset"},
+            "width": {"type": "integer", "minimum": 1},
+            "height": {"type": "integer", "minimum": 1},
+            "selected_box": {"$ref": "#/$defs/box"},
+            "attribution": {
+              "type": "object",
+              "required": ["source_label", "creator_label", "source_url"],
+              "properties": {
+                "source_label": {"type": "string", "minLength": 1},
+                "creator_label": {"type": ["string", "null"]},
+                "source_url": {"type": ["string", "null"]}
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "expected_reference": {
+          "type": "object",
+          "required": ["person_count", "target_layout", "composition_notes", "confidence"],
+          "properties": {
+            "person_count": {"type": "integer", "minimum": 0},
+            "target_layout": {"$ref": "#/$defs/layout"},
+            "composition_notes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "additionalProperties": false
+        },
+        "shot_plan_fixture": {
+          "type": "object",
+          "required": ["camera_height", "camera_angle", "lens", "capture_mode", "phone_setup_instruction", "action_script", "safety_notes", "confidence"],
+          "properties": {
+            "camera_height": {"enum": ["ground", "knee", "waist", "chest", "eye", "overhead"]},
+            "camera_angle": {"enum": ["level", "slight_up", "slight_down"]},
+            "lens": {"enum": ["0.5x", "1x", "2x"]},
+            "capture_mode": {"enum": ["photo", "short_video"]},
+            "phone_setup_instruction": {"type": "string", "minLength": 1},
+            "action_script": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/action"}},
+            "safety_notes": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+          },
+          "additionalProperties": false
+        },
+        "result_evaluations": {"type": "array", "maxItems": 2, "items": {"$ref": "#/$defs/evaluation"}}
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -58,6 +58,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create a short-lived signed upload for session-owned image media */
+        post: operations["createMediaUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/uploads/{media_asset_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify an uploaded object and mark the media ready */
+        post: operations["completeMediaUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/media/{media_asset_id}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Create a short-lived read URL for ready session-owned media */
+        get: operations["getMediaAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/references/analyze": {
         parameters: {
             query?: never;
@@ -477,6 +528,8 @@ export interface components {
         ReferenceAsset: {
             schema_version: components["schemas"]["SchemaVersion"];
             reference_id: string;
+            /** @description Owned upload backing this reference. Preset references may leave it null. */
+            media_asset_id?: string | null;
             /** @enum {string} */
             media_type: "image" | "video_frame";
             /** @enum {string} */
@@ -493,6 +546,13 @@ export interface components {
             person_count: number;
             target_layout: components["schemas"]["TargetLayout"];
             composition_notes: string[];
+            /**
+             * @default safe
+             * @enum {string}
+             */
+            safety_status: "safe" | "warn" | "block";
+            /** @default [] */
+            safety_warnings: string[];
             confidence: number;
         };
         TargetLayout: {
@@ -519,10 +579,52 @@ export interface components {
             estimated_cost_usd: number;
             confidence: number;
             fallback_used: boolean;
+            provider: string;
+            model: string | null;
+            warnings: string[];
+            repair_count: number;
             error_code: components["schemas"]["ErrorCode"] | null;
         };
         Capture: components["schemas"]["capture.schema"];
-        HandoffTask: components["schemas"]["handoff.schema"];
+        MediaAsset: {
+            schema_version: components["schemas"]["SchemaVersion"];
+            media_asset_id: string;
+            session_id: string;
+            purpose: components["schemas"]["MediaPurpose"];
+            /** @enum {string} */
+            content_type: "image/jpeg" | "image/png" | "image/webp";
+            byte_size: number;
+            sha256: string;
+            /** @enum {string} */
+            status: "pending_upload" | "ready" | "failed" | "deleted";
+            width: number | null;
+            height: number | null;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * HandoffTask
+         * @description Safe public handoff status. Session data is returned only after a successful claim.
+         */
+        HandoffTask: {
+            schema_version: components["schemas"]["SchemaVersion"];
+            handoff_id: string;
+            code: string;
+            /** @enum {string} */
+            status: "created" | "claimed" | "completed" | "revoked" | "expired";
+            /** @enum {string} */
+            mode: "original_replication" | "scene_adaptation";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            expires_at: string;
+            /** Format: date-time */
+            claimed_at: string | null;
+            /** Format: date-time */
+            completed_at: string | null;
+        };
         PostJob: {
             schema_version: components["schemas"]["SchemaVersion"];
             post_id: string;
@@ -568,6 +670,44 @@ export interface components {
             /** @enum {string} */
             mode: "original_replication" | "scene_adaptation";
             user_constraints: components["schemas"]["UserConstraints"];
+            /** @default false */
+            external_ai_consent: boolean;
+        };
+        CreateMediaUploadRequest: {
+            /** @constant */
+            schema_version: "1.0";
+            session_id: string;
+            purpose: components["schemas"]["MediaPurpose"];
+            /** @enum {string} */
+            content_type: "image/jpeg" | "image/png" | "image/webp";
+            byte_size: number;
+            sha256: string;
+        };
+        CompleteMediaUploadRequest: {
+            /** @constant */
+            schema_version: "1.0";
+            session_id: string;
+        };
+        MediaUploadTicket: {
+            /** @constant */
+            schema_version: "1.0";
+            asset: components["schemas"]["MediaAsset"];
+            /** Format: uri */
+            upload_url: string;
+            upload_headers: {
+                [key: string]: string;
+            };
+            /** Format: date-time */
+            upload_expires_at: string;
+        };
+        MediaAccess: {
+            /** @constant */
+            schema_version: "1.0";
+            asset: components["schemas"]["MediaAsset"];
+            /** Format: uri */
+            download_url: string;
+            /** Format: date-time */
+            access_expires_at: string;
         };
         AnalyzeReferenceRequest: {
             /** @constant */
@@ -632,7 +772,6 @@ export interface components {
             /** @constant */
             schema_version: "1.0";
             session_id: string;
-            ttl_seconds: number;
         };
         ClaimHandoffRequest: {
             /** @constant */
@@ -643,6 +782,22 @@ export interface components {
             /** @constant */
             schema_version: "1.0";
             client_instance_id: string;
+        };
+        HandoffCreateResult: {
+            /** @constant */
+            schema_version: "1.0";
+            handoff: components["schemas"]["HandoffTask"];
+            management_token: string;
+            /** Format: uri */
+            qr_payload: string;
+        };
+        HandoffClaimResult: {
+            /** @constant */
+            schema_version: "1.0";
+            handoff: components["schemas"]["HandoffTask"];
+            session: components["schemas"]["session.schema"];
+            claim_token: string;
+            reference_access: components["schemas"]["MediaAccess"] | null;
         };
         RenderPostRequest: {
             /** @constant */
@@ -674,6 +829,12 @@ export interface components {
             agent_run: components["schemas"]["agent-run.schema"];
             skill_runs: components["schemas"]["SkillRun"][];
         };
+        SkillInvocation: {
+            /** @constant */
+            schema_version: "1.0";
+            run: components["schemas"]["SkillRun"];
+            output: components["schemas"]["ReferenceAnalysis"] | components["schemas"]["shot-plan.schema"] | components["schemas"]["evaluation.schema"] | components["schemas"]["PostJob"];
+        };
         DeletedResource: {
             /** @constant */
             schema_version: "1.0";
@@ -684,6 +845,7 @@ export interface components {
             /** @constant */
             schema_version: "1.0";
             accepted_count: number;
+            duplicate_count: number;
         };
         FunnelMetrics: {
             /** @constant */
@@ -722,14 +884,32 @@ export interface components {
         SkillRunResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["SkillRun"];
         };
+        SkillInvocationResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["SkillInvocation"];
+        };
         CaptureResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["capture.schema"];
+        };
+        MediaAssetResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["MediaAsset"];
+        };
+        MediaUploadTicketResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["MediaUploadTicket"];
+        };
+        MediaAccessResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["MediaAccess"];
         };
         EvaluationResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["evaluation.schema"];
         };
         HandoffResponse: components["schemas"]["ResponseMetadata"] & {
-            data: components["schemas"]["handoff.schema"];
+            data: components["schemas"]["HandoffTask"];
+        };
+        HandoffCreateResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["HandoffCreateResult"];
+        };
+        HandoffClaimResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["HandoffClaimResult"];
         };
         PostResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["PostJob"];
@@ -888,12 +1068,18 @@ export interface components {
             source_channel: components["schemas"]["SourceChannel"];
             /** @enum {string} */
             mode: "original_replication" | "scene_adaptation";
-            reference_asset: components["schemas"]["ReferenceAsset"];
+            reference_asset: components["schemas"]["ReferenceAsset"] | null;
+            scene_asset_id?: string | null;
+            active_reference_analysis_id?: string | null;
             user_constraints: components["schemas"]["UserConstraints"];
             selected_skills: components["schemas"]["SkillRef"][];
             shot_plan: components["schemas"]["shot-plan.schema"] | null;
             capture_rounds: components["schemas"]["capture.schema"][];
             evaluation: components["schemas"]["evaluation.schema"] | null;
+            /** @default [] */
+            evaluations: components["schemas"]["evaluation.schema"][];
+            /** Format: date-time */
+            external_ai_consent_at?: string | null;
             publish_package: components["schemas"]["PostJob"] | null;
             analytics_context: {
                 client: components["schemas"]["Client"];
@@ -905,7 +1091,9 @@ export interface components {
             updated_at: string;
         };
         /** @enum {string} */
-        ErrorCode: "REFERENCE_NO_PERSON" | "REFERENCE_MULTIPLE_PEOPLE" | "REFERENCE_PARSE_FAILED" | "MODEL_TIMEOUT" | "INVALID_JSON" | "LOW_CONFIDENCE" | "CAPTURE_UPLOAD_FAILED" | "COMPARE_FAILED" | "VIDEO_RENDER_FAILED" | "HANDOFF_EXPIRED" | "HANDOFF_ALREADY_CLAIMED" | "SESSION_EXPIRED" | "UNSUPPORTED_MEDIA" | "SCHEMA_VERSION_UNSUPPORTED" | "VALIDATION_FAILED" | "NOT_FOUND" | "INTERNAL_ERROR";
+        ErrorCode: "REFERENCE_NO_PERSON" | "REFERENCE_MULTIPLE_PEOPLE" | "REFERENCE_PARSE_FAILED" | "MODEL_TIMEOUT" | "INVALID_JSON" | "LOW_CONFIDENCE" | "CAPTURE_UPLOAD_FAILED" | "COMPARE_FAILED" | "VIDEO_RENDER_FAILED" | "HANDOFF_EXPIRED" | "HANDOFF_REVOKED" | "HANDOFF_ALREADY_CLAIMED" | "HANDOFF_INVALID_TOKEN" | "HANDOFF_RATE_LIMITED" | "SESSION_EXPIRED" | "UNSUPPORTED_MEDIA" | "MEDIA_TOO_LARGE" | "MEDIA_NOT_READY" | "MEDIA_INTEGRITY_FAILED" | "MEDIA_ACCESS_DENIED" | "PROVIDER_REJECTED" | "CONSENT_REQUIRED" | "UNSAFE_INSTRUCTION" | "SCHEMA_VERSION_UNSUPPORTED" | "IDEMPOTENCY_CONFLICT" | "SKILL_NOT_FOUND" | "SKILL_VERSION_UNSUPPORTED" | "PROVIDER_UNAVAILABLE" | "INVALID_STATE" | "VALIDATION_FAILED" | "NOT_FOUND" | "INTERNAL_ERROR";
+        /** @enum {string} */
+        MediaPurpose: "reference" | "scene" | "capture";
         /** @enum {string} */
         AgentIntent: "original_replication" | "scene_adaptation" | "result_evaluation" | "continue_coaching" | "content_generation" | "creator_template_generation";
         /** @enum {string} */
@@ -942,22 +1130,13 @@ export interface components {
                     estimated_cost_usd: number;
                     confidence: number;
                     fallback_used: boolean;
+                    provider: string;
+                    model: string | null;
+                    warnings: string[];
+                    repair_count: number;
                     error_code: components["schemas"]["ErrorCode"] | null;
                 };
             };
-        };
-        /** HandoffTask */
-        "handoff.schema": {
-            schema_version: components["schemas"]["SchemaVersion"];
-            handoff_id: string;
-            code: string;
-            session_id: string;
-            /** @enum {string} */
-            status: "created" | "claimed" | "completed" | "revoked" | "expired";
-            /** Format: date-time */
-            expires_at: string;
-            /** Format: date-time */
-            claimed_at: string | null;
         };
         /** AnalyticsEvent */
         "analytics-event.schema": {
@@ -1029,6 +1208,7 @@ export interface components {
         ReferenceAnalysisAccepted: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1049,6 +1229,7 @@ export interface components {
         AgentRunAccepted: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1059,6 +1240,7 @@ export interface components {
         AgentRunOk: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1069,6 +1251,7 @@ export interface components {
         AgentTraceOk: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1079,10 +1262,11 @@ export interface components {
         SkillRunAccepted: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["SkillRunResponse"];
+                "application/json": components["schemas"]["SkillInvocationResponse"];
             };
         };
         /** @description Capture registered */
@@ -1105,24 +1289,65 @@ export interface components {
                 "application/json": components["schemas"]["CaptureResponse"];
             };
         };
+        /** @description Signed media upload created */
+        MediaUploadCreated: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MediaUploadTicketResponse"];
+            };
+        };
+        /** @description Media upload verified and ready */
+        MediaAssetOk: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MediaAssetResponse"];
+            };
+        };
+        /** @description Short-lived media read access created */
+        MediaAccessOk: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["MediaAccessResponse"];
+            };
+        };
         /** @description Evaluation accepted */
         EvaluationAccepted: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
                 "application/json": components["schemas"]["EvaluationResponse"];
             };
         };
-        /** @description Handoff created */
+        /** @description Handoff created or an existing unclaimed handoff recovered */
         HandoffCreated: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["HandoffResponse"];
+                "application/json": components["schemas"]["HandoffCreateResponse"];
+            };
+        };
+        /** @description Handoff claimed and its task snapshot released to one client */
+        HandoffClaimed: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HandoffClaimResponse"];
             };
         };
         /** @description Handoff retrieved or updated */
@@ -1139,6 +1364,7 @@ export interface components {
         PostAccepted: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1149,6 +1375,7 @@ export interface components {
         PostOk: {
             headers: {
                 "X-Request-ID": components["headers"]["RequestId"];
+                "X-SoloShot-Execution-Mode": components["headers"]["ExecutionMode"];
                 [name: string]: unknown;
             };
             content: {
@@ -1275,15 +1502,42 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Required provider or dependency is unavailable */
+        ServiceUnavailable: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
+        /** @description Handoff lookup or claim rate limit exceeded */
+        TooManyRequests: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                "Retry-After"?: number;
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         /** @description Opaque key used to deduplicate retryable writes */
         IdempotencyKey: string;
         SessionId: string;
+        SessionIdQuery: string;
+        MediaAssetId: string;
         ReferenceId: string;
         RunId: string;
         CaptureId: string;
         HandoffCode: string;
+        /** @description Opaque creator capability; never place it in URLs or logs */
+        HandoffManagementToken: string;
+        /** @description Opaque claimant capability bound to one client instance */
+        HandoffClaimToken: string;
         PostId: string;
         ShareId: string;
         SkillName: "reference_understanding" | "shooting_plan" | "scene_adaptation" | "result_evaluation" | "coaching_decision" | "content_composer" | "growth_analytics";
@@ -1292,6 +1546,8 @@ export interface components {
     headers: {
         /** @description Correlation id for this request */
         RequestId: string;
+        /** @description Honest source of AI or deterministic Skill output */
+        ExecutionMode: "fixture" | "mock" | "live" | "cache" | "fallback";
     };
     pathItems: never;
 }
@@ -1336,6 +1592,8 @@ export interface operations {
         responses: {
             201: components["responses"]["SessionCreated"];
             400: components["responses"]["BadRequest"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
             500: components["responses"]["InternalError"];
         };
     };
@@ -1370,6 +1628,71 @@ export interface operations {
         responses: {
             200: components["responses"]["Deleted"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    createMediaUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque key used to deduplicate retryable writes */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateMediaUploadRequest"];
+            };
+        };
+        responses: {
+            201: components["responses"]["MediaUploadCreated"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    completeMediaUpload: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque key used to deduplicate retryable writes */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path: {
+                media_asset_id: components["parameters"]["MediaAssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteMediaUploadRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["MediaAssetOk"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
+    getMediaAccess: {
+        parameters: {
+            query: {
+                session_id: components["parameters"]["SessionIdQuery"];
+            };
+            header?: never;
+            path: {
+                media_asset_id: components["parameters"]["MediaAssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["MediaAccessOk"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     analyzeReference: {
@@ -1390,7 +1713,10 @@ export interface operations {
         responses: {
             202: components["responses"]["ReferenceAnalysisAccepted"];
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     adaptReference: {
@@ -1431,6 +1757,8 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["ReferenceBoxValidationOk"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
         };
     };
@@ -1467,7 +1795,10 @@ export interface operations {
         responses: {
             202: components["responses"]["AgentRunAccepted"];
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getAgentRun: {
@@ -1506,6 +1837,8 @@ export interface operations {
             202: components["responses"]["AgentRunAccepted"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getAgentRunTrace: {
@@ -1543,7 +1876,9 @@ export interface operations {
         responses: {
             202: components["responses"]["SkillRunAccepted"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     createCapture: {
@@ -1564,6 +1899,8 @@ export interface operations {
         responses: {
             201: components["responses"]["CaptureCreated"];
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
         };
     };
@@ -1623,7 +1960,10 @@ export interface operations {
         responses: {
             202: components["responses"]["EvaluationAccepted"];
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     createHandoff: {
@@ -1642,8 +1982,11 @@ export interface operations {
             };
         };
         responses: {
+            200: components["responses"]["HandoffCreated"];
             201: components["responses"]["HandoffCreated"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
         };
     };
     getHandoff: {
@@ -1660,6 +2003,8 @@ export interface operations {
             200: components["responses"]["HandoffOk"];
             404: components["responses"]["NotFound"];
             410: components["responses"]["Gone"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     revokeHandoff: {
@@ -1668,6 +2013,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque creator capability; never place it in URLs or logs */
+                "X-Handoff-Management-Token": components["parameters"]["HandoffManagementToken"];
             };
             path: {
                 code: components["parameters"]["HandoffCode"];
@@ -1676,8 +2023,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            200: components["responses"]["Deleted"];
+            200: components["responses"]["HandoffOk"];
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            410: components["responses"]["Gone"];
         };
     };
     claimHandoff: {
@@ -1698,9 +2047,11 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["HandoffOk"];
+            200: components["responses"]["HandoffClaimed"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["Gone"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     completeHandoff: {
@@ -1709,6 +2060,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque claimant capability bound to one client instance */
+                "X-Handoff-Claim-Token": components["parameters"]["HandoffClaimToken"];
             };
             path: {
                 code: components["parameters"]["HandoffCode"];
@@ -1722,6 +2075,7 @@ export interface operations {
         };
         responses: {
             200: components["responses"]["HandoffOk"];
+            401: components["responses"]["Unauthorized"];
             409: components["responses"]["Conflict"];
             410: components["responses"]["Gone"];
         };
@@ -1744,6 +2098,10 @@ export interface operations {
         responses: {
             202: components["responses"]["PostAccepted"];
             400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     getPost: {

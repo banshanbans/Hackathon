@@ -38,17 +38,31 @@ public struct AgentRun: Sendable, Codable, Hashable {
         case compareFailed = "COMPARE_FAILED"
         case videoRenderFailed = "VIDEO_RENDER_FAILED"
         case handoffExpired = "HANDOFF_EXPIRED"
+        case handoffRevoked = "HANDOFF_REVOKED"
         case handoffAlreadyClaimed = "HANDOFF_ALREADY_CLAIMED"
+        case handoffInvalidToken = "HANDOFF_INVALID_TOKEN"
+        case handoffRateLimited = "HANDOFF_RATE_LIMITED"
         case sessionExpired = "SESSION_EXPIRED"
         case unsupportedMedia = "UNSUPPORTED_MEDIA"
+        case mediaTooLarge = "MEDIA_TOO_LARGE"
+        case mediaNotReady = "MEDIA_NOT_READY"
+        case mediaIntegrityFailed = "MEDIA_INTEGRITY_FAILED"
+        case mediaAccessDenied = "MEDIA_ACCESS_DENIED"
+        case providerRejected = "PROVIDER_REJECTED"
+        case consentRequired = "CONSENT_REQUIRED"
+        case unsafeInstruction = "UNSAFE_INSTRUCTION"
         case schemaVersionUnsupported = "SCHEMA_VERSION_UNSUPPORTED"
+        case idempotencyConflict = "IDEMPOTENCY_CONFLICT"
+        case skillNotFound = "SKILL_NOT_FOUND"
+        case skillVersionUnsupported = "SKILL_VERSION_UNSUPPORTED"
+        case providerUnavailable = "PROVIDER_UNAVAILABLE"
+        case invalidState = "INVALID_STATE"
         case validationFailed = "VALIDATION_FAILED"
         case notFound = "NOT_FOUND"
         case internalError = "INTERNAL_ERROR"
     }
     public static let runIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^run_[A-Za-z0-9_-]+$/")
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
-    public static let selectedSkillsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
     public static let providerRule = StringRule(minLength: 1, maxLength: 100, pattern: nil)
     public static let modelRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let latencyMsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
@@ -59,7 +73,7 @@ public struct AgentRun: Sendable, Codable, Hashable {
     public var runId: String
     public var sessionId: String
     public var intent: Intent
-    public var selectedSkills: Set<SoloShotSessionSelectedSkillsInner>
+    public var selectedSkills: [SoloShotSessionSelectedSkillsInner]
     public var provider: String
     public var model: String?
     public var status: Status
@@ -71,7 +85,7 @@ public struct AgentRun: Sendable, Codable, Hashable {
     public var traceId: String
     public var createdAt: Date
 
-    public init(schemaVersion: SchemaVersion, runId: String, sessionId: String, intent: Intent, selectedSkills: Set<SoloShotSessionSelectedSkillsInner>, provider: String, model: String?, status: Status, latencyMs: Int, estimatedCostUsd: Double, confidence: Double, fallbackUsed: Bool, errorCode: ErrorCode?, traceId: String, createdAt: Date) {
+    public init(schemaVersion: SchemaVersion, runId: String, sessionId: String, intent: Intent, selectedSkills: [SoloShotSessionSelectedSkillsInner], provider: String, model: String?, status: Status, latencyMs: Int, estimatedCostUsd: Double, confidence: Double, fallbackUsed: Bool, errorCode: ErrorCode?, traceId: String, createdAt: Date) {
         self.schemaVersion = schemaVersion
         self.runId = runId
         self.sessionId = sessionId

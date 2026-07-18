@@ -1,0 +1,351 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		9B2C668FCA4EB1146B0A149F /* SoloShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C715B35B3B1453073DE1626D /* SoloShotApp.swift */; };
+		CEC06E2A4DFCEDEC2A5B34DB /* SoloShotContracts in Frameworks */ = {isa = PBXBuildFile; productRef = 44D854FC49E53A6D9C494AC7 /* SoloShotContracts */; };
+		FD61C16166C47788C4BDC4FC /* FoundationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E330B4862F948EB14A52A863 /* FoundationView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		44855860173C6B8574D27740 /* swift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = swift; path = ../../packages/contracts/generated/swift; sourceTree = SOURCE_ROOT; };
+		8539AE91C78E913D47254ED3 /* SoloShot.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SoloShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C715B35B3B1453073DE1626D /* SoloShotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoloShotApp.swift; sourceTree = "<group>"; };
+		E330B4862F948EB14A52A863 /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1E6EAC2930911F3B309183D6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEC06E2A4DFCEDEC2A5B34DB /* SoloShotContracts in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0FBC4106CD3DAB4214244556 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8539AE91C78E913D47254ED3 /* SoloShot.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		16C12570E39E24B5CC6B8EDC /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				44855860173C6B8574D27740 /* swift */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		284E73C14D849CC20E7D9B4B = {
+			isa = PBXGroup;
+			children = (
+				16C12570E39E24B5CC6B8EDC /* Packages */,
+				9E38E5D70B4E8D2BA1B06A99 /* SoloShot */,
+				0FBC4106CD3DAB4214244556 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		9E38E5D70B4E8D2BA1B06A99 /* SoloShot */ = {
+			isa = PBXGroup;
+			children = (
+				BDBACE33BA6AD1593550FCE0 /* App */,
+				9EE8B441D95E0C31DF679F73 /* Features */,
+			);
+			path = SoloShot;
+			sourceTree = "<group>";
+		};
+		9EE8B441D95E0C31DF679F73 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				E330B4862F948EB14A52A863 /* FoundationView.swift */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		BDBACE33BA6AD1593550FCE0 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C715B35B3B1453073DE1626D /* SoloShotApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0296121D12F4A3CF58322630 /* SoloShot */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DDF3278F72EFB7428DCA0CDD /* Build configuration list for PBXNativeTarget "SoloShot" */;
+			buildPhases = (
+				BE6685B4CE27143BA3654A81 /* Sources */,
+				1E6EAC2930911F3B309183D6 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SoloShot;
+			packageProductDependencies = (
+				44D854FC49E53A6D9C494AC7 /* SoloShotContracts */,
+			);
+			productName = SoloShot;
+			productReference = 8539AE91C78E913D47254ED3 /* SoloShot.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		71F030741ACB5570682B5EF3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = DEB34404F647B8CD6CC12C3E /* Build configuration list for PBXProject "SoloShot" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 284E73C14D849CC20E7D9B4B;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				435DA531E8ACDDCA7692D9D1 /* XCLocalSwiftPackageReference "../../packages/contracts/generated/swift" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0FBC4106CD3DAB4214244556 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0296121D12F4A3CF58322630 /* SoloShot */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BE6685B4CE27143BA3654A81 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FD61C16166C47788C4BDC4FC /* FoundationView.swift in Sources */,
+				9B2C668FCA4EB1146B0A149F /* SoloShotApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0FC0FB41A36E6061516CAC35 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SoloShot;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
+				PRODUCT_NAME = SoloShot;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		5AF94F9E1EFA388FBAD55AF5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		77E976408F9C8B7A60ABF575 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		FE858B89BD6AB5D916957F54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = SoloShot;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
+				PRODUCT_NAME = SoloShot;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		DDF3278F72EFB7428DCA0CDD /* Build configuration list for PBXNativeTarget "SoloShot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0FC0FB41A36E6061516CAC35 /* Debug */,
+				FE858B89BD6AB5D916957F54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		DEB34404F647B8CD6CC12C3E /* Build configuration list for PBXProject "SoloShot" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5AF94F9E1EFA388FBAD55AF5 /* Debug */,
+				77E976408F9C8B7A60ABF575 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		435DA531E8ACDDCA7692D9D1 /* XCLocalSwiftPackageReference "../../packages/contracts/generated/swift" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/contracts/generated/swift;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		44D854FC49E53A6D9C494AC7 /* SoloShotContracts */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SoloShotContracts;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 71F030741ACB5570682B5EF3 /* Project object */;
+}

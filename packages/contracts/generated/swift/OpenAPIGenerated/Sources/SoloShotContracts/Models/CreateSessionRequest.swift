@@ -27,12 +27,14 @@ public struct CreateSessionRequest: Sendable, Codable, Hashable {
     public var sourceChannel: SourceChannel
     public var mode: Mode
     public var userConstraints: SoloShotSessionUserConstraints
+    public var externalAiConsent: Bool? = false
 
-    public init(schemaVersion: SchemaVersion, sourceChannel: SourceChannel, mode: Mode, userConstraints: SoloShotSessionUserConstraints) {
+    public init(schemaVersion: SchemaVersion, sourceChannel: SourceChannel, mode: Mode, userConstraints: SoloShotSessionUserConstraints, externalAiConsent: Bool? = false) {
         self.schemaVersion = schemaVersion
         self.sourceChannel = sourceChannel
         self.mode = mode
         self.userConstraints = userConstraints
+        self.externalAiConsent = externalAiConsent
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -40,6 +42,7 @@ public struct CreateSessionRequest: Sendable, Codable, Hashable {
         case sourceChannel = "source_channel"
         case mode
         case userConstraints = "user_constraints"
+        case externalAiConsent = "external_ai_consent"
     }
 
     // Encodable protocol methods
@@ -50,6 +53,7 @@ public struct CreateSessionRequest: Sendable, Codable, Hashable {
         try container.encode(sourceChannel, forKey: .sourceChannel)
         try container.encode(mode, forKey: .mode)
         try container.encode(userConstraints, forKey: .userConstraints)
+        try container.encodeIfPresent(externalAiConsent, forKey: .externalAiConsent)
     }
 }
 

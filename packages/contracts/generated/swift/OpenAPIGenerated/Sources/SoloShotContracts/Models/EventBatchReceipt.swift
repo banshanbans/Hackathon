@@ -13,17 +13,21 @@ public struct EventBatchReceipt: Sendable, Codable, Hashable {
         case _10 = "1.0"
     }
     public static let acceptedCountRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
+    public static let duplicateCountRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var acceptedCount: Int
+    public var duplicateCount: Int
 
-    public init(schemaVersion: SchemaVersion, acceptedCount: Int) {
+    public init(schemaVersion: SchemaVersion, acceptedCount: Int, duplicateCount: Int) {
         self.schemaVersion = schemaVersion
         self.acceptedCount = acceptedCount
+        self.duplicateCount = duplicateCount
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case acceptedCount = "accepted_count"
+        case duplicateCount = "duplicate_count"
     }
 
     // Encodable protocol methods
@@ -32,6 +36,7 @@ public struct EventBatchReceipt: Sendable, Codable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(schemaVersion, forKey: .schemaVersion)
         try container.encode(acceptedCount, forKey: .acceptedCount)
+        try container.encode(duplicateCount, forKey: .duplicateCount)
     }
 }
 

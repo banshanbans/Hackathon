@@ -26,6 +26,11 @@
       "properties": {
         "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
         "reference_id": { "type": "string", "pattern": "^ref_[A-Za-z0-9_-]+$" },
+        "media_asset_id": {
+          "type": ["string", "null"],
+          "pattern": "^media_[A-Za-z0-9_-]+$",
+          "description": "Owned upload backing this reference. Preset references may leave it null."
+        },
         "media_type": { "type": "string", "enum": ["image", "video_frame"] },
         "source_type": { "type": "string", "enum": ["upload", "preset"] },
         "width": { "type": "integer", "minimum": 1 },
@@ -56,6 +61,17 @@
           "type": "array",
           "items": { "type": "string", "minLength": 1, "maxLength": 200 },
           "maxItems": 10
+        },
+        "safety_status": {
+          "type": "string",
+          "enum": ["safe", "warn", "block"],
+          "default": "safe"
+        },
+        "safety_warnings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "maxItems": 10,
+          "default": []
         },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
       },

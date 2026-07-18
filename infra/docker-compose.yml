@@ -38,6 +38,7 @@ services:
     environment:
       MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY:-soloshot-local}
       MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_KEY:-local-development-only}
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:5173,http://127.0.0.1:5173
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -72,4 +73,3 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-

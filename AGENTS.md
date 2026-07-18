@@ -40,6 +40,22 @@ Do not add a P1/P2 feature while a P0 path is broken.
 - First release uses a native 2D screen-space overlay, not complex world-anchored 3D AR.
 - Never claim that a Douyin publish/account/POI integration is live unless it has been implemented and verified. Use an adapter and label previews honestly.
 
+## UI source hierarchy and Stitch boundary
+
+Before starting W2 or any later H5/iOS UI work, read `docs/STITCH_UI_AUDIT.md`.
+
+When UI sources conflict, use this priority order:
+
+1. `PRODUCT_OWNER_GUIDE.md`.
+2. `CODEX_IMPLEMENTATION_SPEC.md`.
+3. `packages/contracts/`.
+4. Confirmed UI overview images and design tokens.
+5. `stitch_ui_visual_replication/` as visual and information-architecture inspiration only.
+
+`stitch_ui_visual_replication/` is not a product source of truth, production implementation, or pixel-perfect acceptance target. Do not copy its disconnected static pages, fake interactions, uncontrolled remote assets, CDN runtime dependencies, inaccessible markup, or unverified security/platform claims into a client.
+
+Production UI must be implemented inside the existing client architecture with real navigation, typed state and contracts, recoverable failures, refresh recovery where required, controlled local assets, responsive behavior, and accessibility. Do not change an accepted P0 flow or add unsupported behavior merely to match Stitch.
+
 ## Repository boundaries
 
 Preferred dependency direction:
@@ -87,6 +103,11 @@ Rules:
 - Return recoverable errors with stable codes.
 - Do not log secrets, signed URLs, raw access tokens, or user media bytes.
 - Preserve source attribution concepts and user deletion paths.
+
+### Documentation
+
+- All human-authored files under `docs/` must be written in Simplified Chinese.
+- Keep code snippets, commands, file paths, identifiers, API field names, and established technical terms in their original form when translating them would reduce accuracy; explain their meaning in Chinese where needed.
 
 ### Python / API
 

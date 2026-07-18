@@ -27,6 +27,10 @@
         "estimated_cost_usd",
         "confidence",
         "fallback_used",
+        "provider",
+        "model",
+        "warnings",
+        "repair_count",
         "error_code"
       ],
       "properties": {
@@ -38,6 +42,14 @@
         "estimated_cost_usd": { "type": "number", "minimum": 0 },
         "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
         "fallback_used": { "type": "boolean" },
+        "provider": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "model": { "type": ["string", "null"], "maxLength": 100 },
+        "warnings": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "maxItems": 20
+        },
+        "repair_count": { "type": "integer", "minimum": 0, "maximum": 1 },
         "error_code": {
           "anyOf": [
             { "$ref": "common.schema.json#/$defs/ErrorCode" },
@@ -74,8 +86,7 @@
     "intent": { "$ref": "#/$defs/AgentIntent" },
     "selected_skills": {
       "type": "array",
-      "items": { "$ref": "common.schema.json#/$defs/SkillRef" },
-      "uniqueItems": true
+      "items": { "$ref": "common.schema.json#/$defs/SkillRef" }
     },
     "provider": { "type": "string", "minLength": 1, "maxLength": 100 },
     "model": { "type": ["string", "null"], "maxLength": 100 },

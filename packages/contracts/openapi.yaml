@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   description: >-
     Contract-first API for SoloShot AI. All normalized coordinates use the [0,1]
-    range with a top-left origin; x grows right and y grows down. W0 implements
-    only /health even though later work-package operations are specified here.
+    range with a top-left origin; x grows right and y grows down. W3 adds a
+    short-lived, capability-secured H5 to iOS handoff surface.
 servers:
   - url: http://localhost:8000
     description: Local development
@@ -17,6 +17,7 @@ tags:
   - name: skills
   - name: captures
   - name: evaluations
+  - name: media
   - name: handoffs
   - name: content
   - name: analytics
@@ -56,6 +57,10 @@ paths:
           $ref: "#/components/responses/SessionCreated"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -82,6 +87,71 @@ paths:
           $ref: "#/components/responses/Deleted"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /api/v1/media/uploads:
+    post:
+      operationId: createMediaUpload
+      tags: [media]
+      summary: Create a short-lived signed upload for session-owned image media
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMediaUploadRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/MediaUploadCreated"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/media/uploads/{media_asset_id}/complete:
+    post:
+      operationId: completeMediaUpload
+      tags: [media]
+      summary: Verify an uploaded object and mark the media ready
+      parameters:
+        - $ref: "#/components/parameters/MediaAssetId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteMediaUploadRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/MediaAssetOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/v1/media/{media_asset_id}/access:
+    get:
+      operationId: getMediaAccess
+      tags: [media]
+      summary: Create a short-lived read URL for ready session-owned media
+      parameters:
+        - $ref: "#/components/parameters/MediaAssetId"
+        - $ref: "#/components/parameters/SessionIdQuery"
+      responses:
+        "200":
+          $ref: "#/components/responses/MediaAccessOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
   /api/v1/references/analyze:
     post:
@@ -101,8 +171,14 @@ paths:
           $ref: "#/components/responses/ReferenceAnalysisAccepted"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/references/adapt:
     post:
@@ -141,6 +217,10 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/ReferenceBoxValidationOk"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationError"
 
@@ -175,8 +255,14 @@ paths:
           $ref: "#/components/responses/AgentRunAccepted"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/agent/runs/{run_id}:
     get:
@@ -212,6 +298,10 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/agent/runs/{run_id}/trace:
     get:
@@ -247,6 +337,10 @@ paths:
           $ref: "#/components/responses/NotFound"
         "422":
           $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/captures:
     post:
@@ -266,6 +360,10 @@ paths:
           $ref: "#/components/responses/CaptureCreated"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationError"
 
@@ -322,8 +420,14 @@ paths:
           $ref: "#/components/responses/EvaluationAccepted"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
         "422":
           $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/handoffs:
     post:
@@ -339,10 +443,16 @@ paths:
             schema:
               $ref: "#/components/schemas/CreateHandoffRequest"
       responses:
+        "200":
+          $ref: "#/components/responses/HandoffCreated"
         "201":
           $ref: "#/components/responses/HandoffCreated"
         "404":
           $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
 
   /api/v1/handoffs/{code}:
     parameters:
@@ -358,17 +468,26 @@ paths:
           $ref: "#/components/responses/NotFound"
         "410":
           $ref: "#/components/responses/Gone"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
     delete:
       operationId: revokeHandoff
       tags: [handoffs]
       summary: Revoke a handoff
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/HandoffManagementToken"
       responses:
         "200":
-          $ref: "#/components/responses/Deleted"
+          $ref: "#/components/responses/HandoffOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
+        "410":
+          $ref: "#/components/responses/Gone"
 
   /api/v1/handoffs/{code}/claim:
     post:
@@ -386,11 +505,15 @@ paths:
               $ref: "#/components/schemas/ClaimHandoffRequest"
       responses:
         "200":
-          $ref: "#/components/responses/HandoffOk"
+          $ref: "#/components/responses/HandoffClaimed"
         "409":
           $ref: "#/components/responses/Conflict"
         "410":
           $ref: "#/components/responses/Gone"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/handoffs/{code}/complete:
     post:
@@ -400,6 +523,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/HandoffCode"
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/HandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -409,6 +533,8 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/HandoffOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
         "410":
@@ -432,6 +558,14 @@ paths:
           $ref: "#/components/responses/PostAccepted"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
 
   /api/v1/posts/{post_id}:
     get:
@@ -542,6 +676,11 @@ components:
         type: string
         minLength: 1
         maxLength: 128
+    ExecutionMode:
+      description: Honest source of AI or deterministic Skill output
+      schema:
+        type: string
+        enum: [fixture, mock, live, cache, fallback]
 
   parameters:
     IdempotencyKey:
@@ -560,6 +699,20 @@ components:
       schema:
         type: string
         pattern: ^ss_[A-Za-z0-9_-]+$
+    SessionIdQuery:
+      name: session_id
+      in: query
+      required: true
+      schema:
+        type: string
+        pattern: ^ss_[A-Za-z0-9_-]+$
+    MediaAssetId:
+      name: media_asset_id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^media_[A-Za-z0-9_-]+$
     ReferenceId:
       name: reference_id
       in: path
@@ -587,7 +740,25 @@ components:
       required: true
       schema:
         type: string
-        pattern: ^[A-Z0-9]{6}$
+        pattern: ^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$
+    HandoffManagementToken:
+      name: X-Handoff-Management-Token
+      in: header
+      required: true
+      description: Opaque creator capability; never place it in URLs or logs
+      schema:
+        type: string
+        minLength: 32
+        maxLength: 2048
+    HandoffClaimToken:
+      name: X-Handoff-Claim-Token
+      in: header
+      required: true
+      description: Opaque claimant capability bound to one client instance
+      schema:
+        type: string
+        minLength: 32
+        maxLength: 2048
     PostId:
       name: post_id
       in: path
@@ -638,8 +809,10 @@ components:
       $ref: ./schemas/agent-run.schema.json#/$defs/SkillRun
     Capture:
       $ref: ./schemas/capture.schema.json
+    MediaAsset:
+      $ref: ./schemas/media.schema.json#/$defs/MediaAsset
     HandoffTask:
-      $ref: ./schemas/handoff.schema.json
+      $ref: ./schemas/handoff.schema.json#/$defs/HandoffTask
     PostJob:
       $ref: ./schemas/post.schema.json#/$defs/PostJob
     Share:
@@ -682,6 +855,83 @@ components:
           enum: [original_replication, scene_adaptation]
         user_constraints:
           $ref: ./schemas/common.schema.json#/$defs/UserConstraints
+        external_ai_consent:
+          type: boolean
+          default: false
+      additionalProperties: false
+
+    CreateMediaUploadRequest:
+      type: object
+      required: [schema_version, session_id, purpose, content_type, byte_size, sha256]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        purpose:
+          $ref: ./schemas/media.schema.json#/$defs/MediaPurpose
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        byte_size:
+          type: integer
+          minimum: 1
+          maximum: 8000000
+        sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+      additionalProperties: false
+
+    CompleteMediaUploadRequest:
+      type: object
+      required: [schema_version, session_id]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+      additionalProperties: false
+
+    MediaUploadTicket:
+      type: object
+      required: [schema_version, asset, upload_url, upload_headers, upload_expires_at]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        asset:
+          $ref: "#/components/schemas/MediaAsset"
+        upload_url:
+          type: string
+          format: uri
+        upload_headers:
+          type: object
+          additionalProperties:
+            type: string
+        upload_expires_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+
+    MediaAccess:
+      type: object
+      required: [schema_version, asset, download_url, access_expires_at]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        asset:
+          $ref: "#/components/schemas/MediaAsset"
+        download_url:
+          type: string
+          format: uri
+        access_expires_at:
+          type: string
+          format: date-time
       additionalProperties: false
 
     AnalyzeReferenceRequest:
@@ -791,7 +1041,7 @@ components:
         round_index:
           type: integer
           minimum: 1
-          maximum: 10
+          maximum: 2
         media_asset_id:
           type: string
           pattern: ^media_[A-Za-z0-9_-]+$
@@ -826,7 +1076,7 @@ components:
 
     CreateHandoffRequest:
       type: object
-      required: [schema_version, session_id, ttl_seconds]
+      required: [schema_version, session_id]
       properties:
         schema_version:
           type: string
@@ -834,10 +1084,6 @@ components:
         session_id:
           type: string
           pattern: ^ss_[A-Za-z0-9_-]+$
-        ttl_seconds:
-          type: integer
-          minimum: 60
-          maximum: 3600
       additionalProperties: false
 
     ClaimHandoffRequest:
@@ -864,6 +1110,45 @@ components:
           type: string
           minLength: 8
           maxLength: 128
+      additionalProperties: false
+
+    HandoffCreateResult:
+      type: object
+      required: [schema_version, handoff, management_token, qr_payload]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        handoff:
+          $ref: "#/components/schemas/HandoffTask"
+        management_token:
+          type: string
+          minLength: 32
+          maxLength: 2048
+        qr_payload:
+          type: string
+          format: uri
+      additionalProperties: false
+
+    HandoffClaimResult:
+      type: object
+      required: [schema_version, handoff, session, claim_token, reference_access]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        handoff:
+          $ref: "#/components/schemas/HandoffTask"
+        session:
+          $ref: "#/components/schemas/SoloShotSession"
+        claim_token:
+          type: string
+          minLength: 32
+          maxLength: 2048
+        reference_access:
+          anyOf:
+            - $ref: "#/components/schemas/MediaAccess"
+            - type: "null"
       additionalProperties: false
 
     RenderPostRequest:
@@ -938,6 +1223,23 @@ components:
             $ref: "#/components/schemas/SkillRun"
       additionalProperties: false
 
+    SkillInvocation:
+      type: object
+      required: [schema_version, run, output]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        run:
+          $ref: "#/components/schemas/SkillRun"
+        output:
+          oneOf:
+            - $ref: "#/components/schemas/ReferenceAnalysis"
+            - $ref: "#/components/schemas/ShotPlan"
+            - $ref: "#/components/schemas/ResultEvaluation"
+            - $ref: "#/components/schemas/PostJob"
+      additionalProperties: false
+
     DeletedResource:
       type: object
       required: [schema_version, deleted]
@@ -952,12 +1254,15 @@ components:
 
     EventBatchReceipt:
       type: object
-      required: [schema_version, accepted_count]
+      required: [schema_version, accepted_count, duplicate_count]
       properties:
         schema_version:
           type: string
           const: "1.0"
         accepted_count:
+          type: integer
+          minimum: 0
+        duplicate_count:
           type: integer
           minimum: 0
       additionalProperties: false
@@ -1050,6 +1355,14 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/SkillRun"
+    SkillInvocationResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/SkillInvocation"
     CaptureResponse:
       allOf:
         - $ref: "#/components/schemas/ResponseMetadata"
@@ -1058,6 +1371,30 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/Capture"
+    MediaAssetResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/MediaAsset"
+    MediaUploadTicketResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/MediaUploadTicket"
+    MediaAccessResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/MediaAccess"
     EvaluationResponse:
       allOf:
         - $ref: "#/components/schemas/ResponseMetadata"
@@ -1074,6 +1411,22 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/HandoffTask"
+    HandoffCreateResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/HandoffCreateResult"
+    HandoffClaimResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/HandoffClaimResult"
     PostResponse:
       allOf:
         - $ref: "#/components/schemas/ResponseMetadata"
@@ -1174,6 +1527,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1192,6 +1547,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1201,6 +1558,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1210,6 +1569,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1219,10 +1580,12 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/SkillRunResponse"
+            $ref: "#/components/schemas/SkillInvocationResponse"
     CaptureCreated:
       description: Capture registered
       headers:
@@ -1241,24 +1604,62 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/CaptureResponse"
+    MediaUploadCreated:
+      description: Signed media upload created
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MediaUploadTicketResponse"
+    MediaAssetOk:
+      description: Media upload verified and ready
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MediaAssetResponse"
+    MediaAccessOk:
+      description: Short-lived media read access created
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/MediaAccessResponse"
     EvaluationAccepted:
       description: Evaluation accepted
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/EvaluationResponse"
     HandoffCreated:
-      description: Handoff created
+      description: Handoff created or an existing unclaimed handoff recovered
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HandoffResponse"
+            $ref: "#/components/schemas/HandoffCreateResponse"
+    HandoffClaimed:
+      description: Handoff claimed and its task snapshot released to one client
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HandoffClaimResponse"
     HandoffOk:
       description: Handoff retrieved or updated
       headers:
@@ -1273,6 +1674,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1282,6 +1685,8 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+        X-SoloShot-Execution-Mode:
+          $ref: "#/components/headers/ExecutionMode"
       content:
         application/json:
           schema:
@@ -1390,6 +1795,28 @@ components:
       headers:
         X-Request-ID:
           $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ServiceUnavailable:
+      description: Required provider or dependency is unavailable
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    TooManyRequests:
+      description: Handoff lookup or claim rate limit exceeded
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+        Retry-After:
+          schema:
+            type: integer
+            minimum: 1
       content:
         application/json:
           schema:

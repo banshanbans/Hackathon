@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
+<title>SoloShot AI - Before/After Comparison</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-fixed": "#001a42",
+                    "on-primary": "#591d00",
+                    "primary-fixed-dim": "#ffb597",
+                    "on-secondary-fixed": "#002109",
+                    "outline": "#a78a7f",
+                    "on-primary-container": "#511a00",
+                    "background": "#111317",
+                    "on-tertiary": "#002e6a",
+                    "on-secondary-container": "#004119",
+                    "secondary-fixed": "#6bff8f",
+                    "surface-container-high": "#282a2e",
+                    "on-primary-fixed-variant": "#7d2d00",
+                    "secondary-fixed-dim": "#4ae176",
+                    "surface-container-highest": "#333539",
+                    "on-tertiary-fixed-variant": "#004395",
+                    "on-secondary": "#003915",
+                    "primary-container": "#f06a28",
+                    "tertiary-fixed-dim": "#adc6ff",
+                    "primary-fixed": "#ffdbcd",
+                    "surface": "#111317",
+                    "surface-container-low": "#1a1c20",
+                    "surface-variant": "#333539",
+                    "on-surface-variant": "#e0c0b3",
+                    "surface-container-lowest": "#0c0e12",
+                    "secondary-container": "#00b954",
+                    "on-surface": "#e2e2e8",
+                    "inverse-surface": "#e2e2e8",
+                    "tertiary": "#adc6ff",
+                    "on-error": "#690005",
+                    "on-error-container": "#ffdad6",
+                    "inverse-on-surface": "#2f3035",
+                    "tertiary-fixed": "#d8e2ff",
+                    "surface-dim": "#111317",
+                    "inverse-primary": "#a43d00",
+                    "on-tertiary-container": "#002960",
+                    "secondary": "#4ae176",
+                    "on-secondary-fixed-variant": "#005321",
+                    "on-background": "#e2e2e8",
+                    "outline-variant": "#584238",
+                    "surface-bright": "#37393e",
+                    "tertiary-container": "#5290ff",
+                    "error": "#ffb4ab",
+                    "surface-tint": "#ffb597",
+                    "primary": "#ffb597",
+                    "error-container": "#93000a",
+                    "surface-container": "#1e2024",
+                    "on-primary-fixed": "#360f00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "base": "4px",
+                    "card-inner-padding": "16px",
+                    "grid-gutter": "16px",
+                    "stack-gap": "12px",
+                    "container-padding": "20px"
+            },
+            "fontFamily": {
+                    "title-lg": [
+                            "Be Vietnam Pro"
+                    ],
+                    "body-md": [
+                            "Be Vietnam Pro"
+                    ],
+                    "label-sm": [
+                            "Geist"
+                    ],
+                    "headline-md": [
+                            "Be Vietnam Pro"
+                    ],
+                    "body-lg": [
+                            "Be Vietnam Pro"
+                    ],
+                    "headline-lg": [
+                            "Be Vietnam Pro"
+                    ],
+                    "label-md": [
+                            "Geist"
+                    ]
+            },
+            "fontSize": {
+                    "title-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "10px",
+                            {
+                                    "lineHeight": "12px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "22px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "500"
+                            }
+                    ]
+            }
+        },
+        },
+      }
+    </script>
+<style>
+        /* Custom Scrollbar for hidden horizontal overflow */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pt-safe pb-safe selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation (Contextual, No Global Shell per instructions for this transactional step) -->
+<header class="flex justify-between items-center w-full px-container h-14 sticky top-0 z-50 bg-surface/70 backdrop-blur-xl">
+<button aria-label="Go Back" class="flex items-center justify-center p-2 rounded-full hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-on-surface">arrow_back</span>
+</button>
+<div class="flex-1 flex justify-center items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">compare</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">对比与进步 (示例)</span>
+</div>
+<div class="px-2 py-1 bg-secondary-container/20 border border-secondary-container rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-secondary-container text-[14px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-label-sm text-label-sm text-secondary-container">目标已满足</span>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col px-container pt-4 pb-24 overflow-y-auto">
+<!-- Comparison Grid -->
+<div class="grid grid-cols-3 gap-3 mb-8">
+<!-- Reference Shot -->
+<div class="flex flex-col gap-2 items-center">
+<span class="font-label-md text-label-md text-on-surface-variant text-center h-8 flex items-center">参考镜头</span>
+<div class="w-full aspect-[9/16] rounded-lg overflow-hidden border border-outline-variant relative group bg-surface-container">
+<img class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" data-alt="A solo traveler standing on a cliff edge overlooking a vast ocean at sunset. Warm, cinematic lighting, dramatic orange and purple sky. Technical cinematic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDomVmihCkIChqvF1K4HNQxzmZrUaZS9dXzKKwwEVmMsb0M8ADfffWvOSgKlLwirrO8w72PeFDRchMIB4YYFDeZNgRbbj2u0k-TmX34nZ9xoWOINrujCzg3P4cm532f3gPgUsCeK0z5mBQdZE0gH5H0Z2tH6umzX-QUjat7na1LvBfrQpJyXWpON1sMCmNXmxI4Gkz1iIkBLW8qX-Lv8vzRZ7on510OVOw2jphRhhC_YuPMMorGpbeRxA"/>
+</div>
+</div>
+<!-- First Take -->
+<div class="flex flex-col gap-2 items-center">
+<span class="font-label-md text-label-md text-on-surface-variant text-center h-8 flex items-center">第一次成片<br/>(保留)</span>
+<div class="w-full aspect-[9/16] rounded-lg overflow-hidden border border-outline-variant relative group bg-surface-container">
+<img class="w-full h-full object-cover opacity-70 grayscale-[30%]" data-alt="A solo traveler standing slightly too far left on a rocky coastal path, overlooking the sea. Similar lighting to reference but slightly misaligned composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAw4zOugxrzp_GQPm1rxszhQmtwbpB4hwWBDHZpAbs88NjH6bsaVIrr4OHUuvrgYk4iKEDI3hlF99G4mjOt-quYGT3Mx1ciRInotZMJWFreBOKQoRGvoylm57fcQRyoi8Ojlt617EpUfqS4ZgYxJQ45J_9UO5AwHCMJc5Ce6Kg22OeQhR23o-27ysoYwMVApOci5SlyaSrqyzbaKGoVzsbQSfsbd1OjcZxc7jH6zEXrpi4unn3zLiPpug"/>
+<div class="absolute inset-0 bg-background/20"></div>
+</div>
+</div>
+<!-- Second Take (Latest) -->
+<div class="flex flex-col gap-2 items-center">
+<span class="font-label-md text-label-md text-primary font-bold text-center h-8 flex items-center">第二次成片<br/>(最新)</span>
+<div class="w-full aspect-[9/16] rounded-xl overflow-hidden border-2 border-secondary-container relative shadow-[0_0_15px_rgba(0,185,84,0.15)] bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="A perfect match of the reference shot. A solo traveler standing on a cliff edge, composition perfectly aligned with the rule of thirds. Warm cinematic lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_FcVKdPrfDkwpdl0-7bvP0Md-Ypnwdvoy_13hxWAwRP_wet2OjyxvcZRGCCOhNEFf5vpT1iTKKJZ-w6euRQkIgBHpqipKHLrlmNdwwb_UOjMiXdnnTO5S-9h6ctv4tb4FFm5wFOdULbX_XSR7LjSktQ5lhw2WJBjiKjLv_Z6gBE5EF9Tz-bmWFSFF8FtIyKpt3DiIdEZsreKUH21mXi7-2UkELxwQqOzHl4KkL_D7hP5OB_O0gbmnjw"/>
+<!-- Success Badge -->
+<div class="absolute top-2 right-2 bg-secondary-container rounded-full p-1 shadow-lg">
+<span class="material-symbols-outlined text-on-secondary-container text-[16px]" style="font-variation-settings: 'FILL' 1;">check</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Improvement Details Section -->
+<div class="bg-surface-container rounded-xl p-card-inner-padding border border-outline-variant shadow-sm flex flex-col gap-stack-gap">
+<div class="flex items-center gap-2 mb-1">
+<span class="material-symbols-outlined text-primary text-[20px]">auto_fix</span>
+<h3 class="font-title-lg text-title-lg text-on-surface">改进效果</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                人物位置更接近右侧三分之一，画面更平衡。
+            </p>
+</div>
+</main>
+<!-- Bottom Action Bar (Fixed) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-xl border-t border-outline-variant px-container py-4 pb-safe z-50">
+<div class="flex gap-4">
+<button class="flex-1 bg-transparent border border-outline-variant text-on-surface font-label-md text-label-md rounded-full py-3 px-4 flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined text-[18px]">replay</span>
+                继续拍摄
+            </button>
+<button class="flex-[2] bg-primary-container text-on-primary-container font-label-md text-label-md rounded-full py-3 px-4 flex items-center justify-center gap-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">movie_creation</span>
+                满意，去生成内容
+            </button>
+</div>
+</div>
+</body></html>

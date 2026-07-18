@@ -1,0 +1,1 @@
+{"schema_version":"1.0","note":"示例只说明安全和结构化输出要求，不是 Live 模型结果。","safe_example":{"safety_status":"safe","safety_warnings":[]},"blocked_example":{"safety_status":"block","safety_warnings":["现场靠近机动车道路，不能在此站位拍摄。"]}}

@@ -1,0 +1,6 @@
+[
+  {"case_id":"doorway_coffee_fullbody","fixture":"packages/evals/test-image-v1/manifest.json","reference_id":"ref_doorway_coffee_fullbody","expects":{"confidence_min":0.85,"h5_supported":true,"safety_notes_min":1}},
+  {"case_id":"stone_village_lean","fixture":"packages/evals/test-image-v1/manifest.json","reference_id":"ref_stone_village_lean","expects":{"confidence_min":0.85,"h5_supported":true,"safety_notes_min":1}},
+  {"case_id":"storefront_profile","fixture":"packages/evals/test-image-v1/manifest.json","reference_id":"ref_storefront_profile","expects":{"confidence_min":0.85,"h5_supported":true,"safety_notes_min":1}},
+  {"case_id":"cafe_seated_drink","fixture":"packages/evals/test-image-v1/manifest.json","reference_id":"ref_cafe_seated_drink","expects":{"confidence_min":0.85,"h5_supported":true,"safety_notes_min":1}}
+]

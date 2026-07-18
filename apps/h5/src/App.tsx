@@ -1,35 +1,55 @@
-const foundations = [
-  "共享 OpenAPI 与 JSON Schema",
-  "FastAPI 健康检查",
-  "H5 与 iOS 类型生成",
-  "Postgres、Redis 与 MinIO 本地依赖",
-] as const;
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState } from "react";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrandHeader } from "./components/AppChrome";
+import { FlowProvider } from "./flow/FlowProvider";
+import { HandoffLandingScreen, HandoffScreen } from "./screens/HandoffScreens";
+import {
+  AnalysisScreen,
+  CaptureScreen,
+  EvaluationScreen,
+  NotFoundScreen,
+  PlanScreen,
+  ResultScreen,
+  SceneScreen,
+} from "./screens/SessionScreens";
+import { ConstraintsScreen, EntryScreen, ReferenceScreen } from "./screens/StartScreens";
 
 export function App() {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: { retry: 1, staleTime: 5_000 },
+          mutations: { retry: 0 },
+        },
+      }),
+  );
   return (
-    <main className="shell">
-      <section className="hero" aria-labelledby="page-title">
-        <p className="eyebrow">SOLOSHOT AI · W0</p>
-        <h1 id="page-title">把旅行灵感，变成一个人能完成的镜头。</h1>
-        <p className="lede">
-          当前页面是可运行的工程基础骨架。Agent、镜头分析与拍摄评价将在后续工作包接入；这里不展示伪造的实时 AI 结果。
-        </p>
-        <div className="status" role="status">
-          <span className="status-dot" aria-hidden="true" />
-          契约优先基础已就绪
-        </div>
-      </section>
-
-      <section className="foundation" aria-labelledby="foundation-title">
-        <p className="section-label">W0 FOUNDATION</p>
-        <h2 id="foundation-title">同一份任务契约，服务 H5、iOS 与 API。</h2>
-        <ul>
-          {foundations.map((foundation) => (
-            <li key={foundation}>{foundation}</li>
-          ))}
-        </ul>
-      </section>
-    </main>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <FlowProvider>
+          <div className="app-shell">
+            <BrandHeader />
+            <main>
+              <Routes>
+                <Route path="/" element={<EntryScreen />} />
+                <Route path="/reference" element={<ReferenceScreen />} />
+                <Route path="/constraints" element={<ConstraintsScreen />} />
+                <Route path="/session/:id/analysis" element={<AnalysisScreen />} />
+                <Route path="/session/:id/scene" element={<SceneScreen />} />
+                <Route path="/session/:id/plan" element={<PlanScreen />} />
+                <Route path="/session/:id/handoff" element={<HandoffScreen />} />
+                <Route path="/session/:id/capture/:round" element={<CaptureScreen />} />
+                <Route path="/session/:id/evaluation/:round" element={<EvaluationScreen />} />
+                <Route path="/session/:id/result" element={<ResultScreen />} />
+                <Route path="/handoff/:code" element={<HandoffLandingScreen />} />
+                <Route path="*" element={<NotFoundScreen />} />
+              </Routes>
+            </main>
+          </div>
+        </FlowProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }
-

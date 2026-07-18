@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>SoloShot AI - Screens 6-10</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            primary: '#f06a28',
+            'primary-hover': '#d95a1c',
+            surface: '#111317',
+            'surface-dim': '#0c0e12',
+            'surface-bright': '#37393e',
+            'surface-container': '#212328',
+            'surface-variant': '#43474e',
+            outline: '#8d9199',
+            'outline-variant': '#43474e',
+            error: '#ffb4ab',
+            success: '#6EE7B7',
+            'success-dark': '#059669',
+          },
+          fontFamily: {
+            sans: ['"Be Vietnam Pro"', 'sans-serif'],
+          },
+          borderRadius: {
+            'xl': '0.75rem',
+            '2xl': '1rem',
+          }
+        }
+      }
+    }
+  </script>
+<style data-purpose="base-styles">
+    body {
+      background-color: #111317; /* surface */
+      color: #e3e2e6; /* on-surface */
+      -webkit-font-smoothing: antialiased;
+    }
+    .screen-container {
+      width: 375px;
+      height: 812px;
+      background-color: #1a1c20; /* surface-container-low */
+      border-radius: 2rem;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      border: 8px solid #000;
+      display: flex;
+      flex-direction: column;
+    }
+    .safe-area-top { height: 44px; }
+    .safe-area-bottom { height: 34px; }
+    
+    /* Hide scrollbar for cleaner look */
+    ::-webkit-scrollbar { display: none; }
+    
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      z-index: 50;
+      position: relative;
+    }
+    
+    .glass-panel {
+      background: rgba(33, 35, 40, 0.8); /* surface-container with opacity */
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-8 gap-8 bg-neutral-900 flex-wrap">
+<!-- BEGIN: Screen 6 - Countdown / Auto Record -->
+<div class="screen-container">
+<div class="absolute inset-0 z-0">
+<img alt="Camera Feed" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1hy8qdjJ5AKoB6GjxXc6F3HAPIkaGlV2JNp3vWxZba0IlIWj2LISEu5mwvT7S2IApWssgF171_WnseNMj5BZXg69XrwDRBalDcwnb_oBnQDo06mVk_8l1KPxrvskpxGf3cv8he2IVLEFdAUoaoWIZWFUBMKlPJRCjLlNMGpiwOS2HJX_ypq_5wMO1SGk6WvTrfrbZRuJZYwjayIg64bxsHJZFTQzQXR1fQfG1TJU3xpQSLbQIxjI8Dw"/>
+</div>
+<div class="status-bar">
+<span>9:41</span>
+<div class="flex gap-1.5 items-center">
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M2 11.5a8.38 8.38 0 013.388-6.702l-.592-.592L6.21 2.793l1.828 1.828c.883-.346 1.847-.534 2.85-.534 2.94 0 5.617 1.144 7.6 3.01l-1.414 1.414A9.97 9.97 0 0010.887 4.08c-.76-.08-1.536-.08-2.296 0L10.3 5.793l1.414-1.414a8.38 8.38 0 012.898 6.121h1.5A9.98 9.98 0 0013.3 3.8L15 2.1l1.414 1.414-1.636 1.636A11.97 11.97 0 0118 11.5h-1.5c0-1.85-.55-3.57-1.48-5.02l-1.41 1.41c.64 1.09 1.03 2.37 1.03 3.73v.25c0 1.25-.43 2.41-1.15 3.32l-1.06-1.06A4.97 4.97 0 0011 11.5h-1.5v2.88l-1.42 1.42A7.95 7.95 0 013.5 11.5H2zM8.5 14.38V11.5H7A6.5 6.5 0 0013.5 18v-1.5a5 5 0 01-5-2.12z"></path></svg>
+<svg class="w-4 h-4" fill="currentColor" viewbox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path></svg>
+<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20"><path d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm14 1H4v8h12V6z"></path></svg>
+</div>
+</div>
+<div class="flex-1 flex flex-col items-center justify-between pb-10 z-10 relative">
+<!-- Top Badges -->
+<div class="w-full px-4 flex justify-between mt-2">
+<div class="bg-success-dark text-white text-xs font-semibold px-3 py-1.5 rounded-full flex items-center gap-1">
+           已就位
+        </div>
+<div class="bg-surface/60 backdrop-blur-sm text-gray-300 text-xs px-3 py-1.5 rounded-full">
+          离线模式
+        </div>
+</div>
+<!-- Action Hint -->
+<div class="glass-panel text-white text-sm font-medium px-6 py-3 rounded-full mt-8">
+        边走边回头
+      </div>
+<!-- Countdown -->
+<div class="flex-1 flex flex-col items-center justify-center">
+<div class="text-[120px] font-bold text-white leading-none shadow-lg">3</div>
+<div class="text-white/80 text-sm mt-4 tracking-wider">将自动开始录制</div>
+</div>
+<!-- Recording Split View (Simulated) -->
+<div class="w-full relative h-[1px] bg-white/20 my-4">
+<div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-[1px] bg-white"></div>
+</div>
+<!-- Recording State (Bottom Half) -->
+<div class="w-full flex flex-col items-center flex-1 justify-center relative">
+<div class="absolute right-4 top-0 bg-surface/60 backdrop-blur-sm text-gray-300 text-xs px-3 py-1.5 rounded-full">
+          离线模式
+        </div>
+<div class="text-[120px] font-bold text-white leading-none shadow-lg mt-12">1</div>
+<div class="flex items-center gap-2 mt-4 text-primary font-mono font-medium">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+          00:00 <span class="text-white/50">/ 00:06</span>
+</div>
+<div class="mt-6 border border-success text-success text-sm px-6 py-2 rounded-full backdrop-blur-sm bg-success/10">
+          保持，准备拍
+        </div>
+</div>
+<!-- Bottom Controls -->
+<div class="w-full px-6 flex justify-between items-center mt-auto">
+<div class="flex flex-col items-center gap-1">
+<div class="w-12 h-12 rounded-lg bg-surface border border-outline-variant overflow-hidden">
+<img alt="Reference" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-F1xiDcWRGduYWNvM5zJdbaD2vzLZRL9KbUYyIa_c0qvvKpHgHnXlqyeUv84BvqA0RyN6-7fQKYJlQhwyRD_eEmRmHzxPsyiPu-xTbPBJxywwv29xHbqfjz_9oom_wiuJ1gAAnsB25RbATtg8zwFzgELmA4EpqNxtCyI0AkUsQjdeonsEVIFFcfSEgxSkpqe1Lu6ZQsJmzBtU2TmYTnfTQQCy8UHxaiU2p_HnAcQAsSGfOjOxEb2jrA"/>
+</div>
+<span class="text-[10px] text-gray-400">参考图</span>
+</div>
+<button class="w-20 h-20 rounded-full border-[4px] border-white flex items-center justify-center">
+<div class="w-6 h-6 bg-primary rounded-sm"></div>
+</button>
+<div class="flex flex-col items-center gap-1">
+<button class="w-12 h-12 rounded-full bg-surface/80 backdrop-blur-sm flex items-center justify-center text-white">
+<svg class="w-6 h-6" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path clip-rule="evenodd" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path><path d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</button>
+<span class="text-[10px] text-gray-400">静音</span>
+</div>
+</div>
+</div>
+</div>
+<!-- END: Screen 6 -->
+<!-- BEGIN: Screen 7 - Candidate Frames Selection -->
+<div class="screen-container bg-[#1a1c20]">
+<div class="status-bar">
+<span>9:41</span>
+<div class="flex gap-1.5 items-center">
+<!-- Icons omitted for brevity, same as above -->
+<div class="w-4 h-4 bg-white/20 rounded-sm"></div>
+<div class="w-4 h-4 bg-white/20 rounded-sm"></div>
+<div class="w-5 h-3 bg-white/20 rounded-sm"></div>
+</div>
+</div>
+<!-- Header -->
+<div class="px-4 py-2 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<svg class="w-5 h-5 text-gray-400 animate-spin" fill="none" viewbox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path></svg>
+<span class="text-sm font-medium">正在处理候选帧... 85%</span>
+</div>
+<div class="bg-surface/60 text-gray-400 text-xs px-2 py-1 rounded">离线模式</div>
+</div>
+<!-- Main Selected Image -->
+<div class="flex-1 px-4 mt-2 relative">
+<div class="w-full h-[400px] bg-[#2a2d35] rounded-xl overflow-hidden relative border-2 border-primary">
+<img alt="Selected Frame" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCca370i3hRJDrvw2KK1-Sixu7Js3UAPEVudNXWAYc13HIXDHL94Noo7nKbKW0_JM-NQm_Zo8WZUoZaaFpXW_bBm_Qe-CrjT-vLfSIilBBawSN88YEfIRCh0lBSgiueBjPa8G1iURr-s1kv28qu4WHe8ul-Phr6Eb0g9I3K2eHSJpYMhGOm4X9tVtdS0EJdl0my0alzBVleKmX779eW1dqmP188UlffSWPt7g3fkYMdcavdhZSxobw-dQ"/>
+<!-- Grid overlay -->
+<div class="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-30">
+<div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div>
+<div class="border-b border-white"></div>
+<div class="border-b border-r border-white"></div>
+<div class="border-b border-r border-white"></div>
+<div class="border-b border-white"></div>
+<div class="border-r border-white"></div>
+<div class="border-r border-white"></div>
+<div></div>
+</div>
+</div>
+<div class="absolute top-2 right-6 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-bl-lg rounded-tr-lg">推荐</div>
+</div>
+<!-- Candidate Thumbnails -->
+<div class="px-4 mt-4 mb-4">
+<div class="flex gap-2 overflow-x-auto pb-2 snap-x">
+<!-- Thumb 1 -->
+<div class="w-[72px] h-[96px] rounded-lg overflow-hidden border-2 border-transparent opacity-50 shrink-0 snap-start">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjH8Fd7r6WPR1RW24Qy_gajSNNjj0y7CX1yL6QS8CKw4-LsmPjCzAC60Yj4miSzz9TnRt2uHtcYwvc_h-hNPBRylJRnGD8AxuU3Z78T9rhMoaqoeTZN0iK3rDoCxwOVx8A080dNowhiP3PnjFGJEvmi0yhaDR27XwfheDRi_tSK5AJ_3256VO1A3ZvTbUjck7J-eLNBwfPzfsD9OklzFO1Y2I1t4ATRfc3OeOnGddSuc8CQ2qT7B9Awg"/>
+</div>
+<!-- Thumb 2 (Selected) -->
+<div class="w-[72px] h-[96px] rounded-lg overflow-hidden border-2 border-primary shrink-0 snap-start relative">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2lo1h69wuZsQ9nM0nWvVniOBkMYxEr8wrkT04yEV6-2FaGCmKE4STpBldZ3fj8EZh_3ZMjuBzK-PyY77VHnw__QddM4rQXq2qEtQfZ8jvfN84q9TWhjq0YvlGS8lxCoS2LjeV4G0h3HzAIghgxBM_LaNSssch6kcHj4FwqKd9vQuEyuHqrZ6VEMYzLVJKOaL51okUOqUspAmOv4vIeRms-kfnYbj0b93lRGy4e0Jip-8kOEj67sTP8Q"/>
+</div>
+<!-- Thumb 3 -->
+<div class="w-[72px] h-[96px] rounded-lg overflow-hidden border-2 border-transparent opacity-50 shrink-0 snap-start">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdCGzISk_Mf-hHDebLPFi5MR9SomtuScWOwdvZUC_V8UvjyH0aW6ZpC4e21Br41eMQM5VUCF21OwVQtoswMq63QR-g05EP3oLSTug2yz9sDg6RU8eDqWkW9mFBs80s7qyrZoeor9GpaKmoQJ5iI6TW4cHWDNEfvaCj58aBD5BA2M9YvWqYHwCAFBKrLem3KG_zxj46nKT11_S93awVgs-b2lJ0f7XJo-EGz3X7EG7qBeS4Zpy6KYLxDw"/>
+</div>
+<!-- Thumb 4 -->
+<div class="w-[72px] h-[96px] rounded-lg overflow-hidden border-2 border-transparent opacity-50 shrink-0 snap-start">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzCbm1Cru_pktarF-aoAQKHnU0WQc4kp2S9_IMa_2sMAH56y1BnZDyz21rhBJKTjuxvteysHHtDHOHr9M4ddegPD8ScxTMrX6pe3a6L0UwoBpIicWQykV7ZrkQ5I7rIBctM99kg2mSJal3bqrK2aY7AGxhYXvJwwDY7cHoPyKjstPEgaxm6Jmj6EEsGiFsPQFHO5Jn_Fnb3g4u6tiN0PVCjPuEQnfTVuRX4csMogGBEO633EhIKL1MXg"/>
+</div>
+<!-- Thumb 5 -->
+<div class="w-[72px] h-[96px] rounded-lg overflow-hidden border-2 border-transparent opacity-50 shrink-0 snap-start">
+<img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDl9klKl7_nB5EBWscBna-NwRUWjkNNfvxrMPBnHnwXbjU5chJ_vZidWjYOrh3_UlKH_mW1S1vMSSQ2zyo6kcOYlfvzzqXFHIsJD1tqE82gKh1v1gKXHiEfNhYoOgAVIHx9n7VDnERtCCV1LWXTBQgBKLtnQ9nv83Nzn8YRxWSI7MGpKx_63nWlKlrOAJqzxV8CePpswH4L-nmSGXpxKKCYVgtEVkQuF2tKAaEu5yvw8K5rPBD8P5YJmg"/>
+</div>
+</div>
+</div>
+<!-- Scoring/Reasoning -->
+<div class="px-4 mb-4">
+<div class="flex items-center text-xs text-gray-400 gap-2 mb-2">
+<span class="text-white font-medium mr-2">推荐依据</span>
+<div class="flex flex-col items-center gap-1">
+<span>完整度</span>
+<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span>位置</span>
+<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span>比例</span>
+<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span>清晰度</span>
+<div class="w-1.5 h-1.5 rounded-full bg-success"></div>
+</div>
+<div class="flex flex-col items-center gap-1">
+<span>姿势</span>
+<div class="w-1.5 h-1.5 rounded-full bg-gray-500"></div>
+</div>
+</div>
+</div>
+<!-- Actions -->
+<div class="px-4 mt-auto mb-6 flex flex-col gap-3">
+<div class="flex gap-3">
+<button class="flex-1 py-3 rounded-xl bg-surface-bright text-white text-sm font-medium">重新拍摄</button>
+<button class="flex-1 py-3 rounded-xl bg-surface-bright text-white text-sm font-medium">删除本地媒体</button>
+</div>
+<button class="w-full py-4 rounded-xl bg-primary hover:bg-primary-hover text-white font-medium text-lg">
+        使用这张
+      </button>
+</div>
+<div class="safe-area-bottom"></div>
+</div>
+<!-- END: Screen 7 -->
+</body></html>

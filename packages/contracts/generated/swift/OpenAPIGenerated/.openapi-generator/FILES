@@ -30,6 +30,7 @@ Sources/SoloShotContracts/Models/Capture.swift
 Sources/SoloShotContracts/Models/CaptureResponse.swift
 Sources/SoloShotContracts/Models/ClaimHandoffRequest.swift
 Sources/SoloShotContracts/Models/CompleteHandoffRequest.swift
+Sources/SoloShotContracts/Models/CompleteMediaUploadRequest.swift
 Sources/SoloShotContracts/Models/ContinueAgentRunRequest.swift
 Sources/SoloShotContracts/Models/CostMetrics.swift
 Sources/SoloShotContracts/Models/CostMetricsResponse.swift
@@ -37,6 +38,7 @@ Sources/SoloShotContracts/Models/CreateAgentRunRequest.swift
 Sources/SoloShotContracts/Models/CreateCaptureRequest.swift
 Sources/SoloShotContracts/Models/CreateEvaluationRequest.swift
 Sources/SoloShotContracts/Models/CreateHandoffRequest.swift
+Sources/SoloShotContracts/Models/CreateMediaUploadRequest.swift
 Sources/SoloShotContracts/Models/CreateSessionRequest.swift
 Sources/SoloShotContracts/Models/CurrentAlignment.swift
 Sources/SoloShotContracts/Models/DeletedResource.swift
@@ -47,10 +49,20 @@ Sources/SoloShotContracts/Models/EventBatchRequest.swift
 Sources/SoloShotContracts/Models/EventBatchResponse.swift
 Sources/SoloShotContracts/Models/FunnelMetrics.swift
 Sources/SoloShotContracts/Models/FunnelMetricsResponse.swift
+Sources/SoloShotContracts/Models/HandoffClaimResponse.swift
+Sources/SoloShotContracts/Models/HandoffClaimResult.swift
+Sources/SoloShotContracts/Models/HandoffCreateResponse.swift
+Sources/SoloShotContracts/Models/HandoffCreateResult.swift
 Sources/SoloShotContracts/Models/HandoffResponse.swift
 Sources/SoloShotContracts/Models/HandoffTask.swift
 Sources/SoloShotContracts/Models/HealthResponse.swift
 Sources/SoloShotContracts/Models/InvokeSkillRequest.swift
+Sources/SoloShotContracts/Models/MediaAccess.swift
+Sources/SoloShotContracts/Models/MediaAccessResponse.swift
+Sources/SoloShotContracts/Models/MediaAsset.swift
+Sources/SoloShotContracts/Models/MediaAssetResponse.swift
+Sources/SoloShotContracts/Models/MediaUploadTicket.swift
+Sources/SoloShotContracts/Models/MediaUploadTicketResponse.swift
 Sources/SoloShotContracts/Models/ModelErrorResponse.swift
 Sources/SoloShotContracts/Models/PostJob.swift
 Sources/SoloShotContracts/Models/PostResponse.swift
@@ -65,6 +77,7 @@ Sources/SoloShotContracts/Models/RenderPostRequest.swift
 Sources/SoloShotContracts/Models/ResponseMetadata.swift
 Sources/SoloShotContracts/Models/ResultEvaluation.swift
 Sources/SoloShotContracts/Models/ResultEvaluation1.swift
+Sources/SoloShotContracts/Models/ResultEvaluation2.swift
 Sources/SoloShotContracts/Models/SelectFrameRequest.swift
 Sources/SoloShotContracts/Models/SessionResponse.swift
 Sources/SoloShotContracts/Models/Share.swift
@@ -75,6 +88,9 @@ Sources/SoloShotContracts/Models/ShotPlan1ActionScriptInner.swift
 Sources/SoloShotContracts/Models/ShotPlan1H5Execution.swift
 Sources/SoloShotContracts/Models/ShotPlan1TargetLayout.swift
 Sources/SoloShotContracts/Models/ShotPlan1TargetLayoutHeadPoint.swift
+Sources/SoloShotContracts/Models/SkillInvocation.swift
+Sources/SoloShotContracts/Models/SkillInvocationOutput.swift
+Sources/SoloShotContracts/Models/SkillInvocationResponse.swift
 Sources/SoloShotContracts/Models/SkillRun.swift
 Sources/SoloShotContracts/Models/SkillRunResponse.swift
 Sources/SoloShotContracts/Models/SoloShotSession.swift

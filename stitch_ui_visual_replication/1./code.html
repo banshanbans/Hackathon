@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>SoloShot AI - Content Entry</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#001a42",
+                      "on-primary": "#591d00",
+                      "primary-fixed-dim": "#ffb597",
+                      "on-secondary-fixed": "#002109",
+                      "outline": "#a78a7f",
+                      "on-primary-container": "#511a00",
+                      "background": "#111317",
+                      "on-tertiary": "#002e6a",
+                      "on-secondary-container": "#004119",
+                      "secondary-fixed": "#6bff8f",
+                      "surface-container-high": "#282a2e",
+                      "on-primary-fixed-variant": "#7d2d00",
+                      "secondary-fixed-dim": "#4ae176",
+                      "surface-container-highest": "#333539",
+                      "on-tertiary-fixed-variant": "#004395",
+                      "on-secondary": "#003915",
+                      "primary-container": "#f06a28",
+                      "tertiary-fixed-dim": "#adc6ff",
+                      "primary-fixed": "#ffdbcd",
+                      "surface": "#111317",
+                      "surface-container-low": "#1a1c20",
+                      "surface-variant": "#333539",
+                      "on-surface-variant": "#e0c0b3",
+                      "surface-container-lowest": "#0c0e12",
+                      "secondary-container": "#00b954",
+                      "on-surface": "#e2e2e8",
+                      "inverse-surface": "#e2e2e8",
+                      "tertiary": "#adc6ff",
+                      "on-error": "#690005",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#2f3035",
+                      "tertiary-fixed": "#d8e2ff",
+                      "surface-dim": "#111317",
+                      "inverse-primary": "#a43d00",
+                      "on-tertiary-container": "#002960",
+                      "secondary": "#4ae176",
+                      "on-secondary-fixed-variant": "#005321",
+                      "on-background": "#e2e2e8",
+                      "outline-variant": "#584238",
+                      "surface-bright": "#37393e",
+                      "tertiary-container": "#5290ff",
+                      "error": "#ffb4ab",
+                      "surface-tint": "#ffb597",
+                      "primary": "#ffb597",
+                      "error-container": "#93000a",
+                      "surface-container": "#1e2024",
+                      "on-primary-fixed": "#360f00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "card-inner-padding": "16px",
+                      "grid-gutter": "16px",
+                      "stack-gap": "12px",
+                      "container-padding": "20px"
+              },
+              "fontFamily": {
+                      "title-lg": ["Be Vietnam Pro"],
+                      "body-md": ["Be Vietnam Pro"],
+                      "label-sm": ["Geist"],
+                      "headline-md": ["Be Vietnam Pro"],
+                      "body-lg": ["Be Vietnam Pro"],
+                      "headline-lg": ["Be Vietnam Pro"],
+                      "label-md": ["Geist"]
+              },
+              "fontSize": {
+                      "title-lg": ["18px", {"lineHeight": "24px", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-sm": ["10px", {"lineHeight": "12px", "fontWeight": "600"}],
+                      "headline-md": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            display: inline-block;
+            vertical-align: middle;
+            line-height: 1;
+        }
+        /* Mobile height fix */
+        .h-screen-safe {
+            height: 100vh;
+            height: -webkit-fill-available;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased h-screen-safe overflow-hidden flex flex-col justify-center items-center">
+<!-- App Container optimized for Mobile Proportions -->
+<main class="relative w-full h-full max-w-md mx-auto bg-surface-container-lowest overflow-hidden flex flex-col shadow-2xl md:rounded-[32px] md:h-[795px] md:border md:border-outline-variant">
+<!-- Hero Background Image with Gradient Overlays -->
+<div class="absolute inset-0 z-0 bg-cover bg-center" data-alt="A cinematic, high-quality photograph of a young woman traveling solo in Cinque Terre, Italy. She is looking out over the beautiful coastal landscape during golden hour. The lighting is warm and dramatic, creating a sense of adventure and wanderlust. The image has a professional camera grade, with a slight vignette, fitting a technical cinematic aesthetic in a dark mode UI." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBWm6fsiNwIKzkPv9O9Bg4NksO6hJ8RH7i6jHJf9gat3A19B4T9RuDEwhnHa9KpdvhP_Q-7g7lyZjoc2xHsUnGQ8-SDgf_ZoDSs1CoAvTGuqik_rxgwrynMBVzzx0JraD-j4k5znrB34AWeWNj_K2024iiyjzhkMl2AqnoxyWnnGsdXDLw-YGKz15vFjUUTuvzK0bOJzJlWk6Ww52YJzGihY1L_1h9HV2tImJ3FXRgKL6S07pw7qhxT3Q')">
+<!-- Top vignette for header readability -->
+<div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/80 to-transparent"></div>
+<!-- Bottom heavy vignette for content readability -->
+<div class="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/80 to-transparent"></div>
+</div>
+<!-- Content Canvas -->
+<div class="relative z-10 flex flex-col h-full w-full justify-between p-container-padding">
+<!-- Top App Bar (Transparent Variant) -->
+<header class="flex justify-between items-center pt-2">
+<h1 class="text-headline-md font-headline-md font-bold text-on-surface tracking-tight drop-shadow-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary-container text-[28px]" style="font-variation-settings: 'FILL' 1;">camera_outdoor</span>
+                    SoloShot AI
+                </h1>
+<button class="p-2 rounded-full bg-surface/30 backdrop-blur-xl border border-outline-variant/30 hover:bg-surface/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface">more_horiz</span>
+</button>
+</header>
+<!-- Play Button Overlay (Center) -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-20">
+<button class="w-16 h-16 flex items-center justify-center rounded-full bg-surface-container/40 backdrop-blur-2xl border border-on-surface/20 hover:scale-105 active:scale-95 transition-all shadow-lg group">
+<span class="material-symbols-outlined text-on-surface text-[32px] group-hover:text-primary-container transition-colors" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+</button>
+</div>
+<!-- Bottom Action Area -->
+<div class="flex-1 flex flex-col justify-end w-full">
+<!-- Headline -->
+<div class="mb-8">
+<h2 class="text-headline-lg font-headline-lg text-on-surface mb-2 drop-shadow-lg leading-tight">
+                        一个人旅行，<br/>也能复刻理想镜头
+                    </h2>
+</div>
+<!-- Video Metadata -->
+<div class="flex justify-between items-end mb-stack-gap text-label-sm font-label-sm text-on-surface-variant">
+<div class="flex flex-col gap-1">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">account_circle</span>
+                            来源：@WanderLinn
+                        </span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">location_on</span>
+                            意大利 · 五渔村
+                        </span>
+</div>
+<div class="bg-surface-container/50 px-2 py-1 rounded-md backdrop-blur-md border border-outline-variant/50">
+                        00:00 / 00:15
+                    </div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col gap-stack-gap w-full pb-4">
+<button class="w-full py-4 rounded-xl bg-primary-container text-on-surface font-title-lg text-title-lg shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        暂停并复刻这个镜头
+                    </button>
+<button class="w-full py-4 rounded-xl border border-outline-variant text-on-surface bg-surface-container/50 backdrop-blur-xl font-title-lg text-title-lg hover:bg-surface-container-high transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+<span class="material-symbols-outlined text-on-surface" style="font-variation-settings: 'FILL' 0;">upload</span>
+                        上传自己的参考图或视频帧
+                    </button>
+</div>
+<!-- Footer Note -->
+<div class="text-center pb-2 text-label-md font-label-md text-on-surface-variant/70">
+                    无需登录 · 无需安装
+                </div>
+</div>
+</div>
+</main>
+<script>
+        // Minimal script to handle button presses for visual feedback
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('touchstart', () => {
+                btn.style.transform = 'scale(0.98)';
+            }, {passive: true});
+            btn.addEventListener('touchend', () => {
+                btn.style.transform = '';
+            }, {passive: true});
+        });
+    </script>
+</body></html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SoloShot AI - Result Evaluation</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: 300;
+            font-style: normal;
+            font-size: 24px;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        /* Custom scrollbar for inner content */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333539;
+            border-radius: 4px;
+        }
+    </style>
+<!-- Tailwind CSS with custom config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-fixed": "#001a42",
+                        "on-primary": "#591d00",
+                        "primary-fixed-dim": "#ffb597",
+                        "on-secondary-fixed": "#002109",
+                        "outline": "#a78a7f",
+                        "on-primary-container": "#511a00",
+                        "background": "#111317",
+                        "on-tertiary": "#002e6a",
+                        "on-secondary-container": "#004119",
+                        "secondary-fixed": "#6bff8f",
+                        "surface-container-high": "#282a2e",
+                        "on-primary-fixed-variant": "#7d2d00",
+                        "secondary-fixed-dim": "#4ae176",
+                        "surface-container-highest": "#333539",
+                        "on-tertiary-fixed-variant": "#004395",
+                        "on-secondary": "#003915",
+                        "primary-container": "#f06a28",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "primary-fixed": "#ffdbcd",
+                        "surface": "#111317",
+                        "surface-container-low": "#1a1c20",
+                        "surface-variant": "#333539",
+                        "on-surface-variant": "#e0c0b3",
+                        "surface-container-lowest": "#0c0e12",
+                        "secondary-container": "#00b954",
+                        "on-surface": "#e2e2e8",
+                        "inverse-surface": "#e2e2e8",
+                        "tertiary": "#adc6ff",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#2f3035",
+                        "tertiary-fixed": "#d8e2ff",
+                        "surface-dim": "#111317",
+                        "inverse-primary": "#a43d00",
+                        "on-tertiary-container": "#002960",
+                        "secondary": "#4ae176",
+                        "on-secondary-fixed-variant": "#005321",
+                        "on-background": "#e2e2e8",
+                        "outline-variant": "#584238",
+                        "surface-bright": "#37393e",
+                        "tertiary-container": "#5290ff",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#ffb597",
+                        "primary": "#ffb597",
+                        "error-container": "#93000a",
+                        "surface-container": "#1e2024",
+                        "on-primary-fixed": "#360f00"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "card-inner-padding": "16px",
+                        "grid-gutter": "16px",
+                        "stack-gap": "12px",
+                        "container-padding": "20px"
+                    },
+                    "fontFamily": {
+                        "title-lg": ["Be Vietnam Pro", "sans-serif"],
+                        "body-md": ["Be Vietnam Pro", "sans-serif"],
+                        "label-sm": ["Geist", "sans-serif"],
+                        "headline-md": ["Be Vietnam Pro", "sans-serif"],
+                        "body-lg": ["Be Vietnam Pro", "sans-serif"],
+                        "headline-lg": ["Be Vietnam Pro", "sans-serif"],
+                        "label-md": ["Geist", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "title-lg": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.02em", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex items-center justify-center p-container-padding antialiased">
+<!-- Mobile Device Simulator Container -->
+<main class="w-full max-w-[414px] h-[896px] max-h-[795px] bg-surface-container flex flex-col rounded-[2rem] shadow-2xl overflow-hidden relative border border-surface-variant">
+<!-- Status Bar Area (Visual only) -->
+<div class="h-12 w-full flex justify-between items-center px-6 text-label-sm text-on-surface-variant pt-2 bg-surface-container z-10">
+<span>9:41</span>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">signal_cellular_4_bar</span>
+<span class="material-symbols-outlined text-[16px]">wifi</span>
+<span class="material-symbols-outlined text-[16px]">battery_full</span>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto px-card-inner-padding pb-32">
+<header class="py-4">
+<h1 class="font-title-lg text-title-lg text-on-surface">成片评价 (示例)</h1>
+</header>
+<!-- 1. Thumbnails Row (Bento Style) -->
+<section class="mb-stack-gap bg-surface-container-high rounded-xl p-3 border border-outline-variant/30">
+<div class="grid grid-cols-3 gap-2">
+<!-- Ref -->
+<div class="flex flex-col gap-1 items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">参考镜头</span>
+<div class="w-full aspect-[9/16] rounded-lg overflow-hidden bg-surface-variant relative shadow-inner">
+<img class="w-full h-full object-cover" data-alt="A solo female traveler standing on a dramatic rocky cliff edge overlooking the ocean in Cinque Terre at golden hour. Warm cinematic lighting, high-end technical photography style, dark mode aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuClBqYjKw8lt879g9BTnq0lgtN-k0Ez1bZJS6yhiA09d1FHRulRrokTh1FVHWH5CCt1__mJ3TSit-8pRvD7Fxjn_y3Xqs4ujhPVrLD3Vhtx4onApIDHHx2N7OZptsXIgBwQD-aKeq0WOdvOY1_hwQmDXAU4OlYx1AnpTrgpgAQD-9JxtCpxXEZS3l_l_gKLTUZEaLB4RnU_cF9bCvkR0JM3-FFHCsL155KGuWj8IV3lYMxTPqBcT-PJfQ"/>
+</div>
+</div>
+<!-- Target (ShotPlan) -->
+<div class="flex flex-col gap-1 items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">ShotPlan 目标</span>
+<div class="w-full aspect-[9/16] rounded-lg overflow-hidden bg-surface-variant relative shadow-inner">
+<img class="w-full h-full object-cover opacity-80" data-alt="A stylized technical breakdown of a cinematic shot in Cinque Terre. The image is overlaid with faint glowing orange and teal grid lines and a central bounding box indicating where the subject should stand. Technical cinematic UI vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD9cNm1wGoaM2yXmYlHgh2JMkZZJIDP4wk9CHWkfE4eYo78sgC1-uElpDvdTiV4iXNMb8hZjcsTw4cvfstsHJ7hONLBZbvIFfkglGrXXwP7mXfYTlFGBYkxFDii54dJD2e6p1iOOQJNymKHzX11lnRSbCgrT1PMVCuVkNkf2NV60xoOI3kwZJu-ddse46Pyk1X1SjWorHouW_RLiZoNmvybE-sxVX_WdRrN6xsgoG_VtfiAlZvBNBgLbA"/>
+<!-- Overlay UI elements -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-1/2 h-1/2 border border-secondary border-dashed rounded-sm flex items-center justify-center">
+<span class="w-1 h-1 bg-secondary rounded-full"></span>
+</div>
+</div>
+</div>
+</div>
+<!-- First Take -->
+<div class="flex flex-col gap-1 items-center">
+<span class="font-label-sm text-label-sm text-on-surface-variant">第一次成片</span>
+<div class="w-full aspect-[9/16] rounded-lg overflow-hidden bg-surface-variant relative shadow-inner">
+<img class="w-full h-full object-cover" data-alt="A photo of a solo female traveler on a cliff in Cinque Terre, but she is positioned slightly too far to the left of the frame. The lighting is good but the composition feels slightly unbalanced. Dark mode technical UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8Wim1MuEWp6CmQpDPgu2IUN__Hn-erbHG2H89kGuHoJK5MK5LUS26IEYartddyiU8GKautrdfa_FxBwmg1Ck9GdD6O8VreJyVqgPZTEsJmZ3NkVAbgT8031HXRyc9rsPBH-kQvqkrVePC2TH4n4mZg_xgNKuPRuRAU9agA9W_wJlNrglq_3lj7z9UBZ9xxUgqyJcXsHtC_2TSbSoZvDJ3bFt1hc_fKrWjgMNYR2ikA3tmsxOICHW9Wg"/>
+</div>
+</div>
+</div>
+<!-- Needs Reshoot Button/Badge -->
+<div class="mt-4 flex justify-center">
+<button class="flex items-center gap-1 px-4 py-1.5 rounded-full border border-error text-error bg-error/10 hover:bg-error/20 transition-colors">
+<span class="material-symbols-outlined text-[16px]">refresh</span>
+<span class="font-label-md text-label-md">需要重拍</span>
+</button>
+</div>
+</section>
+<!-- 2. Highest Priority Issue -->
+<section class="mb-stack-gap">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant mb-2">最高优先级问题 (仅 1 条)</h2>
+<div class="bg-surface-container-highest rounded-xl p-card-inner-padding border border-outline-variant/50 flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-primary-container text-[20px]" data-weight="fill">warning</span>
+</div>
+<div class="flex-1">
+<h3 class="font-title-lg text-title-lg text-on-surface">人物太靠左</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1 line-clamp-1">主体位置偏左，破坏画面平衡与构图。</p>
+</div>
+<div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A small square cropped thumbnail showing a person standing too close to the left edge of a scenic landscape photo, highlighting a composition error in a dark technical UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBqDCv0HSIi70s2_OFKQBMIWCMpcxD62bb4cejrRHPlUIzS-7gjUooaYet2ztO4a2eFpdFsAbbexEkH7M5gheOUncWPtfb-ZrLJ7r-WeBbmkX-1BHPRib89tWhxkq_jAFDSC8BKrG4G277b5ExevyHQsmeJWPVhUmday9-RnG7n8R-ODJwyZZepHN4SOTVMeMSwzNSls9Q4I35oT1n56zng0RKFlOQeOaihecw85HQYMP1Q_cUGiYY8Ww"/>
+</div>
+</div>
+</section>
+<!-- 3. Next Step Advice (Highlight Section) -->
+<section>
+<h2 class="font-label-sm text-label-sm text-on-surface-variant mb-2">下一步唯一建议</h2>
+<div class="bg-surface-container-low rounded-xl p-card-inner-padding border border-primary-container/30 relative overflow-hidden">
+<!-- Subtle ambient glow -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 blur-3xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+<div class="flex items-start gap-3 relative z-10">
+<span class="material-symbols-outlined text-primary-container text-[24px] mt-1" data-weight="fill">directions_walk</span>
+<div>
+<h3 class="font-headline-md text-headline-md text-primary-container mb-1">向右移动一步，保持当前距离</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">保持其他条件不变，重新拍摄。</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Fixed Bottom Action Bar -->
+<div class="absolute bottom-0 left-0 w-full bg-surface-container/90 backdrop-blur-xl border-t border-outline-variant/30 px-6 py-4 pb-8 flex gap-3 z-50">
+<button class="flex-1 py-3.5 rounded-full border border-outline-variant text-on-surface font-label-md hover:bg-surface-variant transition-colors">
+                重新拍摄
+            </button>
+<button class="flex-1 py-3.5 rounded-full bg-primary-container text-on-primary-container font-label-md hover:opacity-90 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] transition-all">
+                按提议重拍
+            </button>
+</div>
+</main>
+</body></html>

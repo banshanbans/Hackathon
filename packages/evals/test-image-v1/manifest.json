@@ -1,0 +1,541 @@
+{
+  "schema_version": "1.0",
+  "dataset_version": "test-image-v1",
+  "description": "SoloShot AI 参考图理解、H5 公开预设与闭环演示的版本化素材集。",
+  "rights": {
+    "status": "public_authorized",
+    "source_label": "SoloShot 授权测试素材",
+    "creator_label": null,
+    "source_url": null
+  },
+  "cases": [
+    {
+      "case_id": "umbrella_graffiti_occlusion",
+      "reference_id": "ref_umbrella_graffiti_occlusion",
+      "title": "透明伞半身",
+      "subtitle": "遮挡与复杂文字背景",
+      "original_filename": "361784132405_.pic_hd.jpg",
+      "source_path": "assets/references/umbrella_graffiti_occlusion.jpg",
+      "sha256": "2b4fd09001693633eaf10b31aaf99fbc9cc251b3c3a1b73cec86409abce5105e",
+      "width": 1320,
+      "height": 1749,
+      "public_preset": false,
+      "difficulty": "hard",
+      "tags": ["half_body", "occlusion", "busy_text", "outdoor"],
+      "mode": "original_replication",
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_umbrella_graffiti_occlusion",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 1320,
+        "height": 1749,
+        "selected_box": {"x": 0.31, "y": 0.32, "width": 0.46, "height": 0.68},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.54,
+          "center_y": 0.66,
+          "width": 0.46,
+          "height": 0.68,
+          "head_point": {"x": 0.54, "y": 0.32},
+          "foot_line_y": 1.0,
+          "body_direction": "slightly_left",
+          "pose_template": "umbrella_half_body"
+        },
+        "composition_notes": ["透明伞遮挡头部，需要降低人物理解置信度。", "人物居中偏右，背景含大量高对比文字。"],
+        "confidence": 0.72
+      },
+      "shot_plan_fixture": {
+        "camera_height": "chest",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "将手机竖直固定在胸口高度，避开道路和排水口。",
+        "action_script": [
+          {"sequence": 1, "instruction": "伞面抬高到眉线上方，保持脸部可见。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "身体微向左转，空出的手自然落在腰侧。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["只在平整人行区域停留。", "雨天地面湿滑时取消拍摄。"],
+        "confidence": 0.7
+      },
+      "result_evaluations": []
+    },
+    {
+      "case_id": "doorway_coffee_fullbody",
+      "reference_id": "ref_doorway_coffee_fullbody",
+      "title": "门廊全身",
+      "subtitle": "人物与建筑框景",
+      "original_filename": "371784132405_.pic_hd.jpg",
+      "source_path": "assets/references/doorway_coffee_fullbody.jpg",
+      "sha256": "66954d63b8b88e20ba37971fa8e9493c38f3a0c3bd4e6a633cb92a9a1f041334",
+      "width": 1320,
+      "height": 1749,
+      "public_preset": true,
+      "difficulty": "baseline",
+      "tags": ["full_body", "standing", "architecture", "outdoor"],
+      "mode": "original_replication",
+      "public_assets": {
+        "thumbnail": "/presets/test-image-v1/doorway_coffee_fullbody-thumb.webp",
+        "detail": "/presets/test-image-v1/doorway_coffee_fullbody-detail.webp"
+      },
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_doorway_coffee_fullbody",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 1320,
+        "height": 1749,
+        "selected_box": {"x": 0.34, "y": 0.42, "width": 0.3, "height": 0.56},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.49,
+          "center_y": 0.7,
+          "width": 0.3,
+          "height": 0.56,
+          "head_point": {"x": 0.49, "y": 0.42},
+          "foot_line_y": 0.98,
+          "body_direction": "slightly_left",
+          "pose_template": "standing_coffee_full_body"
+        },
+        "composition_notes": ["人物位于门廊中央，建筑边框形成稳定的画中框。", "保留头顶门牌和脚下地面，人物约占画面高度二分之一。"],
+        "confidence": 0.94
+      },
+      "shot_plan_fixture": {
+        "camera_height": "waist",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机竖直固定在门廊正前方约三米处，镜头保持水平。",
+        "action_script": [
+          {"sequence": 1, "instruction": "站在门框中央，双脚自然错开。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "举杯靠近嘴边，视线转向画面左侧。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["不要阻挡门口通行。", "确认手机支撑稳定且不会滑落。"],
+        "confidence": 0.92
+      },
+      "result_evaluations": [
+        {
+          "round_index": 1,
+          "fixture_status": "awaiting_real_pair",
+          "issue_code": "person_too_small",
+          "top_issue": "人物在门框中的占比偏小，姿态细节不够清楚。",
+          "next_instruction": "向前一步，其他动作保持不变",
+          "needs_retake": true,
+          "goal_satisfied": false,
+          "publish_readiness": 0.58,
+          "confidence": 0.86
+        },
+        {
+          "round_index": 2,
+          "fixture_status": "awaiting_real_pair",
+          "needs_retake": false,
+          "goal_satisfied": true,
+          "publish_readiness": 0.9,
+          "confidence": 0.88
+        }
+      ]
+    },
+    {
+      "case_id": "stone_village_lean",
+      "reference_id": "ref_stone_village_lean",
+      "title": "山城倚墙",
+      "subtitle": "人物与风景层次",
+      "original_filename": "381784132406_.pic_hd.jpg",
+      "source_path": "assets/references/stone_village_lean.jpg",
+      "sha256": "95dd442583c6cf8dff743017b5902f97244adfcd49c23c69aecb9ab7b82d299e",
+      "width": 1320,
+      "height": 1744,
+      "public_preset": true,
+      "difficulty": "baseline",
+      "tags": ["three_quarter", "leaning", "travel", "outdoor"],
+      "mode": "original_replication",
+      "public_assets": {
+        "thumbnail": "/presets/test-image-v1/stone_village_lean-thumb.webp",
+        "detail": "/presets/test-image-v1/stone_village_lean-detail.webp"
+      },
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_stone_village_lean",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 1320,
+        "height": 1744,
+        "selected_box": {"x": 0.13, "y": 0.34, "width": 0.58, "height": 0.66},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.42,
+          "center_y": 0.67,
+          "width": 0.58,
+          "height": 0.66,
+          "head_point": {"x": 0.48, "y": 0.34},
+          "foot_line_y": 1.0,
+          "body_direction": "slightly_right",
+          "pose_template": "wall_lean_three_quarter"
+        },
+        "composition_notes": ["人物靠近画面中央，左臂延伸到石墙形成斜线。", "左上保留山城环境，右侧石墙形成近景层次。"],
+        "confidence": 0.91
+      },
+      "shot_plan_fixture": {
+        "camera_height": "chest",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机竖直固定在人物正前方约两米，保留左上方远景。",
+        "action_script": [
+          {"sequence": 1, "instruction": "左手轻扶矮墙，肩膀向右后方打开。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "重心落在后脚，视线看向镜头。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["不要倚靠不稳固或临空的墙体。", "确认脚下台阶平整且无湿滑。"],
+        "confidence": 0.89
+      },
+      "result_evaluations": [
+        {
+          "round_index": 1,
+          "fixture_status": "awaiting_real_pair",
+          "issue_code": "person_too_left",
+          "top_issue": "人物过于靠左，遮挡了需要保留的山城背景。",
+          "next_instruction": "向右移动一步，保持当前距离",
+          "needs_retake": true,
+          "goal_satisfied": false,
+          "publish_readiness": 0.61,
+          "confidence": 0.84
+        },
+        {
+          "round_index": 2,
+          "fixture_status": "awaiting_real_pair",
+          "needs_retake": false,
+          "goal_satisfied": true,
+          "publish_readiness": 0.89,
+          "confidence": 0.87
+        }
+      ]
+    },
+    {
+      "case_id": "cafe_doorway_backpack",
+      "reference_id": "ref_cafe_doorway_backpack",
+      "title": "咖啡馆门口",
+      "subtitle": "低分辨率全身站姿",
+      "original_filename": "391784132407_.pic_hd.jpg",
+      "source_path": "assets/references/cafe_doorway_backpack.jpg",
+      "sha256": "431f715cf67cfbf120528100cd745bbe13a763e19824c86ac73cdb6ab6cc1a48",
+      "width": 655,
+      "height": 871,
+      "public_preset": false,
+      "difficulty": "coverage",
+      "tags": ["full_body", "standing", "low_resolution", "indoor"],
+      "mode": "original_replication",
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_cafe_doorway_backpack",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 655,
+        "height": 871,
+        "selected_box": {"x": 0.25, "y": 0.31, "width": 0.45, "height": 0.67},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.475,
+          "center_y": 0.645,
+          "width": 0.45,
+          "height": 0.67,
+          "head_point": {"x": 0.48, "y": 0.31},
+          "foot_line_y": 0.98,
+          "body_direction": "front",
+          "pose_template": "doorway_crossed_legs"
+        },
+        "composition_notes": ["人物位于门口纵向通道中央，双腿交叉形成轻松站姿。", "低分辨率会限制手部和面部姿态判断。"],
+        "confidence": 0.79
+      },
+      "shot_plan_fixture": {
+        "camera_height": "waist",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机固定在通道正前方，人物与门框保持等距。",
+        "action_script": [
+          {"sequence": 1, "instruction": "双腿轻交叉，一手提包一手举杯。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "肩膀放松，视线看向镜头。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["保持门口通道畅通。", "不要把手机放在容易被碰倒的位置。"],
+        "confidence": 0.77
+      },
+      "result_evaluations": []
+    },
+    {
+      "case_id": "storefront_profile",
+      "reference_id": "ref_storefront_profile",
+      "title": "街边侧身",
+      "subtitle": "姿态与视线方向",
+      "original_filename": "401784132408_.pic_hd.jpg",
+      "source_path": "assets/references/storefront_profile.jpg",
+      "sha256": "46914363b7971edecb0c3c4bb86817cef2fd319f00566c18c4253530b49949bb",
+      "width": 1320,
+      "height": 1744,
+      "public_preset": true,
+      "difficulty": "baseline",
+      "tags": ["closeup", "profile", "storefront", "outdoor"],
+      "mode": "original_replication",
+      "public_assets": {
+        "thumbnail": "/presets/test-image-v1/storefront_profile-thumb.webp",
+        "detail": "/presets/test-image-v1/storefront_profile-detail.webp"
+      },
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_storefront_profile",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 1320,
+        "height": 1744,
+        "selected_box": {"x": 0.14, "y": 0.18, "width": 0.59, "height": 0.82},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.435,
+          "center_y": 0.59,
+          "width": 0.59,
+          "height": 0.82,
+          "head_point": {"x": 0.47, "y": 0.18},
+          "foot_line_y": 1.0,
+          "body_direction": "right",
+          "pose_template": "profile_bottle_closeup"
+        },
+        "composition_notes": ["人物侧脸朝右，肩部和水瓶形成前景主体。", "商店文字背景密集，应优先保持人物轮廓清晰。"],
+        "confidence": 0.9
+      },
+      "shot_plan_fixture": {
+        "camera_height": "chest",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机竖直固定在人物左前方约一米半，镜头与肩部同高。",
+        "action_script": [
+          {"sequence": 1, "instruction": "身体和下巴转向画面右侧。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "水瓶保持在胸前，视线略微抬高。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["只在人行区域拍摄并远离行车道。", "不要使用商店出入口作为手机支撑点。"],
+        "confidence": 0.88
+      },
+      "result_evaluations": [
+        {
+          "round_index": 1,
+          "fixture_status": "awaiting_real_pair",
+          "issue_code": "pose_direction_wrong",
+          "top_issue": "身体朝向与参考侧身方向相反，侧脸轮廓没有形成。",
+          "next_instruction": "身体转向右侧，水瓶位置保持不变",
+          "needs_retake": true,
+          "goal_satisfied": false,
+          "publish_readiness": 0.55,
+          "confidence": 0.85
+        },
+        {
+          "round_index": 2,
+          "fixture_status": "awaiting_real_pair",
+          "needs_retake": false,
+          "goal_satisfied": true,
+          "publish_readiness": 0.91,
+          "confidence": 0.89
+        }
+      ]
+    },
+    {
+      "case_id": "street_seated_second_person",
+      "reference_id": "ref_street_seated_second_person",
+      "title": "街边红帽坐姿",
+      "subtitle": "多人干扰场景",
+      "original_filename": "411784132409_.pic_hd.jpg",
+      "source_path": "assets/references/street_seated_second_person.jpg",
+      "sha256": "74fbb1d586573a0b6e538dc802f37ec939c6cca6e2b4f36b72d85aa8938e551a",
+      "width": 654,
+      "height": 868,
+      "public_preset": false,
+      "difficulty": "hard",
+      "tags": ["seated", "multiple_people", "foreground_subject", "outdoor"],
+      "mode": "original_replication",
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_street_seated_second_person",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 654,
+        "height": 868,
+        "selected_box": {"x": 0.06, "y": 0.08, "width": 0.66, "height": 0.89},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 2,
+        "target_layout": {
+          "center_x": 0.39,
+          "center_y": 0.525,
+          "width": 0.66,
+          "height": 0.89,
+          "head_point": {"x": 0.43, "y": 0.08},
+          "foot_line_y": 0.97,
+          "body_direction": "front",
+          "pose_template": "seated_forward_lean"
+        },
+        "composition_notes": ["前景红帽人物是圈选主体，背景右侧仍检测到第二人。", "主体坐姿前倾，手臂和膝盖构成稳定三角形。"],
+        "confidence": 0.76
+      },
+      "shot_plan_fixture": {
+        "camera_height": "waist",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机固定在座位正前方，先等待背景行人离开。",
+        "action_script": [
+          {"sequence": 1, "instruction": "身体前倾，双手自然交叠在膝前。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "保持下巴水平，直视镜头。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["不要占用公共通道。", "出现无法避开的路人时暂停拍摄。"],
+        "confidence": 0.74
+      },
+      "result_evaluations": []
+    },
+    {
+      "case_id": "cafe_seated_drink",
+      "reference_id": "ref_cafe_seated_drink",
+      "title": "咖啡馆坐姿",
+      "subtitle": "坐姿与人物留白",
+      "original_filename": "421784132409_.pic_hd.jpg",
+      "source_path": "assets/references/cafe_seated_drink.jpg",
+      "sha256": "467a63dc50b89b342e48b79d41d2676ee4768e6ec42a5af542f78bad6c0eae7a",
+      "width": 657,
+      "height": 875,
+      "public_preset": true,
+      "difficulty": "baseline",
+      "tags": ["full_body", "seated", "drink", "indoor"],
+      "mode": "original_replication",
+      "public_assets": {
+        "thumbnail": "/presets/test-image-v1/cafe_seated_drink-thumb.webp",
+        "detail": "/presets/test-image-v1/cafe_seated_drink-detail.webp"
+      },
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_cafe_seated_drink",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 657,
+        "height": 875,
+        "selected_box": {"x": 0.27, "y": 0.21, "width": 0.52, "height": 0.76},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.53,
+          "center_y": 0.59,
+          "width": 0.52,
+          "height": 0.76,
+          "head_point": {"x": 0.52, "y": 0.21},
+          "foot_line_y": 0.97,
+          "body_direction": "front",
+          "pose_template": "seated_drink"
+        },
+        "composition_notes": ["人物坐在画面中央，举杯手臂形成向上的动作线。", "脚部完整入镜，顶部留白约五分之一。"],
+        "confidence": 0.91
+      },
+      "shot_plan_fixture": {
+        "camera_height": "chest",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机竖直固定在座位正前方约两米半，完整保留鞋子。",
+        "action_script": [
+          {"sequence": 1, "instruction": "坐在长凳中央，双脚在身前轻轻交叠。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "右手举杯到太阳穴附近，肩膀保持放松。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["确认饮料杯盖已盖紧。", "手机不要阻挡店内通道。"],
+        "confidence": 0.89
+      },
+      "result_evaluations": [
+        {
+          "round_index": 1,
+          "fixture_status": "awaiting_real_pair",
+          "issue_code": "feet_cut",
+          "top_issue": "脚部没有完整入镜，坐姿比例被截断。",
+          "next_instruction": "手机后退半步，完整保留双脚",
+          "needs_retake": true,
+          "goal_satisfied": false,
+          "publish_readiness": 0.57,
+          "confidence": 0.87
+        },
+        {
+          "round_index": 2,
+          "fixture_status": "awaiting_real_pair",
+          "needs_retake": false,
+          "goal_satisfied": true,
+          "publish_readiness": 0.92,
+          "confidence": 0.9
+        }
+      ]
+    },
+    {
+      "case_id": "restaurant_foreground_receipt",
+      "reference_id": "ref_restaurant_foreground_receipt",
+      "title": "餐厅前景互动",
+      "subtitle": "票据遮挡与透视",
+      "original_filename": "431784132410_.pic_hd.jpg",
+      "source_path": "assets/references/restaurant_foreground_receipt.jpg",
+      "sha256": "fa41fcf6ee87673d1a667b6f5f252bfce1d5a36bca717d58d4c9c78d0fc492c0",
+      "width": 1320,
+      "height": 1520,
+      "public_preset": false,
+      "difficulty": "hard",
+      "tags": ["seated", "foreground_occlusion", "wide_angle", "indoor"],
+      "mode": "original_replication",
+      "reference_asset": {
+        "schema_version": "1.0",
+        "reference_id": "ref_restaurant_foreground_receipt",
+        "media_type": "image",
+        "source_type": "preset",
+        "width": 1320,
+        "height": 1520,
+        "selected_box": {"x": 0.18, "y": 0.26, "width": 0.48, "height": 0.65},
+        "attribution": {"source_label": "SoloShot 授权测试素材", "creator_label": null, "source_url": null}
+      },
+      "expected_reference": {
+        "person_count": 1,
+        "target_layout": {
+          "center_x": 0.42,
+          "center_y": 0.585,
+          "width": 0.48,
+          "height": 0.65,
+          "head_point": {"x": 0.43, "y": 0.26},
+          "foot_line_y": 0.91,
+          "body_direction": "left",
+          "pose_template": "foreground_receipt_reach"
+        },
+        "composition_notes": ["人物位于中景左侧，前景票据占据画面右半侧。", "广角透视和前景遮挡降低了完整人体框的确定性。"],
+        "confidence": 0.7
+      },
+      "shot_plan_fixture": {
+        "camera_height": "chest",
+        "camera_angle": "slight_down",
+        "lens": "0.5x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "手机由同伴或稳定夹具固定在桌面边缘上方，镜头略微向下。",
+        "action_script": [
+          {"sequence": 1, "instruction": "将票据靠近镜头右侧，但不要完全遮住人物。", "duration_seconds": 2},
+          {"sequence": 2, "instruction": "人物侧身进食，手臂向前形成互动。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["不要把手机悬空放在餐具或热食上方。", "拍摄前取得同行者和店内人员同意。"],
+        "confidence": 0.68
+      },
+      "result_evaluations": []
+    }
+  ]
+}

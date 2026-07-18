@@ -1,0 +1,1 @@
+[{"case_id":"honest_queued_job","fixture":"packages/contracts/fixtures/w1/closed-loop.json","expects":{"status":"queued","output_asset_id":null,"publish_mode":"preview_only"}}]

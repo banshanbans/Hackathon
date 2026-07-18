@@ -1,6 +1,6 @@
 # SoloShot AI
 
-SoloShot AI is a contract-first monorepo for an end-to-end solo travel shooting coach. W0 establishes the shared contracts, local infrastructure, and buildable API, H5, and iOS skeletons. Agent and Skill behavior starts in W1.
+SoloShot AI is a contract-first monorepo for an end-to-end solo travel shooting coach. W0 establishes the shared contracts, W1 adds the Agent/Skill API, W2 adds the H5 capture/evaluation path, and W3 adds secure H5-to-iPhone ShotPlan handoff with offline recovery.
 
 ## Prerequisites
 
@@ -17,13 +17,14 @@ make bootstrap
 make generate
 ```
 
-The bootstrap command creates `.venv`, installs the API development dependencies, and installs the npm workspaces. No model credentials are required for W0.
+The bootstrap command creates `.venv`, installs the API development dependencies, and installs the npm workspaces. The preset Fixture flow does not require model credentials.
 
 ## Run locally
 
 ```bash
 cp .env.example .env
 make dev-infra
+make migrate
 make dev-api
 make dev-h5
 ```
@@ -32,18 +33,24 @@ make dev-h5
 - H5: `http://127.0.0.1:5173`
 - MinIO console: `http://127.0.0.1:9001`
 
-## Validate W0
+## Validate W2/W3
 
 ```bash
 make generate
 make lint
 make typecheck
 make test
+make test-api-integration
+make evals
+make e2e-h5
 make test-ios
+make e2e-handoff
 ```
 
 Generated contract code lives below a `generated/` directory and must not be edited by hand.
 
-## Honest W0 scope
+## Honest current scope
 
-Only `/health` is implemented by the API in W0. The `/api/v1` operations are defined contract-first for later work packages; they are not exposed as working endpoints yet. The H5 and iOS apps visibly identify themselves as W0 foundations and do not present fixture or mock output as live AI.
+W2 provides an explicitly labeled preset Fixture path plus Volcengine Ark Live paths for custom media and scene adaptation. W3 adds a ten-minute QR/code handoff, atomic single-device claim, Keychain capability storage, app-owned 24-hour task cache, and offline task summary. Native camera/Vision alignment remains W4 work. W3 is not closed until an HTTPS test deployment and the documented real-iPhone run both pass; local/CI results alone are labeled accordingly.
+
+The Chinese runbook and current acceptance status live in `docs/runbooks/local-development.md`, `docs/W2_H5_STATUS.md`, and `docs/W3_HANDOFF_STATUS.md`.

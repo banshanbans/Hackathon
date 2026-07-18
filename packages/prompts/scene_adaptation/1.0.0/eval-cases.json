@@ -1,0 +1,1 @@
+[{"case_id":"safe_architecture_reframe","expects":{"safety_status":"safe","person_count":1}},{"case_id":"roadside_block","expects":{"safety_status":"block","warning_required":true}},{"case_id":"unstable_support_warn","expects":{"safety_status":"warn","warning_required":true}}]

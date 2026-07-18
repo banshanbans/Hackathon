@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SoloShot AI - ShotPlan</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;700&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-tertiary-fixed": "#001a42",
+                      "on-primary": "#591d00",
+                      "primary-fixed-dim": "#ffb597",
+                      "on-secondary-fixed": "#002109",
+                      "outline": "#a78a7f",
+                      "on-primary-container": "#511a00",
+                      "background": "#111317",
+                      "on-tertiary": "#002e6a",
+                      "on-secondary-container": "#004119",
+                      "secondary-fixed": "#6bff8f",
+                      "surface-container-high": "#282a2e",
+                      "on-primary-fixed-variant": "#7d2d00",
+                      "secondary-fixed-dim": "#4ae176",
+                      "surface-container-highest": "#333539",
+                      "on-tertiary-fixed-variant": "#004395",
+                      "on-secondary": "#003915",
+                      "primary-container": "#f06a28",
+                      "tertiary-fixed-dim": "#adc6ff",
+                      "primary-fixed": "#ffdbcd",
+                      "surface": "#111317",
+                      "surface-container-low": "#1a1c20",
+                      "surface-variant": "#333539",
+                      "on-surface-variant": "#e0c0b3",
+                      "surface-container-lowest": "#0c0e12",
+                      "secondary-container": "#00b954",
+                      "on-surface": "#e2e2e8",
+                      "inverse-surface": "#e2e2e8",
+                      "tertiary": "#adc6ff",
+                      "on-error": "#690005",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#2f3035",
+                      "tertiary-fixed": "#d8e2ff",
+                      "surface-dim": "#111317",
+                      "inverse-primary": "#a43d00",
+                      "on-tertiary-container": "#002960",
+                      "secondary": "#4ae176",
+                      "on-secondary-fixed-variant": "#005321",
+                      "on-background": "#e2e2e8",
+                      "outline-variant": "#584238",
+                      "surface-bright": "#37393e",
+                      "tertiary-container": "#5290ff",
+                      "error": "#ffb4ab",
+                      "surface-tint": "#ffb597",
+                      "primary": "#ffb597",
+                      "error-container": "#93000a",
+                      "surface-container": "#1e2024",
+                      "on-primary-fixed": "#360f00"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "card-inner-padding": "16px",
+                      "grid-gutter": "16px",
+                      "stack-gap": "12px",
+                      "container-padding": "20px"
+              },
+              "fontFamily": {
+                      "title-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-md": [
+                              "Be Vietnam Pro"
+                      ],
+                      "label-sm": [
+                              "Geist"
+                      ],
+                      "headline-md": [
+                              "Be Vietnam Pro"
+                      ],
+                      "body-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "headline-lg": [
+                              "Be Vietnam Pro"
+                      ],
+                      "label-md": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "title-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "10px",
+                              {
+                                      "lineHeight": "12px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(30, 33, 40, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid #2D3139;
+        }
+        .inner-glow {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<!-- Top App Bar (Semantic Match: TopAppBar from JSON, adapted for sub-page) -->
+<header class="bg-surface/70 backdrop-blur-xl flex justify-between items-center w-full px-container h-14 sticky top-0 z-50">
+<div class="flex items-center gap-2">
+<button aria-label="Back" class="p-2 -ml-2 text-on-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back_ios_new</span>
+</button>
+<h1 class="text-title-lg font-title-lg text-on-surface">ShotPlan 拍摄任务</h1>
+</div>
+<div class="flex items-center gap-3">
+<span class="px-2 py-1 bg-surface-container rounded text-label-sm font-label-sm text-on-surface-variant border border-outline-variant">示例</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow p-container flex flex-col gap-grid-gutter max-w-2xl mx-auto w-full pb-32">
+<!-- Thumbnails Section (Bento Style) -->
+<div class="grid grid-cols-2 gap-stack-gap">
+<!-- Reference Shot -->
+<div class="flex flex-col gap-2">
+<h2 class="text-label-md font-label-md text-on-surface-variant">参考镜头</h2>
+<div class="rounded-xl overflow-hidden aspect-[4/3] bg-surface-container relative glass-panel">
+<img class="w-full h-full object-cover" data-alt="A cinematic solo traveler reference shot. A female traveler stands on a high cliff overlooking a picturesque Italian coastal village at sunset. The lighting is warm golden hour, creating deep shadows and glowing highlights. The color palette is rich with terracotta, deep blue sea, and warm orange sky. Professional cinematic framing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAl63XnFk1gGAcpTd0QCnjSZRoeoB68S18E84rQusmmt4MbNEe4QjSW7jCus7s0PvZqu_-ciGCt0EVxGCtomErxtCwW4bIQmIdkZpMcn7eg0mfjMt9fQXYCOIQAVs7bravf7_H6Uv_uc-kc1h26Tw8-fGnGm6NAS9ZlALV5yWj3IFqWYSvHr1LSRjRsNXsC_C4u-NSIbM4tiVgTdfOf7Z_HfQV-x77w4CA4d-0vqmizZjs2RSHtGj2rSQ"/>
+</div>
+</div>
+<!-- Composition Guide -->
+<div class="flex flex-col gap-2">
+<h2 class="text-label-md font-label-md text-on-surface-variant">构图示意</h2>
+<div class="rounded-xl overflow-hidden aspect-[4/3] bg-surface-container relative glass-panel p-2 flex flex-col justify-between">
+<img class="w-full h-full object-cover rounded-lg" data-alt="A technical composition guide overlay. Dark interface showing a wireframe or silhouetted figure within rule-of-thirds grid lines. Neon green and blue indicator lines show head and foot placement targets. The background is a muted, blurred version of a coastal village. Technical cinematic aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8Wcmk8uu6Tbg95gi2mvROdrIpZy7-ZAUMOnmWIeE8xXy8KQeIBO5bHJ7GcPwNMZJxCn81GinGqD3bqCd_eFbZMou56L4u7l3ZJ-TmUbnnI_0UQNhzyNS1zN1t3T2bf44U4Q-JQ0bL3J_274avIWMWEKORrEwpmF1dsY2xmtnu9nx6rw_eGAHTcy-YciA6sD_X596pW8w0hYNygtNLZtFS2iqbygBs8618kxzELltRlwfOEznCSUnMyw"/>
+<!-- Minimal overlay for composition points -->
+<div class="absolute bottom-4 left-0 w-full flex justify-center gap-4 text-label-sm font-label-sm">
+<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-secondary"></div><span class="text-on-surface">头部点</span></div>
+<div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-tertiary"></div><span class="text-on-surface">脚部线</span></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Shooting Details List (Card) -->
+<section class="glass-panel rounded-xl p-card-inner-padding flex flex-col gap-stack-gap">
+<h3 class="text-title-lg font-title-lg text-on-surface flex items-center gap-2 border-b border-outline-variant pb-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+                拍摄要点
+            </h3>
+<ul class="flex flex-col gap-3">
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 手机固定方式
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">靠墙或栏杆固定，或使用三脚架/支架</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 机位高度
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">手机接近膝盖高度 (≈30-40cm)</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 镜头角度
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">轻微向上，约 10-15° 仰角</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 推荐镜头
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">1x 广角 (主摄)</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 拍摄方式
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">竖拍，跟随人物移动</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 人物位置
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">画面右侧三分之一处</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 动作脚本
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">边走边回头看向镜头 (轻笑)</span>
+</li>
+<li class="flex items-start gap-4">
+<span class="text-label-md font-label-md text-on-surface-variant w-24 shrink-0 mt-0.5 flex items-center gap-1">
+<span class="w-1 h-1 rounded-full bg-primary-container"></span> 安全注意事项
+                    </span>
+<span class="text-body-md font-body-md text-on-surface">注意脚下台阶与栏杆，防滑防跌</span>
+</li>
+</ul>
+</section>
+<!-- Priority Instructions -->
+<section class="flex flex-col gap-stack-gap mt-2">
+<h3 class="text-label-md font-label-md text-on-surface-variant flex items-center gap-2">
+                三条优先指令
+            </h3>
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-3 bg-surface-container rounded-lg p-3 border border-outline-variant/50">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold shrink-0">1</div>
+<span class="text-body-md font-body-md text-on-surface">手机放低一点</span>
+</div>
+<div class="flex items-center gap-3 bg-surface-container rounded-lg p-3 border border-outline-variant/50">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold shrink-0">2</div>
+<span class="text-body-md font-body-md text-on-surface">人物站在画面右侧</span>
+</div>
+<div class="flex items-center gap-3 bg-surface-container rounded-lg p-3 border border-outline-variant/50">
+<div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold shrink-0">3</div>
+<span class="text-body-md font-body-md text-on-surface">边走边回头</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Action Bar (Contextual FAB replacement/Fixed Footer) -->
+<div class="fixed bottom-0 left-0 w-full p-container bg-surface/90 backdrop-blur-2xl border-t border-outline-variant flex gap-3 pb-safe z-50 justify-center">
+<button class="flex-1 max-w-[160px] py-3 px-4 rounded-full border border-outline-variant text-on-surface font-label-md text-label-md flex justify-center items-center gap-2 bg-surface hover:bg-surface-container transition-colors">
+            在 H5 轻量体验
+        </button>
+<button class="flex-1 max-w-[160px] py-3 px-4 rounded-full bg-primary-container text-white font-label-md text-label-md flex justify-center items-center gap-2 inner-glow hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">phone_iphone</span>
+            交给 iPhone 实时随拍
+        </button>
+</div>
+</body></html>

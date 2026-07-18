@@ -7,16 +7,46 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1469901B5D79BB15D4EC37D0 /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2037D4D864121D529BFF3430 /* KeychainStore.swift */; };
+		37395BC003C12787DE4ABEBF /* ImportedTaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DCF91B145D175300ECF06D0 /* ImportedTaskStore.swift */; };
+		5B92584CD698185B1F9A62F9 /* DeepLinkParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D1F0E9EA6C212B44325B037 /* DeepLinkParser.swift */; };
+		8D668449329E107C107BC867 /* AppFlowModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4031716E245028AF3D3D6FBC /* AppFlowModel.swift */; };
 		9B2C668FCA4EB1146B0A149F /* SoloShotApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C715B35B3B1453073DE1626D /* SoloShotApp.swift */; };
+		A1DA49D4B2560C8BAAE8D754 /* DeepLinkParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 626215CE97C6E4C7A64924EE /* DeepLinkParserTests.swift */; };
+		B06733C3C986208901BDF154 /* HandoffAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AA7EED7B5B9A0869B4F8CF2 /* HandoffAPITests.swift */; };
 		CEC06E2A4DFCEDEC2A5B34DB /* SoloShotContracts in Frameworks */ = {isa = PBXBuildFile; productRef = 44D854FC49E53A6D9C494AC7 /* SoloShotContracts */; };
+		D98676E00D04ADE8CC34C401 /* ImportedTask.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC6DFE273286A73B080D4360 /* ImportedTask.swift */; };
+		DF6EAE4D38AEE59AD9E03153 /* HandoffAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = C21B9C30FAA6FC92BCE2D33C /* HandoffAPI.swift */; };
+		FAF5225AEC569A0DDF660A1A /* ImportedTaskStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF9C3CB77E356827A55B77DF /* ImportedTaskStoreTests.swift */; };
 		FD61C16166C47788C4BDC4FC /* FoundationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E330B4862F948EB14A52A863 /* FoundationView.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		4BA39266D4A2F74FE68E15B3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 71F030741ACB5570682B5EF3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 0296121D12F4A3CF58322630;
+			remoteInfo = SoloShot;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		2037D4D864121D529BFF3430 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
+		37E853AE9A472558A89402B9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4031716E245028AF3D3D6FBC /* AppFlowModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppFlowModel.swift; sourceTree = "<group>"; };
 		44855860173C6B8574D27740 /* swift */ = {isa = PBXFileReference; lastKnownFileType = folder; name = swift; path = ../../packages/contracts/generated/swift; sourceTree = SOURCE_ROOT; };
+		5AA7EED7B5B9A0869B4F8CF2 /* HandoffAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffAPITests.swift; sourceTree = "<group>"; };
+		626215CE97C6E4C7A64924EE /* DeepLinkParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkParserTests.swift; sourceTree = "<group>"; };
+		6D1F0E9EA6C212B44325B037 /* DeepLinkParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkParser.swift; sourceTree = "<group>"; };
 		8539AE91C78E913D47254ED3 /* SoloShot.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SoloShot.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		88BF20437D64D18E48DCED65 /* SoloShotTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SoloShotTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DCF91B145D175300ECF06D0 /* ImportedTaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedTaskStore.swift; sourceTree = "<group>"; };
+		C21B9C30FAA6FC92BCE2D33C /* HandoffAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HandoffAPI.swift; sourceTree = "<group>"; };
 		C715B35B3B1453073DE1626D /* SoloShotApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoloShotApp.swift; sourceTree = "<group>"; };
+		DC6DFE273286A73B080D4360 /* ImportedTask.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedTask.swift; sourceTree = "<group>"; };
 		E330B4862F948EB14A52A863 /* FoundationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoundationView.swift; sourceTree = "<group>"; };
+		FF9C3CB77E356827A55B77DF /* ImportedTaskStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportedTaskStoreTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -31,10 +61,19 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		03703F40FE248C68901B97BD /* Domain */ = {
+			isa = PBXGroup;
+			children = (
+				DC6DFE273286A73B080D4360 /* ImportedTask.swift */,
+			);
+			path = Domain;
+			sourceTree = "<group>";
+		};
 		0FBC4106CD3DAB4214244556 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				8539AE91C78E913D47254ED3 /* SoloShot.app */,
+				88BF20437D64D18E48DCED65 /* SoloShotTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -52,15 +91,30 @@
 			children = (
 				16C12570E39E24B5CC6B8EDC /* Packages */,
 				9E38E5D70B4E8D2BA1B06A99 /* SoloShot */,
+				49E31ECCAD389892EC11EF4F /* SoloShotTests */,
 				0FBC4106CD3DAB4214244556 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		49E31ECCAD389892EC11EF4F /* SoloShotTests */ = {
+			isa = PBXGroup;
+			children = (
+				626215CE97C6E4C7A64924EE /* DeepLinkParserTests.swift */,
+				5AA7EED7B5B9A0869B4F8CF2 /* HandoffAPITests.swift */,
+				FF9C3CB77E356827A55B77DF /* ImportedTaskStoreTests.swift */,
+			);
+			path = SoloShotTests;
 			sourceTree = "<group>";
 		};
 		9E38E5D70B4E8D2BA1B06A99 /* SoloShot */ = {
 			isa = PBXGroup;
 			children = (
+				37E853AE9A472558A89402B9 /* Info.plist */,
 				BDBACE33BA6AD1593550FCE0 /* App */,
+				03703F40FE248C68901B97BD /* Domain */,
 				9EE8B441D95E0C31DF679F73 /* Features */,
+				F547193CC1B31B1C06D79924 /* Handoff */,
+				EAC1116D006CFB84762FD913 /* Persistence */,
 			);
 			path = SoloShot;
 			sourceTree = "<group>";
@@ -76,9 +130,28 @@
 		BDBACE33BA6AD1593550FCE0 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				4031716E245028AF3D3D6FBC /* AppFlowModel.swift */,
 				C715B35B3B1453073DE1626D /* SoloShotApp.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		EAC1116D006CFB84762FD913 /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				8DCF91B145D175300ECF06D0 /* ImportedTaskStore.swift */,
+				2037D4D864121D529BFF3430 /* KeychainStore.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		F547193CC1B31B1C06D79924 /* Handoff */ = {
+			isa = PBXGroup;
+			children = (
+				6D1F0E9EA6C212B44325B037 /* DeepLinkParser.swift */,
+				C21B9C30FAA6FC92BCE2D33C /* HandoffAPI.swift */,
+			);
+			path = Handoff;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -102,6 +175,24 @@
 			productName = SoloShot;
 			productReference = 8539AE91C78E913D47254ED3 /* SoloShot.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DA1A8FFD58B4C6DB7859E892 /* SoloShotTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2DFAEC501E24D462F57D090C /* Build configuration list for PBXNativeTarget "SoloShotTests" */;
+			buildPhases = (
+				2148FE98130E2E05DB4A0C17 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				20D6872FFF7F9A9676E79B2E /* PBXTargetDependency */,
+			);
+			name = SoloShotTests;
+			packageProductDependencies = (
+			);
+			productName = SoloShotTests;
+			productReference = 88BF20437D64D18E48DCED65 /* SoloShotTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -132,21 +223,46 @@
 			projectRoot = "";
 			targets = (
 				0296121D12F4A3CF58322630 /* SoloShot */,
+				DA1A8FFD58B4C6DB7859E892 /* SoloShotTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2148FE98130E2E05DB4A0C17 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1DA49D4B2560C8BAAE8D754 /* DeepLinkParserTests.swift in Sources */,
+				B06733C3C986208901BDF154 /* HandoffAPITests.swift in Sources */,
+				FAF5225AEC569A0DDF660A1A /* ImportedTaskStoreTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		BE6685B4CE27143BA3654A81 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8D668449329E107C107BC867 /* AppFlowModel.swift in Sources */,
+				5B92584CD698185B1F9A62F9 /* DeepLinkParser.swift in Sources */,
 				FD61C16166C47788C4BDC4FC /* FoundationView.swift in Sources */,
+				DF6EAE4D38AEE59AD9E03153 /* HandoffAPI.swift in Sources */,
+				D98676E00D04ADE8CC34C401 /* ImportedTask.swift in Sources */,
+				37395BC003C12787DE4ABEBF /* ImportedTaskStore.swift in Sources */,
+				1469901B5D79BB15D4EC37D0 /* KeychainStore.swift in Sources */,
 				9B2C668FCA4EB1146B0A149F /* SoloShotApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		20D6872FFF7F9A9676E79B2E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 0296121D12F4A3CF58322630 /* SoloShot */;
+			targetProxy = 4BA39266D4A2F74FE68E15B3 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		0FC0FB41A36E6061516CAC35 /* Debug */ = {
@@ -154,10 +270,8 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = SoloShot;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SoloShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -165,6 +279,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
 				PRODUCT_NAME = SoloShot;
 				SDKROOT = iphoneos;
+				SOLOSHOT_API_BASE_URL = "http://127.0.0.1:8000";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -290,15 +405,47 @@
 			};
 			name = Release;
 		};
+		8FF873B7247241064A5BB6F0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SoloShot.app/SoloShot";
+			};
+			name = Debug;
+		};
+		F26317D740A94B507612870E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SoloShot.app/SoloShot";
+			};
+			name = Release;
+		};
 		FE858B89BD6AB5D916957F54 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = SoloShot;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SoloShot/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -306,6 +453,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
 				PRODUCT_NAME = SoloShot;
 				SDKROOT = iphoneos;
+				SOLOSHOT_API_BASE_URL = "http://127.0.0.1:8000";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;
@@ -313,6 +461,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2DFAEC501E24D462F57D090C /* Build configuration list for PBXNativeTarget "SoloShotTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FF873B7247241064A5BB6F0 /* Debug */,
+				F26317D740A94B507612870E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		DDF3278F72EFB7428DCA0CDD /* Build configuration list for PBXNativeTarget "SoloShot" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

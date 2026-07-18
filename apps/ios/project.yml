@@ -19,15 +19,42 @@ targets:
       - path: SoloShot
     dependencies:
       - package: SoloShotContracts
+    resources:
+      - path: ../h5/public/presets/test-image-v1
+        includes:
+          - "*-thumb.webp"
+    info:
+      path: SoloShot/Info.plist
+      properties:
+        CFBundleDisplayName: SoloShot
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        CFBundleURLTypes:
+          - CFBundleURLName: ai.soloshot.handoff
+            CFBundleURLSchemes:
+              - soloshot
+        SoloShotAPIBaseURL: "$(SOLOSHOT_API_BASE_URL)"
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.soloshot.app
         PRODUCT_NAME: SoloShot
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_KEY_CFBundleDisplayName: SoloShot
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        GENERATE_INFOPLIST_FILE: NO
+        SOLOSHOT_API_BASE_URL: http://127.0.0.1:8000
         TARGETED_DEVICE_FAMILY: "1"
+  SoloShotTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: SoloShotTests
+    dependencies:
+      - target: SoloShot
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: ai.soloshot.tests
 schemes:
   SoloShot:
     build:
@@ -37,4 +64,6 @@ schemes:
       config: Debug
     archive:
       config: Release
-
+    test:
+      targets:
+        - SoloShotTests

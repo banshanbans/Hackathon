@@ -13,7 +13,7 @@ public struct CreateCaptureRequest: Sendable, Codable, Hashable {
         case _10 = "1.0"
     }
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
-    public static let roundIndexRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: 10, exclusiveMaximum: false, multipleOf: nil)
+    public static let roundIndexRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: 2, exclusiveMaximum: false, multipleOf: nil)
     public static let mediaAssetIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^media_[A-Za-z0-9_-]+$/")
     public var schemaVersion: SchemaVersion
     public var sessionId: String

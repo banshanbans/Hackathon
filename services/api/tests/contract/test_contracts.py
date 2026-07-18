@@ -83,12 +83,15 @@ def test_openapi_document_is_valid_and_all_external_files_exist() -> None:
             assert target.is_file(), f"{source_path} references missing file {target}"
 
 
-def test_openapi_contains_the_accepted_w0_contract_surface() -> None:
+def test_openapi_contains_the_accepted_w3_contract_surface() -> None:
     paths = set(load_openapi()["paths"])
     expected_paths = {
         "/health",
         "/api/v1/sessions",
         "/api/v1/sessions/{session_id}",
+        "/api/v1/media/uploads",
+        "/api/v1/media/uploads/{media_asset_id}/complete",
+        "/api/v1/media/{media_asset_id}/access",
         "/api/v1/references/analyze",
         "/api/v1/references/adapt",
         "/api/v1/references/validate-box",
@@ -182,3 +185,67 @@ def test_fixture_contains_no_credentials_or_signed_urls() -> None:
     forbidden_fragments = ("api_key", "access_token", "signed_url", "secret_key")
 
     assert not any(fragment in serialized for fragment in forbidden_fragments)
+
+
+def test_handoff_public_contract_contains_no_session_or_capability() -> None:
+    schema = load_json(SCHEMA_ROOT / "handoff.schema.json")["$defs"]["HandoffTask"]
+    properties = set(schema["properties"])
+    assert "session_id" not in properties
+    assert "management_token" not in properties
+    assert "claim_token" not in properties
+    assert schema["properties"]["code"]["pattern"] == (
+        "^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$"
+    )
+
+    document = load_openapi()
+    assert document["components"]["schemas"]["HandoffClaimResult"]["properties"][
+        "session"
+    ] == {"$ref": "#/components/schemas/SoloShotSession"}
+    revoke_parameters = document["paths"]["/api/v1/handoffs/{code}"]["delete"][
+        "parameters"
+    ]
+    assert {item["$ref"] for item in revoke_parameters} >= {
+        "#/components/parameters/HandoffManagementToken"
+    }
+
+
+def test_w1_session_contract_allows_created_state_without_reference() -> None:
+    fixture = copy.deepcopy(load_json(SESSION_FIXTURE_PATH))
+    fixture["state"] = "created"
+    fixture["reference_asset"] = None
+    fixture["selected_skills"] = []
+    fixture["shot_plan"] = None
+
+    session_validator().validate(fixture)
+
+
+def test_w1_skill_invocation_returns_output_and_execution_mode() -> None:
+    document = load_openapi()
+    response = document["components"]["responses"]["SkillRunAccepted"]
+
+    assert response["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/SkillInvocationResponse"
+    }
+    assert response["headers"]["X-SoloShot-Execution-Mode"] == {
+        "$ref": "#/components/headers/ExecutionMode"
+    }
+
+
+def test_selected_skill_contract_preserves_order() -> None:
+    session_schema = load_json(SCHEMA_ROOT / "session.schema.json")
+    agent_schema = load_json(SCHEMA_ROOT / "agent-run.schema.json")
+
+    assert "uniqueItems" not in session_schema["properties"]["selected_skills"]
+    assert "uniqueItems" not in agent_schema["properties"]["selected_skills"]
+
+    swift_session = (
+        CONTRACT_ROOT
+        / "generated/swift/OpenAPIGenerated/Sources/SoloShotContracts/Models/SoloShotSession.swift"
+    ).read_text(encoding="utf-8")
+    python_session = (
+        CONTRACT_ROOT / "generated/python/soloshot_contracts/models/solo_shot_session.py"
+    ).read_text(encoding="utf-8")
+    assert "selectedSkills: [SoloShotSessionSelectedSkillsInner]" in swift_session
+    assert "referenceAsset: SoloShotSessionReferenceAsset?" in swift_session
+    assert "selected_skills: List[SoloShotSessionSelectedSkillsInner]" in python_session
+    assert "reference_asset: Optional[SoloShotSessionReferenceAsset]" in python_session

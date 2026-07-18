@@ -40,10 +40,20 @@ jobs:
         run: make typecheck
       - name: API and contract tests
         run: PYTHONPATH=services/api .venv/bin/pytest services/api/tests
+      - name: Start W3 PostgreSQL and Redis
+        run: docker compose -f infra/docker-compose.yml --env-file .env.example up -d --wait postgres redis
+      - name: Apply W3 migrations and run PostgreSQL/Redis integration tests
+        run: make test-api-integration
+      - name: Versioned Skill evals
+        run: make evals
       - name: H5 contract test
         run: npm run test:contracts --workspace @soloshot/h5
       - name: H5 tests and build
         run: make test-h5
+      - name: Install H5 browser matrix
+        run: npx playwright install --with-deps chromium webkit
+      - name: H5 W2/W3 end-to-end tests
+        run: make e2e-h5
 
   ios:
     runs-on: macos-15
@@ -55,11 +65,5 @@ jobs:
         run: swift test --package-path packages/contracts/generated/swift
       - name: Generate Xcode project
         run: xcodegen generate --spec apps/ios/project.yml --project apps/ios
-      - name: Build iOS skeleton
-        run: >-
-          xcodebuild
-          -project apps/ios/SoloShot.xcodeproj
-          -scheme SoloShot
-          -destination 'generic/platform=iOS Simulator'
-          CODE_SIGNING_ALLOWED=NO
-          build
+      - name: Run iOS handoff tests and Simulator build
+        run: make test-ios

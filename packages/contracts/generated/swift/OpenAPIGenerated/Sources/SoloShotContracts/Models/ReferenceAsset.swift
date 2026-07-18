@@ -21,10 +21,13 @@ public struct ReferenceAsset: Sendable, Codable, Hashable {
         case preset = "preset"
     }
     public static let referenceIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ref_[A-Za-z0-9_-]+$/")
+    public static let mediaAssetIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^media_[A-Za-z0-9_-]+$/")
     public static let widthRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let heightRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var referenceId: String
+    /** Owned upload backing this reference. Preset references may leave it null. */
+    public var mediaAssetId: String?
     public var mediaType: MediaType
     public var sourceType: SourceType
     public var width: Int
@@ -32,9 +35,10 @@ public struct ReferenceAsset: Sendable, Codable, Hashable {
     public var selectedBox: SoloShotSessionReferenceAssetSelectedBox
     public var attribution: SoloShotSessionReferenceAssetAttribution
 
-    public init(schemaVersion: SchemaVersion, referenceId: String, mediaType: MediaType, sourceType: SourceType, width: Int, height: Int, selectedBox: SoloShotSessionReferenceAssetSelectedBox, attribution: SoloShotSessionReferenceAssetAttribution) {
+    public init(schemaVersion: SchemaVersion, referenceId: String, mediaAssetId: String? = nil, mediaType: MediaType, sourceType: SourceType, width: Int, height: Int, selectedBox: SoloShotSessionReferenceAssetSelectedBox, attribution: SoloShotSessionReferenceAssetAttribution) {
         self.schemaVersion = schemaVersion
         self.referenceId = referenceId
+        self.mediaAssetId = mediaAssetId
         self.mediaType = mediaType
         self.sourceType = sourceType
         self.width = width
@@ -46,6 +50,7 @@ public struct ReferenceAsset: Sendable, Codable, Hashable {
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case referenceId = "reference_id"
+        case mediaAssetId = "media_asset_id"
         case mediaType = "media_type"
         case sourceType = "source_type"
         case width
@@ -60,6 +65,7 @@ public struct ReferenceAsset: Sendable, Codable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(schemaVersion, forKey: .schemaVersion)
         try container.encode(referenceId, forKey: .referenceId)
+        try container.encodeIfPresent(mediaAssetId, forKey: .mediaAssetId)
         try container.encode(mediaType, forKey: .mediaType)
         try container.encode(sourceType, forKey: .sourceType)
         try container.encode(width, forKey: .width)

@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "note": "Deterministic W1 fixture; not live model or media output.",
+  "session": {
+    "source_channel": "demo_preset",
+    "mode": "original_replication",
+    "user_constraints": {
+      "solo_traveler": true,
+      "tripod_available": false,
+      "has_luggage": true,
+      "notes": "W1 fixed API acceptance fixture"
+    }
+  },
+  "reference_asset": {
+    "schema_version": "1.0",
+    "reference_id": "ref_w1_fixture",
+    "media_type": "image",
+    "source_type": "preset",
+    "width": 1320,
+    "height": 1749,
+    "selected_box": {"x": 0.6, "y": 0.2, "width": 0.24, "height": 0.68},
+    "attribution": {
+      "source_label": "SoloShot W1 contract fixture",
+      "creator_label": null,
+      "source_url": null
+    }
+  },
+  "capture": {"round_index": 1, "media_asset_id": "media_w1_capture_fixture"}
+}

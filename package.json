@@ -12,7 +12,8 @@
   ],
   "scripts": {
     "generate:h5": "openapi-typescript packages/contracts/openapi.yaml -o apps/h5/src/generated/api.ts",
-    "generate:swift": "./scripts/generate-swift-contracts.sh"
+    "generate:swift": "./scripts/generate-swift-contracts.sh",
+    "generate:python": "./scripts/generate-python-contracts.sh"
   },
   "devDependencies": {
     "@openapitools/openapi-generator-cli": "2.39.1",

@@ -37,36 +37,46 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         case sceneAdaptation = "scene_adaptation"
     }
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
-    public static let selectedSkillsRule = ArrayRule(minItems: nil, maxItems: nil, uniqueItems: true)
-    public static let captureRoundsRule = ArrayRule(minItems: nil, maxItems: 10, uniqueItems: false)
+    public static let sceneAssetIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^media_[A-Za-z0-9_-]+$/")
+    public static let activeReferenceAnalysisIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ra_[A-Za-z0-9_-]+$/")
+    public static let captureRoundsRule = ArrayRule(minItems: nil, maxItems: 2, uniqueItems: false)
+    public static let evaluationsRule = ArrayRule(minItems: nil, maxItems: 2, uniqueItems: false)
     public var schemaVersion: SchemaVersion
     public var sessionId: String
     public var state: State
     public var sourceChannel: SourceChannel
     public var mode: Mode
-    public var referenceAsset: SoloShotSessionReferenceAsset
+    public var referenceAsset: SoloShotSessionReferenceAsset?
+    public var sceneAssetId: String?
+    public var activeReferenceAnalysisId: String?
     public var userConstraints: SoloShotSessionUserConstraints
-    public var selectedSkills: Set<SoloShotSessionSelectedSkillsInner>
+    public var selectedSkills: [SoloShotSessionSelectedSkillsInner]
     public var shotPlan: ShotPlan1?
     public var captureRounds: [Capture]
     public var evaluation: ResultEvaluation1?
+    public var evaluations: [ResultEvaluation2]?
+    public var externalAiConsentAt: Date?
     public var publishPackage: SoloShotSessionPublishPackage?
     public var analyticsContext: SoloShotSessionAnalyticsContext
     public var createdAt: Date
     public var updatedAt: Date
 
-    public init(schemaVersion: SchemaVersion, sessionId: String, state: State, sourceChannel: SourceChannel, mode: Mode, referenceAsset: SoloShotSessionReferenceAsset, userConstraints: SoloShotSessionUserConstraints, selectedSkills: Set<SoloShotSessionSelectedSkillsInner>, shotPlan: ShotPlan1?, captureRounds: [Capture], evaluation: ResultEvaluation1?, publishPackage: SoloShotSessionPublishPackage?, analyticsContext: SoloShotSessionAnalyticsContext, createdAt: Date, updatedAt: Date) {
+    public init(schemaVersion: SchemaVersion, sessionId: String, state: State, sourceChannel: SourceChannel, mode: Mode, referenceAsset: SoloShotSessionReferenceAsset?, sceneAssetId: String? = nil, activeReferenceAnalysisId: String? = nil, userConstraints: SoloShotSessionUserConstraints, selectedSkills: [SoloShotSessionSelectedSkillsInner], shotPlan: ShotPlan1?, captureRounds: [Capture], evaluation: ResultEvaluation1?, evaluations: [ResultEvaluation2]? = nil, externalAiConsentAt: Date? = nil, publishPackage: SoloShotSessionPublishPackage?, analyticsContext: SoloShotSessionAnalyticsContext, createdAt: Date, updatedAt: Date) {
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
         self.state = state
         self.sourceChannel = sourceChannel
         self.mode = mode
         self.referenceAsset = referenceAsset
+        self.sceneAssetId = sceneAssetId
+        self.activeReferenceAnalysisId = activeReferenceAnalysisId
         self.userConstraints = userConstraints
         self.selectedSkills = selectedSkills
         self.shotPlan = shotPlan
         self.captureRounds = captureRounds
         self.evaluation = evaluation
+        self.evaluations = evaluations
+        self.externalAiConsentAt = externalAiConsentAt
         self.publishPackage = publishPackage
         self.analyticsContext = analyticsContext
         self.createdAt = createdAt
@@ -80,11 +90,15 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         case sourceChannel = "source_channel"
         case mode
         case referenceAsset = "reference_asset"
+        case sceneAssetId = "scene_asset_id"
+        case activeReferenceAnalysisId = "active_reference_analysis_id"
         case userConstraints = "user_constraints"
         case selectedSkills = "selected_skills"
         case shotPlan = "shot_plan"
         case captureRounds = "capture_rounds"
         case evaluation
+        case evaluations
+        case externalAiConsentAt = "external_ai_consent_at"
         case publishPackage = "publish_package"
         case analyticsContext = "analytics_context"
         case createdAt = "created_at"
@@ -101,11 +115,15 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         try container.encode(sourceChannel, forKey: .sourceChannel)
         try container.encode(mode, forKey: .mode)
         try container.encode(referenceAsset, forKey: .referenceAsset)
+        try container.encodeIfPresent(sceneAssetId, forKey: .sceneAssetId)
+        try container.encodeIfPresent(activeReferenceAnalysisId, forKey: .activeReferenceAnalysisId)
         try container.encode(userConstraints, forKey: .userConstraints)
         try container.encode(selectedSkills, forKey: .selectedSkills)
         try container.encode(shotPlan, forKey: .shotPlan)
         try container.encode(captureRounds, forKey: .captureRounds)
         try container.encode(evaluation, forKey: .evaluation)
+        try container.encodeIfPresent(evaluations, forKey: .evaluations)
+        try container.encodeIfPresent(externalAiConsentAt, forKey: .externalAiConsentAt)
         try container.encode(publishPackage, forKey: .publishPackage)
         try container.encode(analyticsContext, forKey: .analyticsContext)
         try container.encode(createdAt, forKey: .createdAt)

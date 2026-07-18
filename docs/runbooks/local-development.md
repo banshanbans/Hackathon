@@ -1,25 +1,99 @@
-# Local development runbook
+# 本地开发运行手册
 
-## First setup
+## 首次设置
 
-1. Install Python 3.12 and XcodeGen on macOS: `brew install python@3.12 xcodegen`.
-2. Start Docker Desktop.
-3. Run `make bootstrap` and `make generate`.
-4. Copy `.env.example` to `.env`; local Make targets do this automatically when starting infrastructure.
+1. 在 macOS 上安装 Python 3.12、Node.js 24、Java 21 和 XcodeGen：`brew install python@3.12 node openjdk@21 xcodegen`。
+2. 启动 Docker Desktop。
+3. 运行 `make bootstrap` 和 `make generate`。
+4. 将 `.env.example` 复制为 `.env`。首次运行 `make dev-infra` 时也会自动创建该文件。
 
-## Start W0 services
+## 启动 W2/W3 本地链路
 
-- `make dev-infra` starts PostgreSQL, Redis, MinIO, and the bucket initializer.
-- `make infra-status` shows dependency health.
-- `make dev-api` starts FastAPI on port 8000.
-- `make dev-h5` starts Vite on port 5173.
+依次运行：
 
-W0 intentionally exposes only `/health`. A 404 from `/api/v1` routes is correct until their owning work package is implemented.
+```bash
+make dev-infra
+make migrate
+make dev-api
+make dev-h5
+```
 
-## Common recovery
+- API：`http://127.0.0.1:8000`
+- H5：`http://127.0.0.1:5173`
+- MinIO 控制台：`http://127.0.0.1:9001`
 
-- Docker connection failure: start Docker Desktop, then rerun `make dev-infra`.
-- Port conflict: stop the conflicting local service rather than changing shared contract URLs silently.
-- Generated code drift: run `make generate`, inspect the contract change, and commit both contract and generated output.
-- Missing simulator device runtime: use `make test-ios`, which builds for the generic iOS Simulator destination without booting a device.
-- Missing Xcode iOS platform component: install the matching iOS platform from Xcode Settings > Components first. The SDK may appear in `xcodebuild -showsdks`, but Xcode cannot select even a generic destination until the platform component is registered.
+`make dev-infra` 会启动 PostgreSQL、Redis、MinIO，并创建私有的 `soloshot-media` 存储桶。`make migrate` 会应用 W1、W2 和 W3 迁移；应用启动时不会自动修改数据库结构。
+
+## W3 接力配置与本地验证
+
+- `HANDOFF_TTL_SECONDS=600` 控制任务码有效期；认领凭据和 iOS 本地缓存默认保留 24 小时。
+- `HANDOFF_SIGNING_SECRET` 用于 HMAC 签名。开发环境可使用示例值；任何非开发环境都必须替换为至少 32 字符的随机密钥，否则 API 拒绝启动。
+- `PUBLIC_HANDOFF_BASE_URL` 决定 QR 内容。本地可使用 `http://127.0.0.1:5173/handoff`；共享测试环境必须使用 iPhone 可访问的 HTTPS 地址。
+- PostgreSQL 保存状态和哈希，不保存原始 `management_token`、`claim_token`；Redis 负责查询与认领限流。测试/生产的 Redis 故障时认领失败关闭，不绕过保护。
+- H5 的管理 token 和创建 Idempotency-Key 仅存在于 `sessionStorage`，不会进入 URL、`localStorage`、analytics 或日志。
+
+在 H5 生成 ShotPlan 后选择“在 iPhone 继续”。模拟器可用下列命令验证严格深链入口，任务码必须来自当前测试 Session：
+
+```bash
+xcrun simctl openurl booted 'soloshot://handoff/ABC234'
+```
+
+iOS Debug 构建默认访问 `http://127.0.0.1:8000`。测试环境构建应通过 `SOLOSHOT_API_BASE_URL=https://api.example.test` 覆盖，且 H5 的 `PUBLIC_HANDOFF_BASE_URL` 必须指向同一套可访问环境。
+
+## Fixture 与 Live 的边界
+
+默认配置是 `MODEL_PROVIDER=hybrid`、`MOCK_AI_ENABLED=false`：
+
+- 预设参考 + 原图复刻走确定性 Fixture，页面和响应头均标记 `Fixture`，不会产生模型费用。
+- 自定义参考以及所有场景适配走火山方舟 Live。首次创建 Live Session 前，用户必须勾选“媒体将发送至火山方舟分析”。
+- Live 需要在 `.env` 中填写 `ARK_API_KEY` 和 `ARK_MODEL_ID`。缺少配置时返回可恢复的 `PROVIDER_UNAVAILABLE`，不会静默切换为 Fixture。
+- `ARK_BASE_URL` 默认使用 `https://ark.cn-beijing.volces.com/api/v3`，模型 ID 不写入代码。
+
+真实 Live smoke test 会产生外部模型调用和可能的费用，因此不属于默认 CI。仅在确认凭据和费用后手动填写 `.env`，再从 H5 选择自定义参考执行完整流程。
+
+## 媒体规则与恢复
+
+- H5 会将图片归一化为 JPEG，最长边不超过 2048px，上传文件不超过 8MB。
+- 视频只在浏览器内暂停并抽取 JPEG 帧，不上传原视频；限制为 30 秒和 100MB。
+- 上传地址有效 10 分钟，预览地址有效 5 分钟，媒体默认保留 24 小时。
+- API 每小时清理过期媒体；删除 Session 会立即清理其媒体和关联记录。
+- 刷新后以服务端 Session 为准恢复路由、ShotPlan 和两轮评价。本地尚未提交的文件不能跨刷新恢复，页面会要求重新选择。
+- localStorage 只保存 Session ID、路由草稿和非敏感选项，不保存媒体、Base64 或签名 URL。
+
+## 完整验证
+
+```bash
+make generate
+make lint
+make typecheck
+make test
+make test-api-integration
+make evals
+make e2e-h5
+make test-ios
+make e2e-handoff
+```
+
+- `make test`：API 单元测试、合同测试、H5 单元测试和生产构建。
+- `make test-api-integration`：应用迁移并验证 PostgreSQL 跨实例恢复与级联删除，需要本地基础设施已启动。
+- `make test-contracts`：验证 OpenAPI/JSON Schema，以及 H5、Python、Swift 生成类型。
+- `make evals`：运行五个版本化 Skill 的固定评测，不调用付费模型。
+- `make e2e-h5`：运行移动 Chromium、移动 WebKit 和桌面 Chromium 的 W2/W3 流程。
+- `make test-ios`：运行 W3 XCTest target，并构建通用 iOS Simulator 目标；可用 `IOS_SIMULATOR_NAME` 覆盖本机设备名。
+- `make e2e-handoff`：运行 W3 API 生命周期/并发/限流测试和 H5 模拟 iOS 认领的接力 Playwright 场景。
+
+## 常见问题恢复
+
+- Docker 连接失败：启动 Docker Desktop，然后重新运行 `make dev-infra`。
+- Live 返回 `PROVIDER_UNAVAILABLE`：确认 `MODEL_PROVIDER=hybrid`，并检查 `ARK_API_KEY`、`ARK_MODEL_ID` 是否只存在于服务端 `.env`。
+- 上传失败：确认 MinIO 健康、存储桶已初始化，并检查浏览器访问地址是否与 `OBJECT_STORAGE_PUBLIC_ENDPOINT` 一致。
+- 媒体已过期：重新开始 Session；过期签名 URL 不应保存或复用。
+- 端口冲突：停止占用 5173、8000、9000、5432 或 6379 的本地进程，不要临时修改共享契约 URL。
+- 生成代码与契约不一致：运行 `make generate`，并同时提交契约和生成产物；不要手工编辑 `generated/`。
+- 数据库提示缺少关系：先运行 `make migrate`，不要让应用启动时自动建表。
+- Playwright 缺少浏览器：运行 `npx playwright install chromium webkit` 后重试。
+- Xcode 缺少 iOS 平台组件：在 Xcode 的“设置 > Components”中安装对应平台；仅出现 SDK 不代表平台已完成注册。
+- iPhone 无法打开二维码：确认二维码为手机可访问的 HTTPS 地址，落地页再由用户点击 `soloshot://handoff/{code}`；本地 `127.0.0.1` 只适用于同机模拟器。
+- 接力返回 `HANDOFF_RATE_LIMITED`：等待 `Retry-After` 后重试，并检查 Redis 健康；不要关闭限流绕过。
+
+W2 已完成本地和 CI 工程验收。W3 的代码、本地和 CI 验收不等于最终关闭：还必须在 HTTPS 测试环境用指定 iPhone 连续完成真机清单。

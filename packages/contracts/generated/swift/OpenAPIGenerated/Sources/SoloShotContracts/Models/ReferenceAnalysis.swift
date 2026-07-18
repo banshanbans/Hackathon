@@ -12,10 +12,16 @@ public struct ReferenceAnalysis: Sendable, Codable, Hashable {
     public enum SchemaVersion: String, Sendable, Codable, CaseIterable {
         case _10 = "1.0"
     }
+    public enum SafetyStatus: String, Sendable, Codable, CaseIterable {
+        case safe = "safe"
+        case warn = "warn"
+        case block = "block"
+    }
     public static let analysisIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ra_[A-Za-z0-9_-]+$/")
     public static let referenceIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ref_[A-Za-z0-9_-]+$/")
     public static let personCountRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public static let compositionNotesRule = ArrayRule(minItems: nil, maxItems: 10, uniqueItems: false)
+    public static let safetyWarningsRule = ArrayRule(minItems: nil, maxItems: 10, uniqueItems: false)
     public static let confidenceRule = NumericRule<Double>(minimum: 0, exclusiveMinimum: false, maximum: 1, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var analysisId: String
@@ -23,15 +29,19 @@ public struct ReferenceAnalysis: Sendable, Codable, Hashable {
     public var personCount: Int
     public var targetLayout: ShotPlan1TargetLayout
     public var compositionNotes: [String]
+    public var safetyStatus: SafetyStatus? = .safe
+    public var safetyWarnings: [String]?
     public var confidence: Double
 
-    public init(schemaVersion: SchemaVersion, analysisId: String, referenceId: String, personCount: Int, targetLayout: ShotPlan1TargetLayout, compositionNotes: [String], confidence: Double) {
+    public init(schemaVersion: SchemaVersion, analysisId: String, referenceId: String, personCount: Int, targetLayout: ShotPlan1TargetLayout, compositionNotes: [String], safetyStatus: SafetyStatus? = .safe, safetyWarnings: [String]? = nil, confidence: Double) {
         self.schemaVersion = schemaVersion
         self.analysisId = analysisId
         self.referenceId = referenceId
         self.personCount = personCount
         self.targetLayout = targetLayout
         self.compositionNotes = compositionNotes
+        self.safetyStatus = safetyStatus
+        self.safetyWarnings = safetyWarnings
         self.confidence = confidence
     }
 
@@ -42,6 +52,8 @@ public struct ReferenceAnalysis: Sendable, Codable, Hashable {
         case personCount = "person_count"
         case targetLayout = "target_layout"
         case compositionNotes = "composition_notes"
+        case safetyStatus = "safety_status"
+        case safetyWarnings = "safety_warnings"
         case confidence
     }
 
@@ -55,6 +67,8 @@ public struct ReferenceAnalysis: Sendable, Codable, Hashable {
         try container.encode(personCount, forKey: .personCount)
         try container.encode(targetLayout, forKey: .targetLayout)
         try container.encode(compositionNotes, forKey: .compositionNotes)
+        try container.encodeIfPresent(safetyStatus, forKey: .safetyStatus)
+        try container.encodeIfPresent(safetyWarnings, forKey: .safetyWarnings)
         try container.encode(confidence, forKey: .confidence)
     }
 }
