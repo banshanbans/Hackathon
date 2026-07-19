@@ -4,7 +4,7 @@ MYPY := .venv/bin/mypy
 PYTEST := .venv/bin/pytest
 COMPOSE := docker compose -f infra/docker-compose.yml --env-file .env
 
-.PHONY: bootstrap dev-infra infra-status migrate dev-api dev-h5 generate seed-demo lint typecheck test test-api test-api-integration test-h5 test-contracts evals e2e-h5 test-ios e2e-handoff
+.PHONY: bootstrap dev-infra infra-status migrate dev-api dev-h5 generate seed-demo lint typecheck test test-api test-api-integration test-h5 test-contracts evals e2e-h5 test-ios e2e-handoff e2e-ios-w4 e2e-ios-w5 e2e-w5
 
 IOS_SIMULATOR_NAME ?= iPhone 17 Pro
 
@@ -71,5 +71,18 @@ test: test-api test-contracts test-h5
 
 test-ios:
 	xcodegen generate --spec apps/ios/project.yml --project apps/ios
-	xcodebuild test -project apps/ios/SoloShot.xcodeproj -scheme SoloShot -destination 'platform=iOS Simulator,OS=latest,name=$(IOS_SIMULATOR_NAME)' CODE_SIGNING_ALLOWED=NO
+	xcodebuild test -project apps/ios/SoloShot.xcodeproj -scheme SoloShot -destination 'platform=iOS Simulator,OS=latest,name=$(IOS_SIMULATOR_NAME)' -only-testing:SoloShotTests CODE_SIGNING_ALLOWED=NO
 	xcodebuild -project apps/ios/SoloShot.xcodeproj -scheme SoloShot -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+e2e-ios-w4:
+	xcodegen generate --spec apps/ios/project.yml --project apps/ios
+	xcodebuild test -project apps/ios/SoloShot.xcodeproj -scheme SoloShot -destination 'platform=iOS Simulator,OS=latest,name=$(IOS_SIMULATOR_NAME)' -only-testing:SoloShotUITests/W4AlignmentUITests CODE_SIGNING_ALLOWED=NO
+
+e2e-ios-w5:
+	xcodegen generate --spec apps/ios/project.yml --project apps/ios
+	xcodebuild test -project apps/ios/SoloShot.xcodeproj -scheme SoloShot -destination 'platform=iOS Simulator,OS=latest,name=$(IOS_SIMULATOR_NAME)' -only-testing:SoloShotUITests/W5CaptureUITests CODE_SIGNING_ALLOWED=NO
+
+e2e-w5:
+	PYTHONPATH=services/api $(PYTEST) services/api/tests/unit/test_w5_capture.py
+	npm run test:e2e --workspace @soloshot/h5 -- --grep "W5 cross-device"
+	$(MAKE) e2e-ios-w5

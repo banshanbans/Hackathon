@@ -65,5 +65,18 @@ jobs:
         run: swift test --package-path packages/contracts/generated/swift
       - name: Generate Xcode project
         run: xcodegen generate --spec apps/ios/project.yml --project apps/ios
+      - name: Select available iPhone Simulator
+        shell: bash
+        run: |
+          simulator_name="$(xcrun simctl list devices available | awk -F ' \\(' '/iPhone/ { sub(/^[[:space:]]+/, "", $1); print $1; exit }')"
+          if [[ -z "$simulator_name" ]]; then
+            echo "No available iPhone Simulator was found" >&2
+            exit 1
+          fi
+          echo "IOS_SIMULATOR_NAME=$simulator_name" >> "$GITHUB_ENV"
       - name: Run iOS handoff tests and Simulator build
         run: make test-ios
+      - name: Run W4 fixture alignment UI flow
+        run: make e2e-ios-w4
+      - name: Run W5 fixture capture and two-round UI flow
+        run: make e2e-ios-w5

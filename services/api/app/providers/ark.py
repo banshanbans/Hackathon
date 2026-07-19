@@ -73,7 +73,15 @@ class VolcengineArkProvider:
             raise DomainError(
                 "SKILL_NOT_FOUND", f"Ark Skill {skill_name} is unavailable", status_code=404
             )
-        prompt_path = REPOSITORY_ROOT / "packages" / "prompts" / skill_name / "1.0.0" / "system.md"
+        prompt_version = "1.1.0" if skill_name == "result_evaluation" else "1.0.0"
+        prompt_path = (
+            REPOSITORY_ROOT
+            / "packages"
+            / "prompts"
+            / skill_name
+            / prompt_version
+            / "system.md"
+        )
         if not prompt_path.exists():
             raise DomainError(
                 "SKILL_NOT_FOUND",
@@ -233,6 +241,9 @@ class VolcengineArkProvider:
         capture = input_data.get("capture")
         if isinstance(capture, dict):
             candidates.append(capture.get("media_asset_id"))
+        previous_capture = input_data.get("previous_capture")
+        if isinstance(previous_capture, dict):
+            candidates.insert(-1, previous_capture.get("media_asset_id"))
         result: list[str] = []
         for candidate in candidates:
             if isinstance(candidate, str) and candidate not in result:

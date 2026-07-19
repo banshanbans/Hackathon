@@ -27,6 +27,9 @@ Sources/SoloShotContracts/Models/AnalyticsEvent.swift
 Sources/SoloShotContracts/Models/AnalyzeReferenceRequest.swift
 Sources/SoloShotContracts/Models/ApiError.swift
 Sources/SoloShotContracts/Models/Capture.swift
+Sources/SoloShotContracts/Models/CaptureConsentReceipt.swift
+Sources/SoloShotContracts/Models/CaptureConsentRequest.swift
+Sources/SoloShotContracts/Models/CaptureConsentResponse.swift
 Sources/SoloShotContracts/Models/CaptureResponse.swift
 Sources/SoloShotContracts/Models/ClaimHandoffRequest.swift
 Sources/SoloShotContracts/Models/CompleteHandoffRequest.swift
@@ -47,6 +50,7 @@ Sources/SoloShotContracts/Models/EvaluationResponse.swift
 Sources/SoloShotContracts/Models/EventBatchReceipt.swift
 Sources/SoloShotContracts/Models/EventBatchRequest.swift
 Sources/SoloShotContracts/Models/EventBatchResponse.swift
+Sources/SoloShotContracts/Models/FrameSelection.swift
 Sources/SoloShotContracts/Models/FunnelMetrics.swift
 Sources/SoloShotContracts/Models/FunnelMetricsResponse.swift
 Sources/SoloShotContracts/Models/HandoffClaimResponse.swift

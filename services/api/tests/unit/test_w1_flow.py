@@ -228,7 +228,7 @@ def test_w1_closed_loop_has_ordered_trace_and_honest_job() -> None:
                 "schema_version": "1.0",
                 "session_id": session_id,
                 "round_index": 2,
-                "media_asset_id": "media_round_2",
+                    "media_asset_id": "media_fixture_round_2",
             },
         )
         assert second_capture.status_code == 201

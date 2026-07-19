@@ -8,7 +8,19 @@ class SkillRegistry:
     def __init__(self, skills: dict[tuple[str, str], Skill]) -> None:
         self._skills = skills
 
-    def get(self, name: str, version: str = "1.0.0") -> Skill:
+    def get(self, name: str, version: str | None = None) -> Skill:
+        if version is None:
+            versions = [
+                registered_version
+                for registered_name, registered_version in self._skills
+                if registered_name == name
+            ]
+            if versions:
+                version = max(versions)
+            else:
+                raise DomainError(
+                    "SKILL_NOT_FOUND", f"Skill {name} is unavailable", status_code=404
+                )
         skill = self._skills.get((name, version))
         if skill is not None:
             return skill

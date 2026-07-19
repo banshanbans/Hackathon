@@ -1,0 +1,9 @@
+[
+  {
+    "case_id": "doorway_coffee_fullbody_round_2_selected_frame",
+    "fixture": "packages/evals/test-image-v1/manifest.json",
+    "round_index": 2,
+    "media_kind": "selected_frame",
+    "expects": {"forbidden_issue_code": "motion_timing_wrong", "goal_satisfied": true}
+  }
+]

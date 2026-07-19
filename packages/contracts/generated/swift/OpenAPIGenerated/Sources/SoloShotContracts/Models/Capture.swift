@@ -18,28 +18,50 @@ public struct Capture: Sendable, Codable, Hashable {
         case ready = "ready"
         case failed = "failed"
     }
+    public enum SourceClient: String, Sendable, Codable, CaseIterable {
+        case h5 = "h5"
+        case ios = "ios"
+    }
+    public enum CaptureMethod: String, Sendable, Codable, CaseIterable {
+        case photo = "photo"
+        case shortVideo = "short_video"
+        case photoFallback = "photo_fallback"
+    }
+    public enum SelectionSource: String, Sendable, Codable, CaseIterable {
+        case localRecommended = "local_recommended"
+        case userSelected = "user_selected"
+    }
     public static let captureIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^cap_[A-Za-z0-9_-]+$/")
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
     public static let roundIndexRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: 2, exclusiveMaximum: false, multipleOf: nil)
     public static let mediaAssetIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^media_[A-Za-z0-9_-]+$/")
     public static let selectedFrameIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^frame_[A-Za-z0-9_-]+$/")
+    public static let selectedFrameTimestampMsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var captureId: String
     public var sessionId: String
     public var roundIndex: Int
     public var mediaAssetId: String
     public var status: Status
+    public var sourceClient: SourceClient?
+    public var captureMethod: CaptureMethod?
     public var selectedFrameId: String?
+    public var selectedFrameTimestampMs: Int?
+    public var selectionSource: SelectionSource?
     public var createdAt: Date
 
-    public init(schemaVersion: SchemaVersion, captureId: String, sessionId: String, roundIndex: Int, mediaAssetId: String, status: Status, selectedFrameId: String?, createdAt: Date) {
+    public init(schemaVersion: SchemaVersion, captureId: String, sessionId: String, roundIndex: Int, mediaAssetId: String, status: Status, sourceClient: SourceClient? = nil, captureMethod: CaptureMethod? = nil, selectedFrameId: String?, selectedFrameTimestampMs: Int? = nil, selectionSource: SelectionSource? = nil, createdAt: Date) {
         self.schemaVersion = schemaVersion
         self.captureId = captureId
         self.sessionId = sessionId
         self.roundIndex = roundIndex
         self.mediaAssetId = mediaAssetId
         self.status = status
+        self.sourceClient = sourceClient
+        self.captureMethod = captureMethod
         self.selectedFrameId = selectedFrameId
+        self.selectedFrameTimestampMs = selectedFrameTimestampMs
+        self.selectionSource = selectionSource
         self.createdAt = createdAt
     }
 
@@ -50,7 +72,11 @@ public struct Capture: Sendable, Codable, Hashable {
         case roundIndex = "round_index"
         case mediaAssetId = "media_asset_id"
         case status
+        case sourceClient = "source_client"
+        case captureMethod = "capture_method"
         case selectedFrameId = "selected_frame_id"
+        case selectedFrameTimestampMs = "selected_frame_timestamp_ms"
+        case selectionSource = "selection_source"
         case createdAt = "created_at"
     }
 
@@ -64,7 +90,11 @@ public struct Capture: Sendable, Codable, Hashable {
         try container.encode(roundIndex, forKey: .roundIndex)
         try container.encode(mediaAssetId, forKey: .mediaAssetId)
         try container.encode(status, forKey: .status)
+        try container.encodeIfPresent(sourceClient, forKey: .sourceClient)
+        try container.encodeIfPresent(captureMethod, forKey: .captureMethod)
         try container.encode(selectedFrameId, forKey: .selectedFrameId)
+        try container.encodeIfPresent(selectedFrameTimestampMs, forKey: .selectedFrameTimestampMs)
+        try container.encodeIfPresent(selectionSource, forKey: .selectionSource)
         try container.encode(createdAt, forKey: .createdAt)
     }
 }

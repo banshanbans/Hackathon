@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api.models import (
     AdaptReferenceRequest,
     AnalyzeReferenceRequest,
+    CaptureConsentRequest,
     ClaimHandoffRequest,
     CompleteHandoffRequest,
     CompleteMediaUploadRequest,
@@ -34,6 +35,9 @@ ManagementToken = Annotated[
 ]
 ClaimToken = Annotated[
     str, Header(alias="X-Handoff-Claim-Token", min_length=32, max_length=2048)
+]
+OptionalClaimToken = Annotated[
+    str | None, Header(alias="X-Handoff-Claim-Token", min_length=32, max_length=2048)
 ]
 
 
@@ -98,16 +102,39 @@ async def delete_session(
     return response(request, await w1.delete_session(session_id, idempotency_key))
 
 
+@router.post("/sessions/{session_id}/capture-consent", tags=["sessions"])
+async def record_capture_consent(
+    request: Request,
+    session_id: str,
+    body: CaptureConsentRequest,
+    idempotency_key: IdempotencyKey,
+    claim_token: ClaimToken,
+    w1: ServiceDep,
+) -> JSONResponse:
+    return response(
+        request,
+        await w1.record_capture_consent(
+            session_id,
+            body.model_dump(mode="json"),
+            idempotency_key,
+            claim_token,
+        ),
+    )
+
+
 @router.post("/media/uploads", tags=["media"])
 async def create_media_upload(
     request: Request,
     body: CreateMediaUploadRequest,
     idempotency_key: IdempotencyKey,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,
-        await w1.create_media_upload(body.model_dump(mode="json"), idempotency_key),
+        await w1.create_media_upload(
+            body.model_dump(mode="json"), idempotency_key, claim_token
+        ),
     )
 
 
@@ -118,11 +145,12 @@ async def complete_media_upload(
     body: CompleteMediaUploadRequest,
     idempotency_key: IdempotencyKey,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,
         await w1.complete_media_upload(
-            media_asset_id, body.model_dump(mode="json"), idempotency_key
+            media_asset_id, body.model_dump(mode="json"), idempotency_key, claim_token
         ),
     )
 
@@ -238,10 +266,11 @@ async def create_capture(
     body: CreateCaptureRequest,
     idempotency_key: IdempotencyKey,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,
-        await w1.create_capture(body.model_dump(mode="json"), idempotency_key),
+        await w1.create_capture(body.model_dump(mode="json"), idempotency_key, claim_token),
     )
 
 
@@ -257,10 +286,13 @@ async def select_frame(
     body: SelectFrameRequest,
     idempotency_key: IdempotencyKey,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,
-        await w1.select_frame(capture_id, body.model_dump(mode="json"), idempotency_key),
+        await w1.select_frame(
+            capture_id, body.model_dump(mode="json"), idempotency_key, claim_token
+        ),
     )
 
 
@@ -270,10 +302,13 @@ async def create_evaluation(
     body: CreateEvaluationRequest,
     idempotency_key: IdempotencyKey,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,
-        await w1.create_evaluation(body.model_dump(mode="json"), idempotency_key),
+        await w1.create_evaluation(
+            body.model_dump(mode="json"), idempotency_key, claim_token
+        ),
     )
 
 

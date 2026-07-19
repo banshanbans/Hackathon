@@ -43,11 +43,13 @@ class Skill:
         output_model: type[BaseModel],
         provider: StructuredModelProvider,
         timeout_seconds: float,
+        version: str = "1.0.0",
     ) -> None:
         self.name = name
         self.output_model = output_model
         self.provider = provider
         self.timeout_seconds = timeout_seconds
+        self.version = version
 
     def validate_input(self, input_data: JsonObject) -> None:
         try:
@@ -73,6 +75,15 @@ class Skill:
                 ShotPlan.model_validate(input_data.get("shot_plan"))
                 if input_data.get("mode") not in {"original_replication", "scene_adaptation"}:
                     raise ValueError("mode is invalid")
+                if self.version == "1.1.0":
+                    if input_data.get("media_kind") != "selected_frame":
+                        raise ValueError("media_kind must be selected_frame")
+                    round_index = input_data.get("round_index")
+                    if round_index not in {1, 2}:
+                        raise ValueError("round_index is invalid")
+                    if round_index == 2:
+                        Capture.model_validate(input_data.get("previous_capture"))
+                        ResultEvaluation.model_validate(input_data.get("previous_evaluation"))
             elif self.name == "content_composer":
                 if not isinstance(input_data.get("session_id"), str):
                     raise ValueError("session_id is required")
@@ -93,8 +104,8 @@ class Skill:
             async with asyncio.timeout(self.timeout_seconds):
                 result = await self.provider.invoke(self.name, input_data)
                 try:
-                    output_model = self.output_model.model_validate(result.output)
-                except ValidationError as first_error:
+                    output_model = self._validate_output(result.output, input_data)
+                except (ValidationError, ValueError) as first_error:
                     repair_count = 1
                     result = await self.provider.invoke(
                         self.name,
@@ -102,8 +113,8 @@ class Skill:
                         repair_error=str(first_error),
                     )
                     try:
-                        output_model = self.output_model.model_validate(result.output)
-                    except ValidationError as final_error:
+                        output_model = self._validate_output(result.output, input_data)
+                    except (ValidationError, ValueError) as final_error:
                         raise DomainError(
                             "INVALID_JSON",
                             f"Provider output for {self.name} failed after one repair",
@@ -153,6 +164,17 @@ class Skill:
         output = output_model.model_dump(mode="json")
         return SkillInvocation(run=run, output=output, execution_mode=execution_mode)
 
+    def _validate_output(self, output: JsonObject, input_data: JsonObject) -> BaseModel:
+        model = self.output_model.model_validate(output)
+        if (
+            self.name == "result_evaluation"
+            and self.version == "1.1.0"
+            and input_data.get("media_kind") == "selected_frame"
+            and getattr(model, "issue_code", None) == "motion_timing_wrong"
+        ):
+            raise ValueError("selected_frame cannot support motion_timing_wrong")
+        return model
+
 
 OUTPUT_MODELS: dict[str, type[BaseModel]] = {
     "reference_understanding": ReferenceAnalysis,
@@ -166,7 +188,7 @@ OUTPUT_MODELS: dict[str, type[BaseModel]] = {
 def build_skills(
     provider: StructuredModelProvider, timeout_seconds: float
 ) -> dict[tuple[str, str], Skill]:
-    return {
+    skills = {
         (name, Skill.version): Skill(
             name=name,  # type: ignore[arg-type]
             output_model=model,
@@ -175,3 +197,11 @@ def build_skills(
         )
         for name, model in OUTPUT_MODELS.items()
     }
+    skills[("result_evaluation", "1.1.0")] = Skill(
+        name="result_evaluation",
+        output_model=ResultEvaluation,
+        provider=provider,
+        timeout_seconds=timeout_seconds,
+        version="1.1.0",
+    )
+    return skills

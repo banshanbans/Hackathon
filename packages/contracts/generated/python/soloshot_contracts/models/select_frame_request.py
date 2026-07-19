@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
 from typing import Optional, Set
 from typing_extensions import Self
@@ -30,7 +30,9 @@ class SelectFrameRequest(BaseModel):
     """ # noqa: E501
     schema_version: StrictStr
     frame_id: Annotated[str, Field(strict=True)]
-    __properties: ClassVar[List[str]] = ["schema_version", "frame_id"]
+    timestamp_ms: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
+    selection_source: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["schema_version", "frame_id", "timestamp_ms", "selection_source"]
 
     @field_validator('schema_version')
     def schema_version_validate_enum(cls, value):
@@ -47,6 +49,16 @@ class SelectFrameRequest(BaseModel):
 
         if not re.match(r"^frame_[A-Za-z0-9_-]+$", value):
             raise ValueError(r"must validate the regular expression /^frame_[A-Za-z0-9_-]+$/")
+        return value
+
+    @field_validator('selection_source')
+    def selection_source_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['local_recommended', 'user_selected']):
+            raise ValueError("must be one of enum values ('local_recommended', 'user_selected')")
         return value
 
     model_config = ConfigDict(
@@ -88,6 +100,11 @@ class SelectFrameRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # set to None if timestamp_ms (nullable) is None
+        # and model_fields_set contains the field
+        if self.timestamp_ms is None and "timestamp_ms" in self.model_fields_set:
+            _dict['timestamp_ms'] = None
+
         return _dict
 
     @classmethod
@@ -101,7 +118,9 @@ class SelectFrameRequest(BaseModel):
 
         _obj = cls.model_validate({
             "schema_version": obj.get("schema_version"),
-            "frame_id": obj.get("frame_id")
+            "frame_id": obj.get("frame_id"),
+            "timestamp_ms": obj.get("timestamp_ms"),
+            "selection_source": obj.get("selection_source")
         })
         return _obj
 

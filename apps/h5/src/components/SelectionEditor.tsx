@@ -111,13 +111,13 @@ export function SelectionEditor({
             }
           }}
         >
-          <span>人物</span>
+          <span>主角</span>
         </button>
       </div>
       <div className="selection-controls">
         <label>
           <ArrowsOut size={18} aria-hidden="true" />
-          框选大小
+          画面范围
           <input
             type="range"
             min="70"
@@ -132,10 +132,10 @@ export function SelectionEditor({
         </label>
         <button type="button" onClick={() => onChange(initialValue)}>
           <Repeat size={17} aria-hidden="true" />
-          重置
+          重新定位
         </button>
       </div>
-      <p className="selection-help">拖动橙色框对准人物；键盘方向键也可以微调。</p>
+      <p className="selection-help">拖动橙色框，让人物完整落入画面。</p>
     </div>
   );
 }

@@ -253,6 +253,7 @@ async function installApiRoutes(page: Page) {
     }
     if (url.pathname === "/api/v1/evaluations") {
       const first = String(body.capture_id).endsWith("_1");
+      const fixture = (session.reference_asset as Json).source_type === "preset" && session.mode === "original_replication";
       const evaluation = first
         ? {
             schema_version: "1.0",
@@ -265,6 +266,7 @@ async function installApiRoutes(page: Page) {
             goal_satisfied: false,
             publish_readiness: 0.58,
             confidence: 0.86,
+            execution_mode: fixture ? "fixture" : "live",
           }
         : {
             schema_version: "1.0",
@@ -274,6 +276,7 @@ async function installApiRoutes(page: Page) {
             goal_satisfied: true,
             publish_readiness: 0.9,
             confidence: 0.88,
+            execution_mode: fixture ? "fixture" : "live",
           };
       session = {
         ...session,
@@ -281,7 +284,6 @@ async function installApiRoutes(page: Page) {
         evaluation,
         evaluations: [...(session.evaluations as Json[]), evaluation],
       };
-      const fixture = (session.reference_asset as Json).source_type === "preset" && session.mode === "original_replication";
       await fulfill(route, evaluation, 202, fixture ? "fixture" : "live");
       return;
     }
@@ -344,9 +346,9 @@ test("public preset completes the honest two-round flow with refresh recovery", 
   await page.getByRole("button", { name: "按建议再拍一次" }).click();
   await page.getByRole("button", { name: "运行第 2 轮评分" }).click();
   await page.getByRole("button", { name: "查看最终结果" }).click();
-  await expect(page.getByRole("heading", { name: "目标已满足" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "两轮拍摄结果" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "目标已满足" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "两轮拍摄结果" })).toBeVisible();
   await expect(page.getByText(/不生成 Before \/ After/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
@@ -421,5 +423,91 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
     });
   });
   await expect(page.getByText("任务已成功导入 iPhone")).toBeVisible({ timeout: 5_000 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+test("W5 cross-device handoff follows two iOS rounds into the honest result", async ({ page }) => {
+  await installApiRoutes(page);
+  await page.goto("/");
+  await selectPreset(page);
+  await page.getByRole("button", { name: "开始参考分析" }).click();
+  await page.getByRole("button", { name: "生成 ShotPlan" }).click();
+  await page.getByRole("button", { name: "在 iPhone 继续" }).click();
+
+  await page.evaluate(async () => {
+    const json = (method: string, body: unknown, key: string) => ({
+      method,
+      headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+      body: JSON.stringify(body),
+    });
+    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/claim", json("POST", {
+      schema_version: "1.0", client_instance_id: "ios-w5-e2e",
+    }, "claim-w5"));
+    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/complete", {
+      ...json("POST", { schema_version: "1.0", client_instance_id: "ios-w5-e2e" }, "complete-w5"),
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": "complete-w5",
+        "X-Handoff-Claim-Token": "claim-token-e2e-claim-token-e2e",
+      },
+    });
+  });
+  await expect(page.getByText("任务已成功导入 iPhone")).toBeVisible({ timeout: 5_000 });
+
+  const submitRound = async (round: 1 | 2) => {
+    await page.evaluate(async (roundIndex) => {
+      const request = (body: unknown, key: string) => ({
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Idempotency-Key": key },
+        body: JSON.stringify(body),
+      });
+      const uploadResponse = await fetch("http://localhost:8000/api/v1/media/uploads", request({
+        schema_version: "1.0",
+        session_id: "ss_e2e",
+        purpose: "capture",
+        content_type: "image/jpeg",
+        byte_size: 6,
+        sha256: "a".repeat(64),
+      }, `ios-upload-${roundIndex}`));
+      const upload = await uploadResponse.json();
+      await fetch(upload.data.upload_url, {
+        method: "PUT",
+        headers: upload.data.upload_headers,
+        body: new Uint8Array([255, 216, 1, 2, 255, 217]),
+      });
+      await fetch(
+        `http://localhost:8000/api/v1/media/uploads/${upload.data.asset.media_asset_id}/complete`,
+        request({ schema_version: "1.0", session_id: "ss_e2e" }, `ios-complete-${roundIndex}`),
+      );
+      const captureResponse = await fetch("http://localhost:8000/api/v1/captures", request({
+        schema_version: "1.0",
+        session_id: "ss_e2e",
+        round_index: roundIndex,
+        media_asset_id: upload.data.asset.media_asset_id,
+        capture_method: "photo",
+        frame_selection: {
+          frame_id: `frame_ios_${roundIndex}`,
+          timestamp_ms: 0,
+          selection_source: "local_recommended",
+        },
+      }, `ios-capture-${roundIndex}`));
+      const capture = await captureResponse.json();
+      await fetch("http://localhost:8000/api/v1/evaluations", request({
+        schema_version: "1.0",
+        session_id: "ss_e2e",
+        capture_id: capture.data.capture_id,
+      }, `ios-evaluation-${roundIndex}`));
+    }, round);
+  };
+
+  await submitRound(1);
+  await expect(page.getByText("第一轮建议已生成，iPhone 正在准备第二轮。")).toBeVisible({ timeout: 5_000 });
+  await page.reload();
+  await expect(page.getByText("第一轮建议已生成，iPhone 正在准备第二轮。")).toBeVisible({ timeout: 5_000 });
+  await submitRound(2);
+  await expect(page.getByRole("button", { name: "查看两轮结果" })).toBeVisible({ timeout: 5_000 });
+  await page.getByRole("button", { name: "查看两轮结果" }).click();
+  await expect(page.getByText(/照片可以是真实拍摄，但以下建议和准备度来自固定演示数据/)).toBeVisible();
+  await expect(page.getByText(/评分是 Fixture 固定演示，不代表模型比较/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

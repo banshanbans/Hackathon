@@ -86,6 +86,10 @@
       "type": ["string", "null"],
       "format": "date-time"
     },
+    "capture_upload_consent_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
     "publish_package": {
       "anyOf": [
         { "$ref": "post.schema.json#/$defs/PostJob" },

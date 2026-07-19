@@ -38,7 +38,8 @@ class ResultEvaluation(BaseModel):
     goal_satisfied: StrictBool
     publish_readiness: Union[Annotated[float, Field(le=1, strict=True, ge=0)], Annotated[int, Field(le=1, strict=True, ge=0)]]
     confidence: Union[Annotated[float, Field(le=1, strict=True, ge=0)], Annotated[int, Field(le=1, strict=True, ge=0)]]
-    __properties: ClassVar[List[str]] = ["schema_version", "evaluation_id", "capture_id", "issue_code", "top_issue", "next_instruction", "needs_retake", "goal_satisfied", "publish_readiness", "confidence"]
+    execution_mode: Optional[StrictStr] = None
+    __properties: ClassVar[List[str]] = ["schema_version", "evaluation_id", "capture_id", "issue_code", "top_issue", "next_instruction", "needs_retake", "goal_satisfied", "publish_readiness", "confidence", "execution_mode"]
 
     @field_validator('evaluation_id')
     def evaluation_id_validate_regular_expression(cls, value):
@@ -68,6 +69,16 @@ class ResultEvaluation(BaseModel):
 
         if value not in set(['person_too_large', 'person_too_small', 'person_too_left', 'person_too_right', 'head_cut', 'feet_cut', 'background_blocked', 'pose_direction_wrong', 'arm_position_wrong', 'camera_too_high', 'camera_too_low', 'camera_angle_wrong', 'motion_timing_wrong']):
             raise ValueError("must be one of enum values ('person_too_large', 'person_too_small', 'person_too_left', 'person_too_right', 'head_cut', 'feet_cut', 'background_blocked', 'pose_direction_wrong', 'arm_position_wrong', 'camera_too_high', 'camera_too_low', 'camera_angle_wrong', 'motion_timing_wrong')")
+        return value
+
+    @field_validator('execution_mode')
+    def execution_mode_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['fixture', 'live', 'fallback']):
+            raise ValueError("must be one of enum values ('fixture', 'live', 'fallback')")
         return value
 
     model_config = ConfigDict(
@@ -130,7 +141,8 @@ class ResultEvaluation(BaseModel):
             "needs_retake": obj.get("needs_retake"),
             "goal_satisfied": obj.get("goal_satisfied"),
             "publish_readiness": obj.get("publish_readiness"),
-            "confidence": obj.get("confidence")
+            "confidence": obj.get("confidence"),
+            "execution_mode": obj.get("execution_mode")
         })
         return _obj
 

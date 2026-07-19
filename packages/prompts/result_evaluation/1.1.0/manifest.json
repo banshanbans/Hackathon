@@ -1,0 +1,7 @@
+{
+  "name": "result_evaluation",
+  "version": "1.1.0",
+  "timeout_seconds": 8,
+  "max_repairs": 1,
+  "fallback": "cache or fail_closed without fabricated score"
+}

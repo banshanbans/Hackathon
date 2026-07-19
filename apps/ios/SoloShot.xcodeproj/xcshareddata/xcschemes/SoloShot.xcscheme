@@ -50,6 +50,17 @@
                ReferencedContainer = "container:SoloShot.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "B317737C982B2028295927C6"
+               BuildableName = "SoloShotUITests.xctest"
+               BlueprintName = "SoloShotUITests"
+               ReferencedContainer = "container:SoloShot.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
       <CommandLineArguments>
       </CommandLineArguments>

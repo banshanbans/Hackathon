@@ -90,6 +90,31 @@ paths:
         "409":
           $ref: "#/components/responses/Conflict"
 
+  /api/v1/sessions/{session_id}/capture-consent:
+    post:
+      operationId: recordCaptureConsent
+      tags: [sessions]
+      summary: Record iOS consent for temporary capture upload and optional external AI evaluation
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/HandoffClaimToken"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaptureConsentRequest"
+      responses:
+        "200":
+          $ref: "#/components/responses/CaptureConsentOk"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
   /api/v1/media/uploads:
     post:
       operationId: createMediaUpload
@@ -97,6 +122,7 @@ paths:
       summary: Create a short-lived signed upload for session-owned image media
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -121,6 +147,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/MediaAssetId"
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -349,6 +376,7 @@ paths:
       summary: Register an uploaded capture
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -388,6 +416,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/CaptureId"
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -409,6 +438,7 @@ paths:
       summary: Compare a capture with its reference and plan
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:
@@ -759,6 +789,15 @@ components:
         type: string
         minLength: 32
         maxLength: 2048
+    OptionalHandoffClaimToken:
+      name: X-Handoff-Claim-Token
+      in: header
+      required: false
+      description: Required for capture writes after a Handoff has been completed by iOS
+      schema:
+        type: string
+        minLength: 32
+        maxLength: 2048
     PostId:
       name: post_id
       in: path
@@ -882,6 +921,39 @@ components:
         sha256:
           type: string
           pattern: ^[a-f0-9]{64}$
+      additionalProperties: false
+
+    CaptureConsentRequest:
+      type: object
+      required: [schema_version, capture_upload_consent, external_ai_consent]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        capture_upload_consent:
+          type: boolean
+          description: Must be true; the service rejects false because capture upload requires explicit consent.
+        external_ai_consent:
+          type: boolean
+      additionalProperties: false
+
+    CaptureConsentReceipt:
+      type: object
+      required:
+        [schema_version, session_id, capture_upload_consent_at, external_ai_consent_at]
+      properties:
+        schema_version:
+          type: string
+          const: "1.0"
+        session_id:
+          type: string
+          pattern: ^ss_[A-Za-z0-9_-]+$
+        capture_upload_consent_at:
+          type: string
+          format: date-time
+        external_ai_consent_at:
+          type: [string, "null"]
+          format: date-time
       additionalProperties: false
 
     CompleteMediaUploadRequest:
@@ -1045,6 +1117,26 @@ components:
         media_asset_id:
           type: string
           pattern: ^media_[A-Za-z0-9_-]+$
+        capture_method:
+          type: string
+          enum: [photo, short_video, photo_fallback]
+        frame_selection:
+          $ref: "#/components/schemas/FrameSelection"
+      additionalProperties: false
+
+    FrameSelection:
+      type: object
+      required: [frame_id, timestamp_ms, selection_source]
+      properties:
+        frame_id:
+          type: string
+          pattern: ^frame_[A-Za-z0-9_-]+$
+        timestamp_ms:
+          type: [integer, "null"]
+          minimum: 0
+        selection_source:
+          type: string
+          enum: [local_recommended, user_selected]
       additionalProperties: false
 
     SelectFrameRequest:
@@ -1057,6 +1149,12 @@ components:
         frame_id:
           type: string
           pattern: ^frame_[A-Za-z0-9_-]+$
+        timestamp_ms:
+          type: [integer, "null"]
+          minimum: 0
+        selection_source:
+          type: string
+          enum: [local_recommended, user_selected]
       additionalProperties: false
 
     CreateEvaluationRequest:
@@ -1307,6 +1405,14 @@ components:
           properties:
             data:
               $ref: "#/components/schemas/SoloShotSession"
+    CaptureConsentResponse:
+      allOf:
+        - $ref: "#/components/schemas/ResponseMetadata"
+        - type: object
+          required: [data]
+          properties:
+            data:
+              $ref: "#/components/schemas/CaptureConsentReceipt"
     ReferenceResponse:
       allOf:
         - $ref: "#/components/schemas/ResponseMetadata"
@@ -1513,6 +1619,15 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/SessionResponse"
+    CaptureConsentOk:
+      description: Capture consent recorded
+      headers:
+        X-Request-ID:
+          $ref: "#/components/headers/RequestId"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/CaptureConsentResponse"
     ReferenceOk:
       description: Reference retrieved
       headers:

@@ -1,0 +1,15 @@
+[
+  {
+    "name": "round_two_fixes_scale",
+    "input_summary": "Round 1 person_too_small; Round 2 selected frame matches target scale",
+    "output": {
+      "schema_version": "1.0",
+      "evaluation_id": "eval_example_round_2",
+      "capture_id": "cap_example_round_2",
+      "needs_retake": false,
+      "goal_satisfied": true,
+      "publish_readiness": 0.88,
+      "confidence": 0.84
+    }
+  }
+]

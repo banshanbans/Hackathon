@@ -149,32 +149,39 @@ def test_all_reference_fixtures_and_public_closed_loops_match_expectations() -> 
         if not case["public_preset"]:
             continue
         evaluations: list[ResultEvaluation] = []
+        previous_capture: dict[str, Any] | None = None
+        previous_evaluation: dict[str, Any] | None = None
         for expected in case["result_evaluations"]:
             round_index = expected["round_index"]
+            capture_input = {
+                "schema_version": "1.0",
+                "capture_id": f"cap_{case['case_id']}_{round_index}",
+                "session_id": f"ss_{case['case_id']}",
+                "round_index": round_index,
+                "media_asset_id": f"media_fixture_{case['case_id']}_round_{round_index}",
+                "status": "ready",
+                "selected_frame_id": None,
+                "created_at": "2026-07-17T00:00:00Z",
+            }
+            evaluation_input: dict[str, Any] = {
+                "reference_asset": case["reference_asset"],
+                "reference_analysis": reference.output,
+                "scene_asset_id": None,
+                "capture": capture_input,
+                "shot_plan": plan.output,
+                "mode": "original_replication",
+                "media_kind": "selected_frame",
+                "round_index": round_index,
+            }
+            if previous_capture is not None and previous_evaluation is not None:
+                evaluation_input["previous_capture"] = previous_capture
+                evaluation_input["previous_evaluation"] = previous_evaluation
             invocation = asyncio.run(
-                registry.get("result_evaluation").invoke(
-                    {
-                        "reference_asset": case["reference_asset"],
-                        "reference_analysis": reference.output,
-                        "scene_asset_id": None,
-                        "capture": {
-                            "schema_version": "1.0",
-                            "capture_id": f"cap_{case['case_id']}_{round_index}",
-                            "session_id": f"ss_{case['case_id']}",
-                            "round_index": round_index,
-                            "media_asset_id": (
-                                f"media_fixture_{case['case_id']}_round_{round_index}"
-                            ),
-                            "status": "ready",
-                            "selected_frame_id": None,
-                            "created_at": "2026-07-17T00:00:00Z",
-                        },
-                        "shot_plan": plan.output,
-                        "mode": "original_replication",
-                    }
-                )
+                registry.get("result_evaluation").invoke(evaluation_input)
             )
             evaluations.append(ResultEvaluation.model_validate(invocation.output))
+            previous_capture = capture_input
+            previous_evaluation = invocation.output
         assert evaluations[0].needs_retake is True
         assert evaluations[0].issue_code == case["result_evaluations"][0]["issue_code"]
         assert evaluations[1].goal_satisfied is True

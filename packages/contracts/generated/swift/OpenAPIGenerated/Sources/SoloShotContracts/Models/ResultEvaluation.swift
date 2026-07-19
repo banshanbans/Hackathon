@@ -24,6 +24,11 @@ public struct ResultEvaluation: Sendable, Codable, Hashable {
         case cameraAngleWrong = "camera_angle_wrong"
         case motionTimingWrong = "motion_timing_wrong"
     }
+    public enum ExecutionMode: String, Sendable, Codable, CaseIterable {
+        case fixture = "fixture"
+        case live = "live"
+        case fallback = "fallback"
+    }
     public static let evaluationIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^eval_[A-Za-z0-9_-]+$/")
     public static let captureIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^cap_[A-Za-z0-9_-]+$/")
     public static let topIssueRule = StringRule(minLength: 1, maxLength: 300, pattern: nil)
@@ -40,8 +45,9 @@ public struct ResultEvaluation: Sendable, Codable, Hashable {
     public var goalSatisfied: Bool
     public var publishReadiness: Double
     public var confidence: Double
+    public var executionMode: ExecutionMode?
 
-    public init(schemaVersion: String, evaluationId: String, captureId: String, issueCode: IssueCode? = nil, topIssue: String? = nil, nextInstruction: String? = nil, needsRetake: Bool, goalSatisfied: Bool, publishReadiness: Double, confidence: Double) {
+    public init(schemaVersion: String, evaluationId: String, captureId: String, issueCode: IssueCode? = nil, topIssue: String? = nil, nextInstruction: String? = nil, needsRetake: Bool, goalSatisfied: Bool, publishReadiness: Double, confidence: Double, executionMode: ExecutionMode? = nil) {
         self.schemaVersion = schemaVersion
         self.evaluationId = evaluationId
         self.captureId = captureId
@@ -52,6 +58,7 @@ public struct ResultEvaluation: Sendable, Codable, Hashable {
         self.goalSatisfied = goalSatisfied
         self.publishReadiness = publishReadiness
         self.confidence = confidence
+        self.executionMode = executionMode
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -65,6 +72,7 @@ public struct ResultEvaluation: Sendable, Codable, Hashable {
         case goalSatisfied = "goal_satisfied"
         case publishReadiness = "publish_readiness"
         case confidence
+        case executionMode = "execution_mode"
     }
 
     // Encodable protocol methods
@@ -81,6 +89,7 @@ public struct ResultEvaluation: Sendable, Codable, Hashable {
         try container.encode(goalSatisfied, forKey: .goalSatisfied)
         try container.encode(publishReadiness, forKey: .publishReadiness)
         try container.encode(confidence, forKey: .confidence)
+        try container.encodeIfPresent(executionMode, forKey: .executionMode)
     }
 }
 

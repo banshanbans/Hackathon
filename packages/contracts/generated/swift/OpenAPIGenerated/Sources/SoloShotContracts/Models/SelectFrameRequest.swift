@@ -12,18 +12,29 @@ public struct SelectFrameRequest: Sendable, Codable, Hashable {
     public enum SchemaVersion: String, Sendable, Codable, CaseIterable {
         case _10 = "1.0"
     }
+    public enum SelectionSource: String, Sendable, Codable, CaseIterable {
+        case localRecommended = "local_recommended"
+        case userSelected = "user_selected"
+    }
     public static let frameIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^frame_[A-Za-z0-9_-]+$/")
+    public static let timestampMsRule = NumericRule<Int>(minimum: 0, exclusiveMinimum: false, maximum: nil, exclusiveMaximum: false, multipleOf: nil)
     public var schemaVersion: SchemaVersion
     public var frameId: String
+    public var timestampMs: Int?
+    public var selectionSource: SelectionSource?
 
-    public init(schemaVersion: SchemaVersion, frameId: String) {
+    public init(schemaVersion: SchemaVersion, frameId: String, timestampMs: Int? = nil, selectionSource: SelectionSource? = nil) {
         self.schemaVersion = schemaVersion
         self.frameId = frameId
+        self.timestampMs = timestampMs
+        self.selectionSource = selectionSource
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case frameId = "frame_id"
+        case timestampMs = "timestamp_ms"
+        case selectionSource = "selection_source"
     }
 
     // Encodable protocol methods
@@ -32,6 +43,8 @@ public struct SelectFrameRequest: Sendable, Codable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(schemaVersion, forKey: .schemaVersion)
         try container.encode(frameId, forKey: .frameId)
+        try container.encodeIfPresent(timestampMs, forKey: .timestampMs)
+        try container.encodeIfPresent(selectionSource, forKey: .selectionSource)
     }
 }
 

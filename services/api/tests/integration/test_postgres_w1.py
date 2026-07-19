@@ -76,7 +76,7 @@ def test_postgres_persists_session_across_app_instances_and_cascades_delete() ->
                     "schema_version": "1.0",
                     "session_id": session_id,
                     **fixture["capture"],
-                    "media_asset_id": f"media_{suffix}",
+                        "media_asset_id": f"media_fixture_postgres_{suffix}",
                 },
             )
 

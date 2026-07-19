@@ -72,6 +72,10 @@ function AsyncError({ error, onRetry }: { error: unknown; onRetry: () => void })
 }
 
 function modeForSession(session: SoloShotSession, current: string | null): ExecutionMode {
+  const persisted = session.evaluations.at(-1)?.execution_mode;
+  if (persisted === "fixture" || persisted === "live" || persisted === "fallback") {
+    return persisted;
+  }
   if (
     session.mode === "original_replication" &&
     session.reference_asset?.source_type === "preset"
@@ -679,25 +683,37 @@ export function ResultScreen() {
   const first = evaluations[0];
   const latest = evaluations.at(-1);
   const satisfied = latest?.goal_satisfied === true;
+  const realCaptures = session.capture_rounds.filter(
+    (capture) => !capture.media_asset_id.startsWith("media_fixture_"),
+  );
+  const hasRealCaptureMedia = realCaptures.length > 0;
   return (
     <section className="page result-page">
       <div className="result-heading">
         <span>
           {satisfied ? <Check size={30} weight="bold" /> : <Sparkle size={30} weight="fill" />}
         </span>
-        <p className="kicker">SECOND SHOT IMPROVEMENT</p>
-        <h1>{satisfied ? "目标已满足" : "两轮拍摄已完成"}</h1>
-        <p>{satisfied ? "本次任务可以结束。" : "第二轮仍有改进空间，但 W2 不会伪造达标结论。"}</p>
+        <p className="kicker">TWO-ROUND RESULT</p>
+        <h1>{mode === "fixture" ? "两轮拍摄结果" : satisfied ? "目标已满足" : "两轮拍摄已完成"}</h1>
+        <p>
+          {mode === "fixture"
+            ? "照片可以是真实拍摄，但以下建议和准备度来自固定演示数据。"
+            : satisfied
+              ? "本次任务可以结束。"
+              : "第二轮仍有改进空间；系统不会伪造达标结论。"}
+        </p>
       </div>
       <StateNotice mode={mode}>
         {mode === "fixture"
-          ? "仅展示评分变化卡；没有真实配对图时不生成 Before / After 照片。"
+          ? hasRealCaptureMedia
+            ? "以下照片来自本 Session；评分是 Fixture 固定演示，不代表模型比较。"
+            : "仅展示评分变化卡；没有真实配对图时不生成 Before / After 照片。"
           : "以下图片来自本 Session 的真实 Round 1 / Round 2 上传。"}
       </StateNotice>
 
-      {mode === "live" ? (
+      {mode === "live" || hasRealCaptureMedia ? (
         <div className="live-comparison">
-          {session.capture_rounds.map((capture) => (
+          {(mode === "live" ? session.capture_rounds : realCaptures).map((capture) => (
             <RoundMedia key={capture.capture_id} session={session} capture={capture} />
           ))}
         </div>
@@ -719,6 +735,7 @@ export function ResultScreen() {
             <strong>发布准备度</strong>
             <small>
               {Math.round(first.publish_readiness * 100)}% → {Math.round(latest.publish_readiness * 100)}%
+              {mode === "fixture" ? "（Fixture）" : ""}
             </small>
           </span>
           <div aria-label={`发布准备度 ${Math.round(latest.publish_readiness * 100)}%`}>

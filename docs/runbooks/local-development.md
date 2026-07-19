@@ -40,6 +40,55 @@ xcrun simctl openurl booted 'soloshot://handoff/ABC234'
 
 iOS Debug 构建默认访问 `http://127.0.0.1:8000`。测试环境构建应通过 `SOLOSHOT_API_BASE_URL=https://api.example.test` 覆盖，且 H5 的 `PUBLIC_HANDOFF_BASE_URL` 必须指向同一套可访问环境。
 
+## W4 本地对齐与 Simulator Fixture
+
+W4 从已缓存的 `ImportedTask` v2 进入“拍摄前准备”，使用后置广角主摄、固定 1×、竖屏 720p 预览和设备内 Vision。相机帧不会保存、上传或发送给模型；W4 也不会申请麦克风或照片权限。
+
+Simulator 没有真实后置相机。Debug 构建可通过以下启动参数进入明确标记的 Fixture 流程；Release 构建不能启用这些参数：
+
+```text
+-W4SeedTask
+-W4FixtureCamera
+-W4FixtureScenario ready
+```
+
+将 `ready` 改为 `manual` 可验证连续五秒没有可用人体结果后的二次手动确认。增加 `-W4FixturePermissionDenied` 可验证权限拒绝恢复。推荐直接运行：
+
+```bash
+make test-ios
+make e2e-ios-w4
+```
+
+`make test-ios` 会运行 W3/W4 单元测试并构建通用 Simulator 目标；`make e2e-ios-w4` 会验证 Fixture 正常就位、未验证手动降级和权限拒绝三条 UI 路径。可通过 `IOS_SIMULATOR_NAME='iPhone 17 Pro'` 覆盖默认设备名。
+
+部分 Simulator runtime 可能不包含 `VNDetectHumanBodyPoseRequest` 的系统模型权重。此时真实图片 Vision smoke 会明确显示为 skipped；Vision 关节过滤与坐标转换、AlignmentEngine 和 Overlay 测试仍必须通过。只有真机结果才能关闭真实 Vision 能力验收。
+
+## W5 录制、候选帧、评价与第二轮
+
+W5 从 W4 的 ready 状态继续使用同一个 Camera Session。`photo` 模式进行三张短间隔连拍；`short_video` 模式录制 5–8 秒、720p、后置 1×、无声 MOV，并在设备内抽取最多六张候选。视频失败、空间不足或关键系统压力会明确提供照片降级，不会伪装成视频成功。
+
+候选帧按完整入镜、目标位置、人物比例、清晰度和受控姿势规则进行确定性本地推荐。未知姿势模板不会被猜测；用户可以选择任意候选。确认后会删除源视频和未选候选，只在明确同意后上传所选 JPEG。应用不申请麦克风或照片库权限，也不会上传预览帧、Vision 坐标或原始视频。
+
+iOS 接力写请求必须携带 Keychain 中的 `X-Handoff-Claim-Token`。本地 Outbox 按 `consent → upload ticket → signed PUT → complete → create Capture → evaluate` 顺序执行，稳定保存 Capture/Evaluation Idempotency-Key；上传地址过期时只重建 upload attempt。冷启动会恢复待处理工作，网络请求的真实结果决定是否进入离线待重试状态。
+
+Simulator 使用 Release 无法启用的 Debug Fixture：
+
+```text
+-W4SeedTask
+-W4FixtureCamera
+-W4FixtureScenario ready
+-W5FixtureCaptureMode short_video
+```
+
+增加 `-W5FixtureVideoFailure` 可验证视频失败后的照片降级。运行：
+
+```bash
+make e2e-ios-w5
+make e2e-w5
+```
+
+预设任务即使关联真实拍摄照片，评价仍显示“Fixture 固定评分”，不能描述为模型比较或 AI 已验证改善。自定义参考和场景适配必须配置 Ark 并获得 External AI 同意；未配置时保持可重试待评价并返回 `PROVIDER_UNAVAILABLE`，不会切换为 Fixture。
+
 ## Fixture 与 Live 的边界
 
 默认配置是 `MODEL_PROVIDER=hybrid`、`MOCK_AI_ENABLED=false`：
@@ -72,6 +121,9 @@ make evals
 make e2e-h5
 make test-ios
 make e2e-handoff
+make e2e-ios-w4
+make e2e-ios-w5
+make e2e-w5
 ```
 
 - `make test`：API 单元测试、合同测试、H5 单元测试和生产构建。
@@ -79,8 +131,11 @@ make e2e-handoff
 - `make test-contracts`：验证 OpenAPI/JSON Schema，以及 H5、Python、Swift 生成类型。
 - `make evals`：运行五个版本化 Skill 的固定评测，不调用付费模型。
 - `make e2e-h5`：运行移动 Chromium、移动 WebKit 和桌面 Chromium 的 W2/W3 流程。
-- `make test-ios`：运行 W3 XCTest target，并构建通用 iOS Simulator 目标；可用 `IOS_SIMULATOR_NAME` 覆盖本机设备名。
+- `make test-ios`：运行 W3/W4/W5 XCTest target，并构建通用 iOS Simulator 目标；可用 `IOS_SIMULATOR_NAME` 覆盖本机设备名。
 - `make e2e-handoff`：运行 W3 API 生命周期/并发/限流测试和 H5 模拟 iOS 认领的接力 Playwright 场景。
+- `make e2e-ios-w4`：运行 W4 Debug Fixture 的三条 Simulator UI 自动化；Fixture 页面和结果页都会持续标识演示来源。
+- `make e2e-ios-w5`：运行 W5 Debug Fixture 的照片、短视频、视频失败降级、两轮评价和离线恢复 Simulator UI 自动化。
+- `make e2e-w5`：组合运行 W5 API 规则、H5 跨端状态恢复和 W5 iOS Simulator UI 门禁。
 
 ## 常见问题恢复
 
@@ -95,5 +150,11 @@ make e2e-handoff
 - Xcode 缺少 iOS 平台组件：在 Xcode 的“设置 > Components”中安装对应平台；仅出现 SDK 不代表平台已完成注册。
 - iPhone 无法打开二维码：确认二维码为手机可访问的 HTTPS 地址，落地页再由用户点击 `soloshot://handoff/{code}`；本地 `127.0.0.1` 只适用于同机模拟器。
 - 接力返回 `HANDOFF_RATE_LIMITED`：等待 `Retry-After` 后重试，并检查 Redis 健康；不要关闭限流绕过。
+- W4 相机权限被拒绝：从错误页打开系统设置，授权后返回准备页，由用户主动重新进入相机。
+- W4 显示设备压力过高：Critical 时 Vision 会暂停；先退出降温，或使用二次确认的手动降级，不能把手动结果视作已验证。
+- W4 发生相机中断或媒体服务重置：恢复后必须由用户点击继续或返回准备页重进，应用不会在后台静默重启相机。
+- W5 显示“等待网络”：确认 API、MinIO 与网络可用后点击重试；应用冷启动会恢复 Outbox，但不宣称系统终止后仍能在后台上传。
+- W5 上传地址过期：Outbox 会创建新的 upload attempt；Capture 与 Evaluation 的 Idempotency-Key 不会改变。
+- W5 Live 返回 `PROVIDER_UNAVAILABLE`：候选 JPEG 和工作状态会保留到 24 小时任务过期，可在 Ark 配置恢复后重试；不得用 Fixture 分数替代。
 
-W2 已完成本地和 CI 工程验收。W3 的代码、本地和 CI 验收不等于最终关闭：还必须在 HTTPS 测试环境用指定 iPhone 连续完成真机清单。
+W2 已完成本地和 CI 工程验收。W3 的代码、本地和 CI 验收不等于最终关闭：还必须在 HTTPS 测试环境用指定 iPhone 连续完成真机清单。W4/W5 只完成本地、CI 和 Simulator 工程范围；真实后置相机、弱光、热压力、前后台、中断、5–8 秒录制、候选处理时延、断网恢复和两轮成功率仍需指定 iPhone 验收。真实 Ark 效果还需要独立的付费 smoke 与样本验收。

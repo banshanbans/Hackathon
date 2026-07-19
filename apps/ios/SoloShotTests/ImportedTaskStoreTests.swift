@@ -13,11 +13,14 @@ final class ImportedTaskStoreTests: XCTestCase {
             cameraHeight: "waist",
             cameraAngle: "level",
             lens: "1x",
+            captureMode: nil,
             setupInstruction: "固定手机。",
             actions: [ImportedAction(sequence: 1, instruction: "站好。", durationSeconds: 2)],
             safetyNotes: ["检查脚下。"],
             referenceID: nil,
             presetThumbnailName: nil,
+            targetLayout: nil,
+            iosAlignmentSupported: nil,
             localReferenceFilename: nil,
             importedAt: now,
             expiresAt: now.addingTimeInterval(86_400),
@@ -34,9 +37,22 @@ final class ImportedTaskStoreTests: XCTestCase {
         try await store.save(expected)
         let restored = try await store.load(now: importedAt.addingTimeInterval(60))
         XCTAssertEqual(restored, expected)
+        XCTAssertFalse(restored?.canStartAlignment ?? true)
         try await store.clear()
         let cleared = try await store.load(now: importedAt.addingTimeInterval(60))
         XCTAssertNil(cleared)
+    }
+
+    func testVersionTwoTaskRetainsAlignmentTarget() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "soloshot-store-\(UUID().uuidString)", directoryHint: .isDirectory)
+        let store = ImportedTaskStore(directory: directory)
+        let expected = makeW4ImportedTask()
+        try await store.save(expected)
+        let restored = try await store.load(now: expected.importedAt.addingTimeInterval(60))
+        XCTAssertEqual(restored, expected)
+        XCTAssertTrue(restored?.canStartAlignment == true)
+        XCTAssertEqual(restored?.targetLayout?.poseTemplate, "doorway_crossed_legs")
     }
 
     func testExpiredAndCorruptCachesAreRemoved() async throws {

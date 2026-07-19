@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app import __version__
 from app.api.routes import router
+from app.application.capture_authorization import CaptureAuthorizationService
 from app.application.handoff import HandoffService
 from app.application.service import W1Service
 from app.config import Settings, get_settings
@@ -80,10 +81,11 @@ def create_app(
         if isinstance(resolved_store, MemoryStateStore)
         else RedisHandoffRateLimiter(resolved_settings.redis_url)
     )
+    handoff_signer = HandoffTokenSigner(resolved_settings.handoff_signing_secret)
     handoff_service = HandoffService(
         resolved_store,
         media_service,
-        HandoffTokenSigner(resolved_settings.handoff_signing_secret),
+        handoff_signer,
         rate_limiter,
         public_base_url=resolved_settings.public_handoff_base_url,
         handoff_ttl_seconds=resolved_settings.handoff_ttl_seconds,
@@ -116,6 +118,7 @@ def create_app(
     else:
         provider = UnconfiguredProvider()
     registry = SkillRegistry(build_skills(provider, resolved_settings.skill_timeout_seconds))
+    capture_authorization = CaptureAuthorizationService(resolved_store, handoff_signer)
 
     async def cleanup_media_loop() -> None:
         while True:
@@ -175,6 +178,7 @@ def create_app(
         provider.name,
         provider.execution_mode,
         media_service,
+        capture_authorization,
     )
     application.state.handoff_service = handoff_service
     application.state.object_storage = storage

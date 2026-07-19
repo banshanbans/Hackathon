@@ -18,8 +18,9 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from soloshot_contracts.models.frame_selection import FrameSelection
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +33,9 @@ class CreateCaptureRequest(BaseModel):
     session_id: Annotated[str, Field(strict=True)]
     round_index: Annotated[int, Field(le=2, strict=True, ge=1)]
     media_asset_id: Annotated[str, Field(strict=True)]
-    __properties: ClassVar[List[str]] = ["schema_version", "session_id", "round_index", "media_asset_id"]
+    capture_method: Optional[StrictStr] = None
+    frame_selection: Optional[FrameSelection] = None
+    __properties: ClassVar[List[str]] = ["schema_version", "session_id", "round_index", "media_asset_id", "capture_method", "frame_selection"]
 
     @field_validator('schema_version')
     def schema_version_validate_enum(cls, value):
@@ -59,6 +62,16 @@ class CreateCaptureRequest(BaseModel):
 
         if not re.match(r"^media_[A-Za-z0-9_-]+$", value):
             raise ValueError(r"must validate the regular expression /^media_[A-Za-z0-9_-]+$/")
+        return value
+
+    @field_validator('capture_method')
+    def capture_method_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['photo', 'short_video', 'photo_fallback']):
+            raise ValueError("must be one of enum values ('photo', 'short_video', 'photo_fallback')")
         return value
 
     model_config = ConfigDict(
@@ -100,6 +113,9 @@ class CreateCaptureRequest(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of frame_selection
+        if self.frame_selection:
+            _dict['frame_selection'] = self.frame_selection.to_dict()
         return _dict
 
     @classmethod
@@ -115,7 +131,9 @@ class CreateCaptureRequest(BaseModel):
             "schema_version": obj.get("schema_version"),
             "session_id": obj.get("session_id"),
             "round_index": obj.get("round_index"),
-            "media_asset_id": obj.get("media_asset_id")
+            "media_asset_id": obj.get("media_asset_id"),
+            "capture_method": obj.get("capture_method"),
+            "frame_selection": FrameSelection.from_dict(obj["frame_selection"]) if obj.get("frame_selection") is not None else None
         })
         return _obj
 

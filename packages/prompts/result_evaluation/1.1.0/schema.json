@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "input": {
+      "type": "object",
+      "required": [
+        "reference_asset",
+        "reference_analysis",
+        "capture",
+        "shot_plan",
+        "mode",
+        "media_kind",
+        "round_index"
+      ],
+      "properties": {
+        "reference_asset": {"$ref": "../../../contracts/schemas/reference.schema.json#/$defs/ReferenceAsset"},
+        "reference_analysis": {"$ref": "../../../contracts/schemas/reference.schema.json#/$defs/ReferenceAnalysis"},
+        "scene_asset_id": {"type": ["string", "null"], "pattern": "^media_[A-Za-z0-9_-]+$"},
+        "capture": {"$ref": "../../../contracts/schemas/capture.schema.json"},
+        "previous_capture": {"$ref": "../../../contracts/schemas/capture.schema.json"},
+        "previous_evaluation": {"$ref": "../../../contracts/schemas/evaluation.schema.json"},
+        "shot_plan": {"$ref": "../../../contracts/schemas/shot-plan.schema.json"},
+        "mode": {"type": "string", "enum": ["original_replication", "scene_adaptation"]},
+        "media_kind": {"type": "string", "const": "selected_frame"},
+        "round_index": {"type": "integer", "minimum": 1, "maximum": 2}
+      },
+      "additionalProperties": false
+    },
+    "output": {"$ref": "../../../contracts/schemas/evaluation.schema.json"}
+  }
+}

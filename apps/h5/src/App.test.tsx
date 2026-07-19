@@ -205,7 +205,7 @@ describe("W2 H5 flow", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    expect(screen.getAllByText("Fixture").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("演示模式").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "选择参考画面" }));
     for (const item of testImageDataset.cases) {
       expect(screen.getByRole("button", { name: new RegExp(item.title) })).toBeTruthy();
@@ -233,12 +233,14 @@ describe("W2 H5 flow", () => {
     await user.click(screen.getByRole("button", { name: "按建议再拍一次" }));
     await user.click(screen.getByRole("button", { name: "运行第 2 轮评分" }));
     await user.click(await screen.findByRole("button", { name: "查看最终结果" }));
-    expect(await screen.findByRole("heading", { name: "目标已满足" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "两轮拍摄结果" })).toBeTruthy();
     expect(screen.getByText(/没有真实配对图时不生成 Before \/ After/)).toBeTruthy();
 
     view.unmount();
     render(<App />);
-    await waitFor(() => expect(screen.getByRole("heading", { name: "目标已满足" })).toBeTruthy());
+    await waitFor(() =>
+      expect(screen.getByRole("heading", { name: "两轮拍摄结果" })).toBeTruthy(),
+    );
   });
 
   it("shows a recoverable error without switching execution mode to Fixture", async () => {
@@ -251,7 +253,7 @@ describe("W2 H5 flow", () => {
     await user.click(screen.getByRole("button", { name: "开始参考分析" }));
 
     expect(await screen.findByText("NETWORK_ERROR · 未切换到 Fixture")).toBeTruthy();
-    expect(screen.getAllByText("Error").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("需要重试").length).toBeGreaterThan(0);
     await user.click(screen.getByRole("button", { name: "重试" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });

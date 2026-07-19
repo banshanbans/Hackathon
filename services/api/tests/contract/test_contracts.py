@@ -83,12 +83,13 @@ def test_openapi_document_is_valid_and_all_external_files_exist() -> None:
             assert target.is_file(), f"{source_path} references missing file {target}"
 
 
-def test_openapi_contains_the_accepted_w3_contract_surface() -> None:
+def test_openapi_contains_the_accepted_w5_contract_surface() -> None:
     paths = set(load_openapi()["paths"])
     expected_paths = {
         "/health",
         "/api/v1/sessions",
         "/api/v1/sessions/{session_id}",
+        "/api/v1/sessions/{session_id}/capture-consent",
         "/api/v1/media/uploads",
         "/api/v1/media/uploads/{media_asset_id}/complete",
         "/api/v1/media/{media_asset_id}/access",

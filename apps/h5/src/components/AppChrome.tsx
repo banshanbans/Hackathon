@@ -3,19 +3,15 @@ import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import type { ExecutionMode } from "../apiClient";
 import { useFlow } from "../flow/FlowProvider";
-
-const modeLabels: Record<ExecutionMode, string> = {
-  fixture: "Fixture",
-  mock: "Fixture",
-  live: "Live",
-  cache: "Cache",
-  fallback: "Fallback",
-  error: "Error",
-};
+import { executionModeLabels } from "../productCopy";
 
 export function ExecutionBadge({ mode }: { mode: ExecutionMode | null }) {
   const current = mode ?? "error";
-  return <span className={`execution-badge execution-${current}`}>{modeLabels[current]}</span>;
+  return (
+    <span className={`execution-badge execution-${current}`}>
+      {executionModeLabels[current]}
+    </span>
+  );
 }
 
 export function BrandHeader() {

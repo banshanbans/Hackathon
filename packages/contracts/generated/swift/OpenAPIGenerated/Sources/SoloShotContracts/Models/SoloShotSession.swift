@@ -56,12 +56,13 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
     public var evaluation: ResultEvaluation1?
     public var evaluations: [ResultEvaluation2]?
     public var externalAiConsentAt: Date?
+    public var captureUploadConsentAt: Date?
     public var publishPackage: SoloShotSessionPublishPackage?
     public var analyticsContext: SoloShotSessionAnalyticsContext
     public var createdAt: Date
     public var updatedAt: Date
 
-    public init(schemaVersion: SchemaVersion, sessionId: String, state: State, sourceChannel: SourceChannel, mode: Mode, referenceAsset: SoloShotSessionReferenceAsset?, sceneAssetId: String? = nil, activeReferenceAnalysisId: String? = nil, userConstraints: SoloShotSessionUserConstraints, selectedSkills: [SoloShotSessionSelectedSkillsInner], shotPlan: ShotPlan1?, captureRounds: [Capture], evaluation: ResultEvaluation1?, evaluations: [ResultEvaluation2]? = nil, externalAiConsentAt: Date? = nil, publishPackage: SoloShotSessionPublishPackage?, analyticsContext: SoloShotSessionAnalyticsContext, createdAt: Date, updatedAt: Date) {
+    public init(schemaVersion: SchemaVersion, sessionId: String, state: State, sourceChannel: SourceChannel, mode: Mode, referenceAsset: SoloShotSessionReferenceAsset?, sceneAssetId: String? = nil, activeReferenceAnalysisId: String? = nil, userConstraints: SoloShotSessionUserConstraints, selectedSkills: [SoloShotSessionSelectedSkillsInner], shotPlan: ShotPlan1?, captureRounds: [Capture], evaluation: ResultEvaluation1?, evaluations: [ResultEvaluation2]? = nil, externalAiConsentAt: Date? = nil, captureUploadConsentAt: Date? = nil, publishPackage: SoloShotSessionPublishPackage?, analyticsContext: SoloShotSessionAnalyticsContext, createdAt: Date, updatedAt: Date) {
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
         self.state = state
@@ -77,6 +78,7 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         self.evaluation = evaluation
         self.evaluations = evaluations
         self.externalAiConsentAt = externalAiConsentAt
+        self.captureUploadConsentAt = captureUploadConsentAt
         self.publishPackage = publishPackage
         self.analyticsContext = analyticsContext
         self.createdAt = createdAt
@@ -99,6 +101,7 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         case evaluation
         case evaluations
         case externalAiConsentAt = "external_ai_consent_at"
+        case captureUploadConsentAt = "capture_upload_consent_at"
         case publishPackage = "publish_package"
         case analyticsContext = "analytics_context"
         case createdAt = "created_at"
@@ -124,6 +127,7 @@ public struct SoloShotSession: Sendable, Codable, Hashable {
         try container.encode(evaluation, forKey: .evaluation)
         try container.encodeIfPresent(evaluations, forKey: .evaluations)
         try container.encodeIfPresent(externalAiConsentAt, forKey: .externalAiConsentAt)
+        try container.encodeIfPresent(captureUploadConsentAt, forKey: .captureUploadConsentAt)
         try container.encode(publishPackage, forKey: .publishPackage)
         try container.encode(analyticsContext, forKey: .analyticsContext)
         try container.encode(createdAt, forKey: .createdAt)

@@ -185,6 +185,13 @@
   },
   "active": "d7c15a452fb5f5ba",
   "lastOpenFiles": [
+    "docs/W3_HANDOFF_STATUS.md",
+    "docs/W2_H5_STATUS.md",
+    "docs/W2_DESIGN_QA.md",
+    "docs/STITCH_UI_AUDIT.md",
+    "docs/ChatGPT Image Jul 17, 2026 at 02_03_57 PM.png",
+    "docs/ChatGPT Image Jul 17, 2026 at 01_57_33 PM.png",
+    "CODEX_IMPLEMENTATION_SPEC.md",
     "apps/h5/test-results",
     "apps/h5/dist/assets/index-BP7nFiH5.js",
     "apps/h5/test-results/test-image-flow-H5-handoff-34566-OS-claim-through-completion-mobile-webkit/trace.zip",
@@ -198,10 +205,8 @@
     "apps/h5/test-results/test-image-flow-H5-handoff-34566-OS-claim-through-completion-mobile-chromium",
     "services/api/tests/integration/__pycache__/test_postgres_w3_handoff.cpython-312-pytest-8.4.1.pyc",
     "infra/migrations/versions/__pycache__/20260718_0005_w3_handoffs.cpython-312.pyc",
-    "apps/h5/dist/assets/index-qiCCSj2N.js",
     "packages/contracts/generated/swift/OpenAPIGenerated/README 2.md",
     "packages/contracts/generated/swift/OpenAPIGenerated/README.md",
-    "docs/W3_HANDOFF_STATUS.md",
     "node_modules/@types/qrcode/README.md",
     "node_modules/pngjs/coverage/lcov-report/sort-arrow-sprite.png",
     "node_modules/dijkstrajs/README.md",
@@ -220,16 +225,11 @@
     "node_modules/jsqr/README.md",
     "node_modules/qrcode/README.md",
     "node_modules/qrcode/node_modules/yargs-parser/README.md",
-    "node_modules/qrcode/node_modules/yargs-parser/CHANGELOG.md",
-    "node_modules/qrcode/node_modules/y18n/README.md",
-    "node_modules/qrcode/node_modules/y18n/CHANGELOG.md",
     "apps/h5/test-results/test-image-flow-custom-ref-5db7c-Live-scene-adapted-ShotPlan-mobile-chromium/test-failed-1.png",
     "apps/h5/test-results/test-image-flow-custom-ref-5db7c-Live-scene-adapted-ShotPlan-desktop-chromium/test-failed-1.png",
     "apps/h5/test-results/test-image-flow-preset-ref-1fc35-Live-scene-adapted-ShotPlan-mobile-chromium/test-failed-1.png",
     "apps/h5/test-results/test-image-flow-preset-ref-1fc35-Live-scene-adapted-ShotPlan-desktop-chromium/test-failed-1.png",
     "apps/h5/test-results/test-image-flow-custom-ori-919d7-a-real-media-Live-mock-flow-mobile-chromium/test-failed-1.png",
-    "apps/h5/test-results/test-image-flow-custom-ori-919d7-a-real-media-Live-mock-flow-desktop-chromium/test-failed-1.png",
-    "artifacts/design-qa/evaluation-comparison-final.png",
-    "artifacts/design-qa/shot-plan-comparison-final.png"
+    "apps/h5/test-results/test-image-flow-custom-ori-919d7-a-real-media-Live-mock-flow-desktop-chromium/test-failed-1.png"
   ]
 }

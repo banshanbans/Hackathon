@@ -9,6 +9,26 @@ struct ImportedAction: Codable, Equatable, Sendable, Identifiable {
     var id: Int { sequence }
 }
 
+struct ImportedTargetLayout: Codable, Equatable, Sendable {
+    let centerX: Double
+    let centerY: Double
+    let width: Double
+    let height: Double
+    let headPoint: NormalizedPoint
+    let footLineY: Double
+    let bodyDirection: String
+    let poseTemplate: String
+
+    var rect: NormalizedRect {
+        NormalizedRect(
+            x: centerX - width / 2,
+            y: centerY - height / 2,
+            width: width,
+            height: height
+        )
+    }
+}
+
 struct ImportedTask: Codable, Equatable, Sendable {
     let schemaVersion: String
     let code: String
@@ -18,15 +38,22 @@ struct ImportedTask: Codable, Equatable, Sendable {
     let cameraHeight: String
     let cameraAngle: String
     let lens: String
+    let captureMode: String?
     let setupInstruction: String
     let actions: [ImportedAction]
     let safetyNotes: [String]
     let referenceID: String?
     let presetThumbnailName: String?
+    let targetLayout: ImportedTargetLayout?
+    let iosAlignmentSupported: Bool?
     var localReferenceFilename: String?
     let importedAt: Date
     let expiresAt: Date
     var completionConfirmed: Bool
+
+    var canStartAlignment: Bool {
+        targetLayout != nil && iosAlignmentSupported == true
+    }
 
     static func from(_ claim: HandoffClaimResult, now: Date = Date()) throws -> ImportedTask {
         guard let plan = claim.session.shotPlan else {
@@ -40,8 +67,9 @@ struct ImportedTask: Codable, Equatable, Sendable {
         case "ref_storefront_profile": "storefront_profile-thumb"
         default: nil
         }
+        let layout = plan.targetLayout
         return ImportedTask(
-            schemaVersion: "1.0",
+            schemaVersion: "2.0",
             code: claim.handoff.code,
             sessionID: claim.session.sessionId,
             planID: plan.planId,
@@ -49,6 +77,7 @@ struct ImportedTask: Codable, Equatable, Sendable {
             cameraHeight: plan.cameraHeight.rawValue,
             cameraAngle: plan.cameraAngle.rawValue,
             lens: plan.lens.rawValue,
+            captureMode: plan.captureMode.rawValue,
             setupInstruction: plan.phoneSetupInstruction,
             actions: plan.actionScript.map {
                 ImportedAction(
@@ -60,6 +89,17 @@ struct ImportedTask: Codable, Equatable, Sendable {
             safetyNotes: plan.safetyNotes,
             referenceID: referenceID,
             presetThumbnailName: presetName,
+            targetLayout: ImportedTargetLayout(
+                centerX: layout.centerX,
+                centerY: layout.centerY,
+                width: layout.width,
+                height: layout.height,
+                headPoint: NormalizedPoint(x: layout.headPoint.x, y: layout.headPoint.y),
+                footLineY: layout.footLineY,
+                bodyDirection: layout.bodyDirection.rawValue,
+                poseTemplate: layout.poseTemplate
+            ),
+            iosAlignmentSupported: plan.iosExecution.supported,
             localReferenceFilename: nil,
             importedAt: now,
             expiresAt: now.addingTimeInterval(86_400),

@@ -19,9 +19,19 @@
     "round_index": { "type": "integer", "minimum": 1, "maximum": 2 },
     "media_asset_id": { "type": "string", "pattern": "^media_[A-Za-z0-9_-]+$" },
     "status": { "type": "string", "enum": ["uploaded", "processing", "ready", "failed"] },
+    "source_client": { "type": "string", "enum": ["h5", "ios"] },
+    "capture_method": {
+      "type": "string",
+      "enum": ["photo", "short_video", "photo_fallback"]
+    },
     "selected_frame_id": {
       "type": ["string", "null"],
       "pattern": "^frame_[A-Za-z0-9_-]+$"
+    },
+    "selected_frame_timestamp_ms": { "type": ["integer", "null"], "minimum": 0 },
+    "selection_source": {
+      "type": ["string", "null"],
+      "enum": ["local_recommended", "user_selected", null]
     },
     "created_at": { "type": "string", "format": "date-time" }
   },

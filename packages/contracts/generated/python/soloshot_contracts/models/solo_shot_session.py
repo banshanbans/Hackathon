@@ -53,12 +53,13 @@ class SoloShotSession(BaseModel):
     evaluation: Optional[ResultEvaluation1]
     evaluations: Optional[Annotated[List[ResultEvaluation2], Field(max_length=2)]] = None
     external_ai_consent_at: Optional[datetime] = None
+    capture_upload_consent_at: Optional[datetime] = None
     publish_package: Optional[SoloShotSessionPublishPackage]
     analytics_context: SoloShotSessionAnalyticsContext
     created_at: datetime
     updated_at: datetime
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["schema_version", "session_id", "state", "source_channel", "mode", "reference_asset", "scene_asset_id", "active_reference_analysis_id", "user_constraints", "selected_skills", "shot_plan", "capture_rounds", "evaluation", "evaluations", "external_ai_consent_at", "publish_package", "analytics_context", "created_at", "updated_at"]
+    __properties: ClassVar[List[str]] = ["schema_version", "session_id", "state", "source_channel", "mode", "reference_asset", "scene_asset_id", "active_reference_analysis_id", "user_constraints", "selected_skills", "shot_plan", "capture_rounds", "evaluation", "evaluations", "external_ai_consent_at", "capture_upload_consent_at", "publish_package", "analytics_context", "created_at", "updated_at"]
 
     @field_validator('schema_version')
     def schema_version_validate_enum(cls, value):
@@ -239,6 +240,11 @@ class SoloShotSession(BaseModel):
         if self.external_ai_consent_at is None and "external_ai_consent_at" in self.model_fields_set:
             _dict['external_ai_consent_at'] = None
 
+        # set to None if capture_upload_consent_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.capture_upload_consent_at is None and "capture_upload_consent_at" in self.model_fields_set:
+            _dict['capture_upload_consent_at'] = None
+
         # set to None if publish_package (nullable) is None
         # and model_fields_set contains the field
         if self.publish_package is None and "publish_package" in self.model_fields_set:
@@ -271,6 +277,7 @@ class SoloShotSession(BaseModel):
             "evaluation": ResultEvaluation1.from_dict(obj["evaluation"]) if obj.get("evaluation") is not None else None,
             "evaluations": [ResultEvaluation2.from_dict(_item) for _item in obj["evaluations"]] if obj.get("evaluations") is not None else None,
             "external_ai_consent_at": obj.get("external_ai_consent_at"),
+            "capture_upload_consent_at": obj.get("capture_upload_consent_at"),
             "publish_package": SoloShotSessionPublishPackage.from_dict(obj["publish_package"]) if obj.get("publish_package") is not None else None,
             "analytics_context": SoloShotSessionAnalyticsContext.from_dict(obj["analytics_context"]) if obj.get("analytics_context") is not None else None,
             "created_at": obj.get("created_at"),

@@ -35,9 +35,13 @@ class Capture(BaseModel):
     round_index: Annotated[int, Field(le=2, strict=True, ge=1)]
     media_asset_id: Annotated[str, Field(strict=True)]
     status: StrictStr
+    source_client: Optional[StrictStr] = None
+    capture_method: Optional[StrictStr] = None
     selected_frame_id: Optional[Annotated[str, Field(strict=True)]]
+    selected_frame_timestamp_ms: Optional[Annotated[int, Field(strict=True, ge=0)]] = None
+    selection_source: Optional[StrictStr] = None
     created_at: datetime
-    __properties: ClassVar[List[str]] = ["schema_version", "capture_id", "session_id", "round_index", "media_asset_id", "status", "selected_frame_id", "created_at"]
+    __properties: ClassVar[List[str]] = ["schema_version", "capture_id", "session_id", "round_index", "media_asset_id", "status", "source_client", "capture_method", "selected_frame_id", "selected_frame_timestamp_ms", "selection_source", "created_at"]
 
     @field_validator('schema_version')
     def schema_version_validate_enum(cls, value):
@@ -83,6 +87,26 @@ class Capture(BaseModel):
             raise ValueError("must be one of enum values ('uploaded', 'processing', 'ready', 'failed')")
         return value
 
+    @field_validator('source_client')
+    def source_client_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['h5', 'ios']):
+            raise ValueError("must be one of enum values ('h5', 'ios')")
+        return value
+
+    @field_validator('capture_method')
+    def capture_method_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['photo', 'short_video', 'photo_fallback']):
+            raise ValueError("must be one of enum values ('photo', 'short_video', 'photo_fallback')")
+        return value
+
     @field_validator('selected_frame_id')
     def selected_frame_id_validate_regular_expression(cls, value):
         """Validates the regular expression"""
@@ -94,6 +118,16 @@ class Capture(BaseModel):
 
         if not re.match(r"^frame_[A-Za-z0-9_-]+$", value):
             raise ValueError(r"must validate the regular expression /^frame_[A-Za-z0-9_-]+$/")
+        return value
+
+    @field_validator('selection_source')
+    def selection_source_validate_enum(cls, value):
+        """Validates the enum"""
+        if value is None:
+            return value
+
+        if value not in set(['local_recommended', 'user_selected']):
+            raise ValueError("must be one of enum values ('local_recommended', 'user_selected')")
         return value
 
     model_config = ConfigDict(
@@ -140,6 +174,16 @@ class Capture(BaseModel):
         if self.selected_frame_id is None and "selected_frame_id" in self.model_fields_set:
             _dict['selected_frame_id'] = None
 
+        # set to None if selected_frame_timestamp_ms (nullable) is None
+        # and model_fields_set contains the field
+        if self.selected_frame_timestamp_ms is None and "selected_frame_timestamp_ms" in self.model_fields_set:
+            _dict['selected_frame_timestamp_ms'] = None
+
+        # set to None if selection_source (nullable) is None
+        # and model_fields_set contains the field
+        if self.selection_source is None and "selection_source" in self.model_fields_set:
+            _dict['selection_source'] = None
+
         return _dict
 
     @classmethod
@@ -158,7 +202,11 @@ class Capture(BaseModel):
             "round_index": obj.get("round_index"),
             "media_asset_id": obj.get("media_asset_id"),
             "status": obj.get("status"),
+            "source_client": obj.get("source_client"),
+            "capture_method": obj.get("capture_method"),
             "selected_frame_id": obj.get("selected_frame_id"),
+            "selected_frame_timestamp_ms": obj.get("selected_frame_timestamp_ms"),
+            "selection_source": obj.get("selection_source"),
             "created_at": obj.get("created_at")
         })
         return _obj

@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct SoloShotApp: App {
     @StateObject private var flow = AppFlowModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -12,6 +13,13 @@ struct SoloShotApp: App {
                 }
                 .onOpenURL { url in
                     flow.receive(url)
+                }
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active {
+                        flow.handleSceneBecameActive()
+                    } else {
+                        flow.handleSceneBecameInactive()
+                    }
                 }
         }
     }

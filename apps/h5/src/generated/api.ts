@@ -58,6 +58,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{session_id}/capture-consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record iOS consent for temporary capture upload and optional external AI evaluation */
+        post: operations["recordCaptureConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/media/uploads": {
         parameters: {
             query?: never;
@@ -683,6 +700,22 @@ export interface components {
             byte_size: number;
             sha256: string;
         };
+        CaptureConsentRequest: {
+            /** @constant */
+            schema_version: "1.0";
+            /** @description Must be true; the service rejects false because capture upload requires explicit consent. */
+            capture_upload_consent: boolean;
+            external_ai_consent: boolean;
+        };
+        CaptureConsentReceipt: {
+            /** @constant */
+            schema_version: "1.0";
+            session_id: string;
+            /** Format: date-time */
+            capture_upload_consent_at: string;
+            /** Format: date-time */
+            external_ai_consent_at: string | null;
+        };
         CompleteMediaUploadRequest: {
             /** @constant */
             schema_version: "1.0";
@@ -756,11 +789,23 @@ export interface components {
             session_id: string;
             round_index: number;
             media_asset_id: string;
+            /** @enum {string} */
+            capture_method?: "photo" | "short_video" | "photo_fallback";
+            frame_selection?: components["schemas"]["FrameSelection"];
+        };
+        FrameSelection: {
+            frame_id: string;
+            timestamp_ms: number | null;
+            /** @enum {string} */
+            selection_source: "local_recommended" | "user_selected";
         };
         SelectFrameRequest: {
             /** @constant */
             schema_version: "1.0";
             frame_id: string;
+            timestamp_ms?: number | null;
+            /** @enum {string} */
+            selection_source?: "local_recommended" | "user_selected";
         };
         CreateEvaluationRequest: {
             /** @constant */
@@ -865,6 +910,9 @@ export interface components {
         };
         SessionResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["session.schema"];
+        };
+        CaptureConsentResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["CaptureConsentReceipt"];
         };
         ReferenceResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["ReferenceAsset"];
@@ -1034,7 +1082,14 @@ export interface components {
             media_asset_id: string;
             /** @enum {string} */
             status: "uploaded" | "processing" | "ready" | "failed";
+            /** @enum {string} */
+            source_client?: "h5" | "ios";
+            /** @enum {string} */
+            capture_method?: "photo" | "short_video" | "photo_fallback";
             selected_frame_id: string | null;
+            selected_frame_timestamp_ms?: number | null;
+            /** @enum {string|null} */
+            selection_source?: "local_recommended" | "user_selected" | null;
             /** Format: date-time */
             created_at: string;
         };
@@ -1052,6 +1107,8 @@ export interface components {
             goal_satisfied: boolean;
             publish_readiness: number;
             confidence: number;
+            /** @enum {string} */
+            execution_mode?: "fixture" | "live" | "fallback";
             $defs: {
                 /** @enum {string} */
                 IssueCode: "person_too_large" | "person_too_small" | "person_too_left" | "person_too_right" | "head_cut" | "feet_cut" | "background_blocked" | "pose_direction_wrong" | "arm_position_wrong" | "camera_too_high" | "camera_too_low" | "camera_angle_wrong" | "motion_timing_wrong";
@@ -1080,6 +1137,8 @@ export interface components {
             evaluations: components["schemas"]["evaluation.schema"][];
             /** Format: date-time */
             external_ai_consent_at?: string | null;
+            /** Format: date-time */
+            capture_upload_consent_at?: string | null;
             publish_package: components["schemas"]["PostJob"] | null;
             analytics_context: {
                 client: components["schemas"]["Client"];
@@ -1192,6 +1251,16 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["SessionResponse"];
+            };
+        };
+        /** @description Capture consent recorded */
+        CaptureConsentOk: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["CaptureConsentResponse"];
             };
         };
         /** @description Reference retrieved */
@@ -1538,6 +1607,8 @@ export interface components {
         HandoffManagementToken: string;
         /** @description Opaque claimant capability bound to one client instance */
         HandoffClaimToken: string;
+        /** @description Required for capture writes after a Handoff has been completed by iOS */
+        OptionalHandoffClaimToken: string;
         PostId: string;
         ShareId: string;
         SkillName: "reference_understanding" | "shooting_plan" | "scene_adaptation" | "result_evaluation" | "coaching_decision" | "content_composer" | "growth_analytics";
@@ -1631,12 +1702,40 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    recordCaptureConsent: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Opaque key used to deduplicate retryable writes */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Opaque claimant capability bound to one client instance */
+                "X-Handoff-Claim-Token": components["parameters"]["HandoffClaimToken"];
+            };
+            path: {
+                session_id: components["parameters"]["SessionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CaptureConsentRequest"];
+            };
+        };
+        responses: {
+            200: components["responses"]["CaptureConsentOk"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationError"];
+        };
+    };
     createMediaUpload: {
         parameters: {
             query?: never;
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path?: never;
             cookie?: never;
@@ -1659,6 +1758,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path: {
                 media_asset_id: components["parameters"]["MediaAssetId"];
@@ -1887,6 +1988,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path?: never;
             cookie?: never;
@@ -1925,6 +2028,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path: {
                 capture_id: components["parameters"]["CaptureId"];
@@ -1948,6 +2053,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path?: never;
             cookie?: never;

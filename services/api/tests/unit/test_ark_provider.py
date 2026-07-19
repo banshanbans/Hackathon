@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
 from typing import Any
 
@@ -51,8 +52,13 @@ def analysis_output() -> dict[str, Any]:
 
 
 async def media_loader(media_asset_id: str) -> tuple[str, bytes]:
-    assert media_asset_id in {"media_ark_reference", "media_ark_scene"}
-    return "image/jpeg", b"verified-image-bytes"
+    assert media_asset_id in {
+        "media_ark_reference",
+        "media_ark_scene",
+        "media_ark_previous",
+        "media_ark_current",
+    }
+    return "image/jpeg", media_asset_id.encode()
 
 
 def provider_with_handler(
@@ -187,3 +193,106 @@ def test_ark_timeout_and_missing_configuration_fail_without_fixture_output() -> 
             )
         )
     assert missing.value.code == "PROVIDER_UNAVAILABLE"
+
+
+def test_round_two_uses_previous_then_current_selected_frame_and_repairs_motion_claim() -> None:
+    payloads: list[dict[str, Any]] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        payloads.append(json.loads(request.content))
+        if len(payloads) == 1:
+            output = evaluation_output(issue_code="motion_timing_wrong")
+        else:
+            output = evaluation_output(issue_code="person_too_left")
+        return httpx.Response(200, json={"output_text": json.dumps(output)})
+
+    provider = provider_with_handler(httpx.MockTransport(handler))
+    registry = SkillRegistry(build_skills(provider, 2))
+    invocation = asyncio.run(
+        registry.get("result_evaluation").invoke(round_two_evaluation_input())
+    )
+
+    assert len(payloads) == 2
+    assert invocation.run.repair_count == 1
+    assert "STRUCTURED_OUTPUT_REPAIRED_ONCE" in invocation.run.warnings
+    assert invocation.output["issue_code"] == "person_too_left"
+    content = payloads[0]["input"][0]["content"]
+    images = [item["image_url"] for item in content if item["type"] == "input_image"]
+    decoded = [base64.b64decode(value.split(",", 1)[1]).decode() for value in images]
+    assert decoded == ["media_ark_reference", "media_ark_previous", "media_ark_current"]
+
+
+def evaluation_output(*, issue_code: str) -> dict[str, Any]:
+    return {
+        "schema_version": "1.0",
+        "evaluation_id": "eval_ark_round_2",
+        "capture_id": "cap_ark_current",
+        "issue_code": issue_code,
+        "top_issue": "只修正当前最重要的问题。",
+        "next_instruction": "由服务端规则覆盖",
+        "needs_retake": True,
+        "goal_satisfied": False,
+        "publish_readiness": 0.7,
+        "confidence": 0.8,
+        "execution_mode": "live",
+    }
+
+
+def round_two_evaluation_input() -> dict[str, Any]:
+    plan = {
+        "schema_version": "1.0",
+        "plan_id": "sp_ark_test",
+        "camera_height": "waist",
+        "camera_angle": "level",
+        "lens": "1x",
+        "capture_mode": "photo",
+        "phone_setup_instruction": "固定手机。",
+        "target_layout": analysis_output()["target_layout"],
+        "action_script": [
+            {"sequence": 1, "instruction": "站稳。", "duration_seconds": 2}
+        ],
+        "safety_notes": ["检查脚下。"],
+        "h5_execution": {
+            "supported": True,
+            "instruction": "静态构图。",
+            "requires_realtime_alignment": False,
+        },
+        "ios_execution": {
+            "supported": True,
+            "instruction": "本地对齐。",
+            "requires_realtime_alignment": True,
+        },
+        "confidence": 0.9,
+    }
+    previous_capture = {
+        "schema_version": "1.0",
+        "capture_id": "cap_ark_previous",
+        "session_id": "ss_ark_test",
+        "round_index": 1,
+        "media_asset_id": "media_ark_previous",
+        "status": "ready",
+        "selected_frame_id": "frame_ark_previous",
+        "created_at": "2026-07-19T00:00:00Z",
+    }
+    current_capture = {
+        **previous_capture,
+        "capture_id": "cap_ark_current",
+        "round_index": 2,
+        "media_asset_id": "media_ark_current",
+        "selected_frame_id": "frame_ark_current",
+    }
+    previous_evaluation = evaluation_output(issue_code="person_too_left")
+    previous_evaluation["evaluation_id"] = "eval_ark_round_1"
+    previous_evaluation["capture_id"] = "cap_ark_previous"
+    return {
+        "reference_asset": reference_asset(),
+        "reference_analysis": analysis_output(),
+        "scene_asset_id": None,
+        "capture": current_capture,
+        "previous_capture": previous_capture,
+        "previous_evaluation": previous_evaluation,
+        "shot_plan": plan,
+        "mode": "original_replication",
+        "media_kind": "selected_frame",
+        "round_index": 2,
+    }

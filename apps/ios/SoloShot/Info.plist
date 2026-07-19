@@ -36,6 +36,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>SoloShot 使用后置相机在设备本地进行预览、人体姿态、构图对齐和无声拍摄；只有你确认的候选照片会在明确同意后上传。</string>
 	<key>SoloShotAPIBaseURL</key>
 	<string>$(SOLOSHOT_API_BASE_URL)</string>
 	<key>UILaunchScreen</key>

@@ -149,7 +149,11 @@ class Capture(StrictModel):
     round_index: int = Field(ge=1, le=2)
     media_asset_id: str = Field(pattern=r"^media_[A-Za-z0-9_-]+$")
     status: Literal["uploaded", "processing", "ready", "failed"]
+    source_client: Literal["h5", "ios"] | None = None
+    capture_method: Literal["photo", "short_video", "photo_fallback"] | None = None
     selected_frame_id: str | None = None
+    selected_frame_timestamp_ms: int | None = Field(default=None, ge=0)
+    selection_source: Literal["local_recommended", "user_selected"] | None = None
     created_at: datetime
 
 
@@ -196,6 +200,7 @@ class ResultEvaluation(StrictModel):
     goal_satisfied: bool
     publish_readiness: float = Field(ge=0, le=1)
     confidence: float = Field(ge=0, le=1)
+    execution_mode: Literal["fixture", "live", "fallback"] | None = None
 
     @model_validator(mode="after")
     def enforce_single_action(self) -> ResultEvaluation:
@@ -309,6 +314,7 @@ class SoloShotSession(StrictModel):
     evaluation: ResultEvaluation | None
     evaluations: list[ResultEvaluation] = Field(default_factory=list, max_length=2)
     external_ai_consent_at: datetime | None = None
+    capture_upload_consent_at: datetime | None = None
     publish_package: PostJob | None
     analytics_context: JsonObject
     created_at: datetime

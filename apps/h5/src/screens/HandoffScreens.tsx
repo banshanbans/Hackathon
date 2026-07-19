@@ -123,6 +123,17 @@ export function HandoffScreen() {
     retry: 1,
   });
 
+  const sessionQuery = useQuery({
+    queryKey: ["session", sessionId, "handoff-progress"],
+    queryFn: () => soloShotApi.getSession(sessionId),
+    enabled: statusQuery.data?.data.status === "completed",
+    refetchInterval: (query) => {
+      const session = query.state.data?.data;
+      return session?.state === "completed" ? false : 2_000;
+    },
+    retry: 1,
+  });
+
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1_000);
     return () => window.clearInterval(timer);
@@ -259,8 +270,17 @@ export function HandoffScreen() {
           {handoff.status === "completed" ? (
             <div className="handoff-complete">
               <CheckCircle size={30} weight="fill" aria-hidden="true" />
-              <strong>iPhone 已完成原子缓存</strong>
-              <small>现在可以关闭网页；拍摄能力将在 W4 提供。</small>
+              <strong>iPhone 已完成任务导入</strong>
+              <small>{sessionProgressLabel(sessionQuery.data?.data)}</small>
+              {sessionQuery.data?.data.state === "completed" ? (
+                <button
+                  type="button"
+                  className="primary-button"
+                  onClick={() => navigate(`/session/${sessionId}/result`)}
+                >
+                  查看两轮结果
+                </button>
+              ) : null}
             </div>
           ) : null}
         </>
@@ -270,6 +290,25 @@ export function HandoffScreen() {
       </button>
     </section>
   );
+}
+
+function sessionProgressLabel(session: Awaited<ReturnType<typeof soloShotApi.getSession>>["data"] | undefined): string {
+  if (session === undefined || session.state === "handoff_ready") {
+    return "等待 iPhone 开始现场陪拍。";
+  }
+  if (session.state === "evaluating") {
+    return `正在评价第 ${session.capture_rounds.length} 轮。`;
+  }
+  if (session.state === "capturing") {
+    return `iPhone 已提交第 ${session.capture_rounds.length} 轮候选帧。`;
+  }
+  if (session.state === "coaching") {
+    return "第一轮建议已生成，iPhone 正在准备第二轮。";
+  }
+  if (session.state === "completed") {
+    return "iPhone 已完成本次拍摄任务。";
+  }
+  return "iPhone 正在处理任务。";
 }
 
 export function HandoffLandingScreen() {

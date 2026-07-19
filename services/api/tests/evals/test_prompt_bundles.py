@@ -44,6 +44,13 @@ def test_each_versioned_skill_has_prompt_evaluation_assets() -> None:
         assert manifest["max_repairs"] == 1
         assert manifest["fallback"]
 
+    evaluation_directory = PROMPT_ROOT / "result_evaluation" / "1.1.0"
+    assert {path.name for path in evaluation_directory.iterdir()} >= required
+    evaluation_manifest = load_json(evaluation_directory / "manifest.json")
+    assert evaluation_manifest["name"] == "result_evaluation"
+    assert evaluation_manifest["version"] == "1.1.0"
+    assert evaluation_manifest["max_repairs"] == 1
+
 
 def test_mock_outputs_keep_evaluation_and_content_honest() -> None:
     fixture = load_json(FIXTURE_PATH)
@@ -82,6 +89,8 @@ def test_mock_outputs_keep_evaluation_and_content_honest() -> None:
                 "capture": capture,
                 "shot_plan": plan.output,
                 "mode": "original_replication",
+                "media_kind": "selected_frame",
+                "round_index": 1,
             }
         )
     )

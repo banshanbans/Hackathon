@@ -12,6 +12,11 @@ public struct CreateCaptureRequest: Sendable, Codable, Hashable {
     public enum SchemaVersion: String, Sendable, Codable, CaseIterable {
         case _10 = "1.0"
     }
+    public enum CaptureMethod: String, Sendable, Codable, CaseIterable {
+        case photo = "photo"
+        case shortVideo = "short_video"
+        case photoFallback = "photo_fallback"
+    }
     public static let sessionIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^ss_[A-Za-z0-9_-]+$/")
     public static let roundIndexRule = NumericRule<Int>(minimum: 1, exclusiveMinimum: false, maximum: 2, exclusiveMaximum: false, multipleOf: nil)
     public static let mediaAssetIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^media_[A-Za-z0-9_-]+$/")
@@ -19,12 +24,16 @@ public struct CreateCaptureRequest: Sendable, Codable, Hashable {
     public var sessionId: String
     public var roundIndex: Int
     public var mediaAssetId: String
+    public var captureMethod: CaptureMethod?
+    public var frameSelection: FrameSelection?
 
-    public init(schemaVersion: SchemaVersion, sessionId: String, roundIndex: Int, mediaAssetId: String) {
+    public init(schemaVersion: SchemaVersion, sessionId: String, roundIndex: Int, mediaAssetId: String, captureMethod: CaptureMethod? = nil, frameSelection: FrameSelection? = nil) {
         self.schemaVersion = schemaVersion
         self.sessionId = sessionId
         self.roundIndex = roundIndex
         self.mediaAssetId = mediaAssetId
+        self.captureMethod = captureMethod
+        self.frameSelection = frameSelection
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -32,6 +41,8 @@ public struct CreateCaptureRequest: Sendable, Codable, Hashable {
         case sessionId = "session_id"
         case roundIndex = "round_index"
         case mediaAssetId = "media_asset_id"
+        case captureMethod = "capture_method"
+        case frameSelection = "frame_selection"
     }
 
     // Encodable protocol methods
@@ -42,6 +53,8 @@ public struct CreateCaptureRequest: Sendable, Codable, Hashable {
         try container.encode(sessionId, forKey: .sessionId)
         try container.encode(roundIndex, forKey: .roundIndex)
         try container.encode(mediaAssetId, forKey: .mediaAssetId)
+        try container.encodeIfPresent(captureMethod, forKey: .captureMethod)
+        try container.encodeIfPresent(frameSelection, forKey: .frameSelection)
     }
 }
 

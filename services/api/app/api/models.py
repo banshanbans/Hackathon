@@ -51,6 +51,12 @@ class CompleteMediaUploadRequest(StrictModel):
     session_id: str = Field(pattern=r"^ss_[A-Za-z0-9_-]+$")
 
 
+class CaptureConsentRequest(StrictModel):
+    schema_version: SchemaVersion = "1.0"
+    capture_upload_consent: Literal[True]
+    external_ai_consent: bool
+
+
 EventName = Literal[
     "page_view",
     "reference_select",
@@ -113,16 +119,26 @@ class InvokeSkillRequest(StrictModel):
     input: dict[str, Any]
 
 
+class FrameSelection(StrictModel):
+    frame_id: str = Field(pattern=r"^frame_[A-Za-z0-9_-]+$")
+    timestamp_ms: int | None = Field(default=None, ge=0)
+    selection_source: Literal["local_recommended", "user_selected"]
+
+
 class CreateCaptureRequest(StrictModel):
     schema_version: SchemaVersion = "1.0"
     session_id: str = Field(pattern=r"^ss_[A-Za-z0-9_-]+$")
     round_index: int = Field(ge=1, le=2)
     media_asset_id: str = Field(pattern=r"^media_[A-Za-z0-9_-]+$")
+    capture_method: Literal["photo", "short_video", "photo_fallback"] | None = None
+    frame_selection: FrameSelection | None = None
 
 
 class SelectFrameRequest(StrictModel):
     schema_version: SchemaVersion = "1.0"
     frame_id: str = Field(pattern=r"^frame_[A-Za-z0-9_-]+$")
+    timestamp_ms: int | None = Field(default=None, ge=0)
+    selection_source: Literal["local_recommended", "user_selected"] | None = None
 
 
 class CreateEvaluationRequest(StrictModel):

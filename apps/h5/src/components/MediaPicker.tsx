@@ -10,19 +10,19 @@ import {
 function messageFor(error: unknown): string {
   const code = error instanceof Error ? error.message : "UNSUPPORTED_MEDIA";
   const messages: Record<string, string> = {
-    MEDIA_TOO_LARGE: "文件过大：图片上传结果需小于 8MB，视频需小于 100MB。",
-    VIDEO_TOO_LONG: "视频最长支持 30 秒，请重新选择。",
-    IMAGE_ENCODE_FAILED: "图片处理失败，请换一张图片重试。",
-    UNSUPPORTED_MEDIA: "无法读取这个文件，请选择 JPEG、PNG、WebP 或短视频。",
+    MEDIA_TOO_LARGE: "这份素材有点大，请换一张照片或更短的视频。",
+    VIDEO_TOO_LONG: "这段视频有点长，请选择 30 秒内的片段。",
+    IMAGE_ENCODE_FAILED: "这张画面没有准备好，请换一张再试。",
+    UNSUPPORTED_MEDIA: "这份素材暂时无法使用，请换一张照片或短视频。",
   };
-  return messages[code] ?? "媒体处理失败，请重新选择。";
+  return messages[code] ?? "这张画面没有准备好，请重新选择。";
 }
 
 export function MediaPicker({
   value,
   onChange,
   allowVideo = true,
-  title = "添加画面",
+  title = "加入这张画面",
 }: {
   value: PreparedImage | null;
   onChange: (value: PreparedImage) => void;
@@ -94,18 +94,15 @@ export function MediaPicker({
   return (
     <div className="media-picker">
       <div className="media-picker-heading">
-        <span>
-          <strong>{title}</strong>
-          <small>图片自动校正方向并压缩至最长边 2048px</small>
-        </span>
-        {value !== null ? <span className="ready-mark">已就绪</span> : null}
+        <strong>{title}</strong>
+        {value !== null ? <span className="ready-mark">已选好</span> : null}
       </div>
 
       {value !== null ? (
         <div className="local-preview">
           <img src={value.previewUrl} alt="已选择的本地画面" />
           <span>
-            {value.width} × {value.height} · {value.mediaType === "video_frame" ? "视频帧" : "图片"}
+            {value.mediaType === "video_frame" ? "视频中的这一帧" : "已选择的照片"}
           </span>
         </div>
       ) : null}
@@ -127,7 +124,7 @@ export function MediaPicker({
           />
           <button type="button" onClick={useFrame} disabled={busy}>
             <FilmStrip size={18} aria-hidden="true" />
-            使用当前暂停画面
+            使用这一帧
           </button>
         </div>
       ) : null}
@@ -135,7 +132,7 @@ export function MediaPicker({
       <div className="picker-actions">
         <label>
           <Camera size={19} aria-hidden="true" />
-          拍照
+          拍下此刻
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -156,7 +153,7 @@ export function MediaPicker({
 
       {busy ? (
         <p className="picker-status" role="status">
-          <ImageSquare size={18} aria-hidden="true" /> 正在处理画面…
+          <ImageSquare size={18} aria-hidden="true" /> 正在准备这张画面…
         </p>
       ) : null}
       {error !== null ? (
@@ -178,7 +175,7 @@ export function UploadProgress({
   return (
     <div className="upload-progress" role="status" aria-live="polite">
       <span>
-        <strong>正在安全上传</strong>
+        <strong>正在保存这张画面</strong>
         <small>{value}%</small>
       </span>
       <div aria-label={`上传进度 ${value}%`}>
