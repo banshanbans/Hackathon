@@ -1,0 +1,19 @@
+http://shot.socialdog.cn {
+    encode zstd gzip
+    reverse_proxy h5:8080
+}
+
+http://shotapi.socialdog.cn {
+    encode zstd gzip
+
+    @api path /api/* /health /docs /docs/* /openapi.json
+    handle @api {
+        reverse_proxy api:8000
+    }
+
+    # Signed S3 URLs use this host directly. All non-API paths are forwarded
+    # to MinIO without a path rewrite so SigV4 canonical paths remain valid.
+    handle {
+        reverse_proxy minio:9000
+    }
+}
