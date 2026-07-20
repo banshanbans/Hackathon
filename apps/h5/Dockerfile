@@ -8,6 +8,7 @@ RUN npm ci
 
 COPY apps/h5 apps/h5
 COPY packages/contracts packages/contracts
+COPY packages/evals/test-image-v1 packages/evals/test-image-v1
 
 ARG VITE_API_BASE_URL
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}

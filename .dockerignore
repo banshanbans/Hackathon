@@ -1,0 +1,11 @@
+.git
+.venv
+node_modules
+**/node_modules
+.cache
+dist
+**/dist
+DerivedData
+apps/ios
+.env
+infra/deployment/.env.production
