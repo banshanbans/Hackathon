@@ -7,7 +7,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 COPY services/api/requirements.lock /tmp/requirements.lock
-RUN pip install --no-cache-dir -r /tmp/requirements.lock
+ARG PIP_INDEX_URL=https://mirrors.cloud.tencent.com/pypi/simple
+RUN pip install --no-cache-dir --index-url "$PIP_INDEX_URL" -r /tmp/requirements.lock
 
 COPY alembic.ini /app/alembic.ini
 COPY infra/migrations /app/infra/migrations
