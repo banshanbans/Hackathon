@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { SoloShotApiError, soloShotApi, type HandoffTask } from "../apiClient";
 import { analytics } from "../analytics";
-import { PageHeader, StateNotice } from "../components/AppChrome";
+import { PageHeader } from "../components/AppChrome";
 import { HandoffQr } from "../components/HandoffQr";
 import {
   createHandoffDraft,
@@ -23,19 +23,20 @@ import {
   saveHandoffDraft,
   type HandoffDraft,
 } from "../handoff/storage";
+import { creationModeLabels, productErrorCopy, roundLabel } from "../productCopy";
 
 const handoffCodePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
 
 function messageForStatus(status: HandoffTask["status"]): string {
   switch (status) {
     case "created":
-      return "等待 iPhone 确认识别";
+      return "等待 iPhone 接力";
     case "claimed":
-      return "iPhone 正在安全缓存任务";
+      return "正在同步到 iPhone";
     case "completed":
-      return "任务已成功导入 iPhone";
+      return "iPhone 已就绪";
     case "revoked":
-      return "任务码已撤销";
+      return "接力已取消";
     case "expired":
       return "任务码已过期";
   }
@@ -51,7 +52,7 @@ function ErrorPanel({
   error,
   retry,
   forceRetry = false,
-  retryLabel = "重试",
+  retryLabel = "再试一次",
 }: {
   error: unknown;
   retry: () => void;
@@ -62,12 +63,13 @@ function ErrorPanel({
     error instanceof SoloShotApiError
       ? error
       : new SoloShotApiError("任务码暂时不可用。", "REQUEST_FAILED", true);
+  const copy = productErrorCopy(apiError.code);
   return (
     <div className="handoff-error" role="alert">
       <Warning size={28} weight="fill" aria-hidden="true" />
       <span>
-        <strong>{apiError.message}</strong>
-        <small>{apiError.code}</small>
+        <strong>{copy.title}</strong>
+        <small>{copy.detail}</small>
       </span>
       {apiError.recoverable || forceRetry ? (
         <button type="button" onClick={retry}>
@@ -149,9 +151,9 @@ export function HandoffScreen() {
     }
     try {
       await navigator.clipboard.writeText(handoff.code);
-      setNotice("六位码已复制");
+      setNotice("任务码已复制");
     } catch {
-      setNotice("无法自动复制，请长按六位码手动复制");
+      setNotice("无法自动复制，请长按任务码");
     }
   }
 
@@ -194,11 +196,11 @@ export function HandoffScreen() {
       (requestError.code === "HANDOFF_EXPIRED" || requestError.code === "HANDOFF_REVOKED");
     return (
       <section className="page handoff-page">
-        <PageHeader title="在 iPhone 继续" backTo={`/session/${sessionId}/plan`} />
+        <PageHeader title="用 iPhone，继续这次创作" backTo={`/session/${sessionId}/plan`} />
         <ErrorPanel
           error={requestError}
           forceRetry={gone}
-          retryLabel={gone ? "重新生成任务码" : "重试"}
+          retryLabel={gone ? "重新生成任务码" : "再试一次"}
           retry={() => {
             if (gone) {
               regenerate();
@@ -214,16 +216,15 @@ export function HandoffScreen() {
 
   return (
     <section className="page handoff-page">
-      <PageHeader title="在 iPhone 继续" backTo={`/session/${sessionId}/plan`} />
+      <PageHeader title="用 iPhone，继续这次创作" backTo={`/session/${sessionId}/plan`} />
       <div className="handoff-heading">
         <DeviceMobile size={30} weight="duotone" aria-hidden="true" />
         <span>
-          <h1>用系统相机扫描任务码</h1>
-          <p>二维码只包含 HTTPS 落地地址，不包含 Session、照片或管理凭据。</p>
+          <p>扫描后，机位、动作与安全提醒会完整接力。</p>
         </span>
       </div>
       {handoff === undefined || qrPayload === undefined ? (
-        <div className="handoff-loading" role="status">正在创建 10 分钟任务码…</div>
+        <div className="handoff-loading" role="status">正在准备任务码…</div>
       ) : (
         <>
           <HandoffQr payload={qrPayload} />
@@ -237,18 +238,18 @@ export function HandoffScreen() {
             <span>剩余时间</span>
             <strong>{remainingLabel(handoff.expires_at, now)}</strong>
           </div>
-          <StateNotice mode={handoff.status === "completed" ? "cache" : "live"}>
+          <div className="state-notice" role="status">
             {messageForStatus(handoff.status)}
-          </StateNotice>
+          </div>
           {notice !== null ? <p className="handoff-notice" role="status">{notice}</p> : null}
           {actionError !== null ? <ErrorPanel error={actionError} retry={() => void revoke(false)} /> : null}
           {handoff.status === "created" ? (
             <div className="handoff-actions">
               <button type="button" className="secondary-button" onClick={() => void copyCode()}>
-                <Copy size={19} aria-hidden="true" /> 复制六位码
+                <Copy size={19} aria-hidden="true" /> 复制任务码
               </button>
               <button type="button" className="danger-button" disabled={busy} onClick={() => void revoke(false)}>
-                <Trash size={19} aria-hidden="true" /> 撤销接力
+                <Trash size={19} aria-hidden="true" /> 取消接力
               </button>
             </div>
           ) : null}
@@ -259,7 +260,7 @@ export function HandoffScreen() {
               disabled={busy}
               onClick={() => void revoke(false)}
             >
-              <Trash size={19} aria-hidden="true" /> 撤销接力并回到网页
+              <Trash size={19} aria-hidden="true" /> 取消接力并回到网页
             </button>
           ) : null}
           {handoff.status === "revoked" || handoff.status === "expired" ? (
@@ -270,7 +271,7 @@ export function HandoffScreen() {
           {handoff.status === "completed" ? (
             <div className="handoff-complete">
               <CheckCircle size={30} weight="fill" aria-hidden="true" />
-              <strong>iPhone 已完成任务导入</strong>
+              <strong>iPhone 已就绪</strong>
               <small>{sessionProgressLabel(sessionQuery.data?.data)}</small>
               {sessionQuery.data?.data.state === "completed" ? (
                 <button
@@ -278,7 +279,7 @@ export function HandoffScreen() {
                   className="primary-button"
                   onClick={() => navigate(`/session/${sessionId}/result`)}
                 >
-                  查看两轮结果
+                  查看我的作品
                 </button>
               ) : null}
             </div>
@@ -297,13 +298,13 @@ function sessionProgressLabel(session: Awaited<ReturnType<typeof soloShotApi.get
     return "等待 iPhone 开始现场陪拍。";
   }
   if (session.state === "evaluating") {
-    return `正在评价第 ${session.capture_rounds.length} 轮。`;
+    return `正在复盘${roundLabel(session.capture_rounds.length)}成片。`;
   }
   if (session.state === "capturing") {
-    return `iPhone 已提交第 ${session.capture_rounds.length} 轮候选帧。`;
+    return `iPhone 已完成${roundLabel(session.capture_rounds.length)}拍摄。`;
   }
   if (session.state === "coaching") {
-    return "第一轮建议已生成，iPhone 正在准备第二轮。";
+    return "第一次建议已生成，iPhone 正在准备调整后的拍摄。";
   }
   if (session.state === "completed") {
     return "iPhone 已完成本次拍摄任务。";
@@ -324,12 +325,11 @@ export function HandoffLandingScreen() {
 
   return (
     <section className="page handoff-landing-page">
-      <PageHeader title="SoloShot 任务接力" backTo="/" />
+      <PageHeader title="这份 ShotPlan，已在等你" backTo="/" />
       <div className="handoff-heading">
         <QrCode size={30} weight="duotone" aria-hidden="true" />
         <span>
-          <h1>在 SoloShot iPhone App 中打开</h1>
-          <p>公开预览只显示任务模式和有效期；确认后才会原子认领完整 ShotPlan。</p>
+          <p>打开 SoloShot，把网页里的灵感带到现场。</p>
         </span>
       </div>
       {!valid ? (
@@ -340,7 +340,7 @@ export function HandoffLandingScreen() {
       ) : query.error !== null ? (
         <ErrorPanel error={query.error} retry={() => void query.refetch()} />
       ) : query.data === undefined ? (
-        <div className="handoff-loading" role="status">正在安全检查任务码…</div>
+        <div className="handoff-loading" role="status">正在确认这份 ShotPlan…</div>
       ) : (
         <>
           <div className="landing-preview">
@@ -349,8 +349,8 @@ export function HandoffLandingScreen() {
               <strong>{query.data.data.code}</strong>
             </span>
             <span>
-              <small>模式</small>
-              <strong>{query.data.data.mode === "original_replication" ? "原图复刻" : "场景适配"}</strong>
+              <small>创作方式</small>
+              <strong>{creationModeLabels[query.data.data.mode]}</strong>
             </span>
             <span>
               <small>状态</small>
@@ -365,9 +365,9 @@ export function HandoffLandingScreen() {
               window.location.assign(`soloshot://handoff/${code}`);
             }}
           >
-            打开 SoloShot <ArrowSquareOut size={20} aria-hidden="true" />
+            在 SoloShot 中继续 <ArrowSquareOut size={20} aria-hidden="true" />
           </button>
-          <p className="handoff-notice">没有安装 App？请在 iPhone 导入页手动输入上方六位码。</p>
+          <p className="handoff-notice">暂时没安装 App？在 iPhone 输入六位任务码即可继续。</p>
         </>
       )}
     </section>

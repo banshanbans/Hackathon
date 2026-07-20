@@ -115,7 +115,7 @@ describe("W3 handoff screens", () => {
     vi.stubGlobal("fetch", vi.fn(async () => response(created.handoff)));
     wrapper("/handoff/ABC234", <HandoffLandingScreen />);
 
-    expect(await screen.findByRole("button", { name: "打开 SoloShot" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "在 SoloShot 中继续" })).toBeTruthy();
     expect(screen.getByText("原图复刻")).toBeTruthy();
     expect(document.body.textContent).not.toContain("ss_");
     expect(document.body.textContent).not.toContain("management-secret");
@@ -150,7 +150,7 @@ describe("W3 handoff screens", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     wrapper("/session/ss_w3/handoff", <HandoffScreen />);
-    fireEvent.click(await screen.findByRole("button", { name: "撤销接力并回到网页" }));
+    fireEvent.click(await screen.findByRole("button", { name: "取消接力并回到网页" }));
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(

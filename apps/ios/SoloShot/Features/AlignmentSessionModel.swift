@@ -362,7 +362,7 @@ final class AlignmentSessionModel: ObservableObject {
             UIColor.orange.withAlphaComponent(0.45 + CGFloat(index) * 0.08).setFill()
             context.cgContext.fillEllipse(in: CGRect(x: 282, y: 220, width: 156, height: 156))
             context.cgContext.fill(CGRect(x: 250, y: 370, width: 220, height: 520))
-            let label = "Fixture · Round \(roundIndex) · \(index + 1)"
+            let label = "演示画面 · \(ProductCopy.round(roundIndex)) · 候选 \(index + 1)"
             label.draw(
                 at: CGPoint(x: 40, y: 1_160),
                 withAttributes: [

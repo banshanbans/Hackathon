@@ -18,9 +18,9 @@ struct CaptureCameraScreen: View {
                             .frame(width: 44, height: 44)
                             .background(.black.opacity(0.62), in: Circle())
                     }
-                    .accessibilityLabel("取消本轮拍摄")
+                    .accessibilityLabel("取消这次拍摄")
                     Spacer()
-                    Label(session.isFixture ? "Fixture 本地采集" : "本地采集", systemImage: "circle.fill")
+                    Label(session.isFixture ? "演示拍摄" : "本地拍摄", systemImage: "circle.fill")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(session.isFixture ? .orange : .green)
                         .padding(.horizontal, 12)
@@ -29,7 +29,7 @@ struct CaptureCameraScreen: View {
                 }
                 Spacer()
                 captureStatus
-                Text("屏幕文字始终显示；录制不使用麦克风。")
+                Text("只记录画面，不录制声音")
                     .font(.caption)
                     .padding(10)
                     .background(.black.opacity(0.62), in: Capsule())
@@ -47,7 +47,7 @@ struct CaptureCameraScreen: View {
                 Text("\(seconds)")
                     .font(.system(size: 104, weight: .black, design: .rounded))
                     .accessibilityLabel("倒计时 \(seconds) 秒")
-                Text(completion.mode == .manual ? "手动降级 · 未经 Vision 验证" : "保持构图")
+                Text(completion.mode == .manual ? "手动就位 · 未经智能验证" : "保持这个画面")
                     .font(.headline)
             }
             .padding(24)
@@ -56,11 +56,11 @@ struct CaptureCameraScreen: View {
             VStack(spacing: 14) {
                 ProgressView().tint(.white)
                 Label(
-                    method == .shortVideo ? "正在录制 5–8 秒无声短视频" : "正在拍摄三张照片",
+                    method == .shortVideo ? "正在记录这段旅行瞬间" : "正在捕捉这一刻",
                     systemImage: method == .shortVideo ? "video.fill" : "camera.fill"
                 )
                 .font(.headline)
-                Text("完成后只会生成本地候选帧")
+                Text("完成后，SoloShot 会在本机选出候选")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

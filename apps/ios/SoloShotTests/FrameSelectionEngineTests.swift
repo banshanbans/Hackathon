@@ -33,7 +33,7 @@ final class FrameSelectionEngineTests: XCTestCase {
         )
         let candidate = FrameSelectionEngine.rank([input])[0]
         XCTAssertEqual(candidate.localScore, (0.9 * 0.30 + 0.8 * 0.25 + 0.7 * 0.20 + 0.6 * 0.15) / 0.90, accuracy: 0.0001)
-        XCTAssertTrue(candidate.reasons.contains("未知姿势未参与评分"))
+        XCTAssertTrue(candidate.reasons.contains("动作不在本机判断范围"))
     }
 
     func testMultiplePeopleAndMissingHeadFeetAreExplicitlyDegraded() {
@@ -41,7 +41,7 @@ final class FrameSelectionEngineTests: XCTestCase {
         let degraded = input(id: "frame_degraded", people: 2, complete: false)
         let ranked = FrameSelectionEngine.rank([degraded, clean])
         XCTAssertEqual(ranked.first?.id, "frame_clean")
-        XCTAssertTrue(ranked.last?.reasons.contains("画面中有多个人") == true)
+        XCTAssertTrue(ranked.last?.reasons.contains("画面里出现了其他人") == true)
     }
 
     func testVideoCandidatesAreSpacedAndCoverStartMiddleEnd() {

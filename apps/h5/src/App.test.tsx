@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { ShotPlan, SoloShotSession } from "./apiClient";
 import { testImageDataset } from "./dataset";
+import { presetCopy } from "./productCopy";
 
 const selectedCase = testImageDataset.cases[0]!;
 const analysis = {
@@ -182,9 +183,10 @@ function memoryStorage(): Storage {
 }
 
 async function choosePreset(user: ReturnType<typeof userEvent.setup>): Promise<void> {
-  await user.click(screen.getByRole("button", { name: "选择参考画面" }));
-  await user.click(screen.getByRole("button", { name: new RegExp(selectedCase.title) }));
-  await user.click(screen.getByRole("button", { name: "确认圈选" }));
+  await user.click(screen.getByRole("button", { name: "开始创作" }));
+  const copy = presetCopy(selectedCase.caseId, selectedCase.title, selectedCase.subtitle);
+  await user.click(screen.getByRole("button", { name: new RegExp(copy.title) }));
+  await user.click(screen.getByRole("button", { name: "就是这个瞬间" }));
 }
 
 describe("W2 H5 flow", () => {
@@ -206,13 +208,14 @@ describe("W2 H5 flow", () => {
     render(<App />);
 
     expect(screen.getAllByText("演示模式").length).toBeGreaterThan(0);
-    await user.click(screen.getByRole("button", { name: "选择参考画面" }));
+    await user.click(screen.getByRole("button", { name: "开始创作" }));
     for (const item of testImageDataset.cases) {
-      expect(screen.getByRole("button", { name: new RegExp(item.title) })).toBeTruthy();
+      const copy = presetCopy(item.caseId, item.title, item.subtitle);
+      expect(screen.getByRole("button", { name: new RegExp(copy.title) })).toBeTruthy();
     }
     await user.click(screen.getByRole("button", { name: "返回上一步" }));
-    await user.click(screen.getByRole("button", { name: "自定义参考" }));
-    await user.click(screen.getByRole("button", { name: "选择参考画面" }));
+    await user.click(screen.getByRole("button", { name: "我的参考" }));
+    await user.click(screen.getByRole("button", { name: "开始创作" }));
     expect(screen.getByLabelText("从相册选择").getAttribute("accept")).toContain("video/mp4");
   });
 
@@ -222,24 +225,24 @@ describe("W2 H5 flow", () => {
     const view = render(<App />);
 
     await choosePreset(user);
-    await user.click(screen.getByRole("button", { name: "开始参考分析" }));
-    expect(await screen.findByRole("heading", { name: "参考画面已经理解完成" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "生成 ShotPlan" }));
-    expect(await screen.findByRole("heading", { name: "ShotPlan 拍摄任务" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "留在网页拍摄" }));
-    await user.click(screen.getByRole("button", { name: "运行第 1 轮评分" }));
+    await user.click(screen.getByRole("button", { name: "交给 SoloShot" }));
+    expect(await screen.findByRole("heading", { name: "你的灵感，已经读懂" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "生成我的 ShotPlan" }));
+    expect(await screen.findByRole("heading", { name: "你的专属 ShotPlan" })).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "继续在网页完成" }));
+    await user.click(screen.getByRole("button", { name: "查看第一次建议" }));
     expect(await screen.findByRole("heading", { name: "人物比例偏小" })).toBeTruthy();
-    expect(screen.getByText("演示评分卡，不代表真实照片比较。")).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "按建议再拍一次" }));
-    await user.click(screen.getByRole("button", { name: "运行第 2 轮评分" }));
-    await user.click(await screen.findByRole("button", { name: "查看最终结果" }));
-    expect(await screen.findByRole("heading", { name: "两轮拍摄结果" })).toBeTruthy();
-    expect(screen.getByText(/没有真实配对图时不生成 Before \/ After/)).toBeTruthy();
+    expect(screen.getByText("以下结果来自精选样例。")).toBeTruthy();
+    await user.click(screen.getByRole("button", { name: "带着这条建议再拍一次" }));
+    await user.click(screen.getByRole("button", { name: "查看第二次变化" }));
+    await user.click(await screen.findByRole("button", { name: "查看我的作品" }));
+    expect(await screen.findByRole("heading", { name: "一次调整，画面已经不同" })).toBeTruthy();
+    expect(screen.getByText(/不生成虚构的前后对比照片/)).toBeTruthy();
 
     view.unmount();
     render(<App />);
     await waitFor(() =>
-      expect(screen.getByRole("heading", { name: "两轮拍摄结果" })).toBeTruthy(),
+      expect(screen.getByRole("heading", { name: "一次调整，画面已经不同" })).toBeTruthy(),
     );
   });
 
@@ -250,11 +253,12 @@ describe("W2 H5 flow", () => {
     render(<App />);
 
     await choosePreset(user);
-    await user.click(screen.getByRole("button", { name: "开始参考分析" }));
+    await user.click(screen.getByRole("button", { name: "交给 SoloShot" }));
 
-    expect(await screen.findByText("NETWORK_ERROR · 未切换到 Fixture")).toBeTruthy();
+    expect(await screen.findByText("暂时没有连上 SoloShot")).toBeTruthy();
     expect(screen.getAllByText("需要重试").length).toBeGreaterThan(0);
-    await user.click(screen.getByRole("button", { name: "重试" }));
+    expect(document.body.textContent).not.toMatch(/Fixture|Live|Fallback|Round|Session|Provider|W2|W5/);
+    await user.click(screen.getByRole("button", { name: "再试一次" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
   });
 });

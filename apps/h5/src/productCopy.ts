@@ -67,6 +67,33 @@ export function poseLabel(value: string): string {
   return poseLabels[value] ?? "专属构图";
 }
 
+const presetCopyByCaseId: Readonly<Record<string, { title: string; subtitle: string }>> = {
+  doorway_coffee_fullbody: {
+    title: "门廊光影",
+    subtitle: "在城市转角，留下松弛的一刻",
+  },
+  stone_village_lean: {
+    title: "山城回望",
+    subtitle: "让风景成为你的舞台",
+  },
+  storefront_profile: {
+    title: "街角侧影",
+    subtitle: "把路上的随性留在镜头里",
+  },
+  cafe_seated_drink: {
+    title: "咖啡馆午后",
+    subtitle: "一个人的旅行，也有电影感",
+  },
+};
+
+export function presetCopy(
+  caseId: string,
+  fallbackTitle: string,
+  fallbackSubtitle: string,
+): { title: string; subtitle: string } {
+  return presetCopyByCaseId[caseId] ?? { title: fallbackTitle, subtitle: fallbackSubtitle };
+}
+
 export function roundLabel(round: number): string {
   return round === 1 ? "第一次" : "调整后";
 }
@@ -148,6 +175,10 @@ const errorCopyByCode: Readonly<Record<string, ProductErrorCopy>> = {
   INVALID_STATE: {
     title: "这一步需要重新开始",
     detail: "回到上一步，就能继续完成作品。",
+  },
+  VALIDATION_ERROR: {
+    title: "任务码看起来不对",
+    detail: "确认六位任务码后再试一次。",
   },
 };
 

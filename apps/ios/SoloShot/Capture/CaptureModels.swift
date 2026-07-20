@@ -121,16 +121,16 @@ enum FrameSelectionEngine {
 
         var reasons: [String] = []
         if metrics.personCount > 1 {
-            reasons.append("画面中有多个人")
+            reasons.append("画面里出现了其他人")
         } else if metrics.personCount == 0 {
-            reasons.append("未稳定检测到人物")
+            reasons.append("人物没有稳定入镜")
         }
-        if !metrics.headAndFeetVisible { reasons.append("头脚没有完整入镜") }
-        if metrics.sharpness >= 0.72 { reasons.append("画面更清晰") }
-        if metrics.targetPositionMatch >= 0.72 { reasons.append("更接近目标位置") }
-        if metrics.personScaleMatch >= 0.72 { reasons.append("人物比例更合适") }
-        if metrics.supportedPoseMatch == nil { reasons.append("未知姿势未参与评分") }
-        if reasons.isEmpty { reasons.append("综合构图更稳定") }
+        if !metrics.headAndFeetVisible { reasons.append("画面边缘裁到了人物") }
+        if metrics.sharpness >= 0.72 { reasons.append("这一帧更清晰") }
+        if metrics.targetPositionMatch >= 0.72 { reasons.append("站位更接近 ShotPlan") }
+        if metrics.personScaleMatch >= 0.72 { reasons.append("人物比例更自然") }
+        if metrics.supportedPoseMatch == nil { reasons.append("动作不在本机判断范围") }
+        if reasons.isEmpty { reasons.append("整体画面更稳定") }
 
         return CaptureCandidate(
             id: input.frameID,

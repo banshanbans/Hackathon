@@ -99,7 +99,7 @@ final class AppFlowModel: ObservableObject {
                 } else if round.selectedFrameID == nil {
                     state = .selectingFrame(cached, work)
                 } else {
-                    state = .offlinePending(cached, work, message: "拍摄任务已恢复，联网后可继续上传评价。")
+                    state = .offlinePending(cached, work, message: "旅拍进度已找回，联网后可以继续复盘。")
                     submit(task: cached, work: work)
                 }
             } else {
@@ -566,7 +566,7 @@ final class AppFlowModel: ObservableObject {
         method: LocalCaptureMethod
     ) async {
         guard let session = alignmentSession else {
-            state = .captureError(task, message: "相机会话已结束，请重新对齐。", canUsePhotoFallback: false)
+            state = .captureError(task, message: "相机已经停下，请重新回到画面中。", canUsePhotoFallback: false)
             return
         }
         let existing = (try? await captureStore.load(sessionID: task.sessionID)) ?? CaptureWork.empty(task: task)
@@ -625,7 +625,7 @@ final class AppFlowModel: ObservableObject {
 
     private func routeCompletedWork(task: ImportedTask, work: CaptureWork) {
         guard let evaluation = work.currentRound?.evaluation else {
-            state = .offlinePending(task, work, message: "评价尚未完成，可稍后重试。")
+            state = .offlinePending(task, work, message: "这一拍还没有复盘完成，可以稍后继续。")
             return
         }
         if work.rounds.count >= 2 || evaluation.goalSatisfied {

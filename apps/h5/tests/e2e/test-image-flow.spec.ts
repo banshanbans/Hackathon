@@ -306,50 +306,50 @@ async function installApiRoutes(page: Page) {
 }
 
 async function selectPreset(page: Page) {
-  await page.getByRole("button", { name: "选择参考画面" }).click();
-  await page.getByRole("button", { name: /门廊全身/ }).click();
-  await page.getByRole("button", { name: "确认圈选" }).click();
+  await page.getByRole("button", { name: "开始创作" }).click();
+  await page.getByRole("button", { name: /门廊光影/ }).click();
+  await page.getByRole("button", { name: "就是这个瞬间" }).click();
 }
 
 async function selectCustom(page: Page) {
-  await page.getByRole("button", { name: "自定义参考" }).click();
-  await page.getByRole("button", { name: "选择参考画面" }).click();
+  await page.getByRole("button", { name: "我的参考" }).click();
+  await page.getByRole("button", { name: "开始创作" }).click();
   await page.getByLabel("从相册选择").setInputFiles(testImagePath);
-  await expect(page.getByText("已就绪")).toBeVisible();
-  await page.getByRole("button", { name: "确认圈选" }).click();
+  await expect(page.getByText("已选好")).toBeVisible();
+  await page.getByRole("button", { name: "就是这个瞬间" }).click();
   await page.getByRole("checkbox").check();
 }
 
 async function uploadCaptureAndEvaluate(page: Page, round: 1 | 2) {
   await page.getByLabel("从相册选择").setInputFiles(testImagePath);
-  await expect(page.getByText("已就绪")).toBeVisible();
-  await page.getByRole("button", { name: "上传并评价" }).click();
+  await expect(page.getByText("已选好")).toBeVisible();
+  await page.getByRole("button", { name: "看看这一拍" }).click();
 }
 
 test("public preset completes the honest two-round flow with refresh recovery", async ({ page }) => {
   await installApiRoutes(page);
   await page.goto("/");
   await selectPreset(page);
-  await page.getByRole("button", { name: "开始参考分析" }).click();
-  await expect(page.getByRole("heading", { name: "参考画面已经理解完成" })).toBeVisible();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await expect(page.getByRole("heading", { name: "你的灵感，已经读懂" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "参考画面已经理解完成" })).toBeVisible();
-  await page.getByRole("button", { name: "生成 ShotPlan" }).click();
-  await expect(page.getByRole("heading", { name: "ShotPlan 拍摄任务" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "你的灵感，已经读懂" })).toBeVisible();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "ShotPlan 拍摄任务" })).toBeVisible();
-  await page.getByRole("button", { name: "留在网页拍摄" }).click();
-  await page.getByRole("button", { name: "运行第 1 轮评分" }).click();
+  await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
+  await page.getByRole("button", { name: "继续在网页完成" }).click();
+  await page.getByRole("button", { name: "查看第一次建议" }).click();
   await expect(page.getByRole("heading", { name: "人物比例偏小" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "人物比例偏小" })).toBeVisible();
-  await page.getByRole("button", { name: "按建议再拍一次" }).click();
-  await page.getByRole("button", { name: "运行第 2 轮评分" }).click();
-  await page.getByRole("button", { name: "查看最终结果" }).click();
-  await expect(page.getByRole("heading", { name: "两轮拍摄结果" })).toBeVisible();
+  await page.getByRole("button", { name: "带着这条建议再拍一次" }).click();
+  await page.getByRole("button", { name: "查看第二次变化" }).click();
+  await page.getByRole("button", { name: "查看我的作品" }).click();
+  await expect(page.getByRole("heading", { name: "一次调整，画面已经不同" })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "两轮拍摄结果" })).toBeVisible();
-  await expect(page.getByText(/不生成 Before \/ After/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "一次调整，画面已经不同" })).toBeVisible();
+  await expect(page.getByText(/不生成虚构的前后对比照片/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
@@ -357,34 +357,34 @@ test("custom original replication completes a real-media Live mock flow", async 
   await installApiRoutes(page);
   await page.goto("/");
   await selectCustom(page);
-  await page.getByRole("button", { name: "开始参考分析" }).click();
-  await page.getByRole("button", { name: "生成 ShotPlan" }).click();
-  await page.getByRole("button", { name: "留在网页拍摄" }).click();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.getByRole("button", { name: "继续在网页完成" }).click();
   await uploadCaptureAndEvaluate(page, 1);
-  await page.getByRole("button", { name: "按建议再拍一次" }).click();
+  await page.getByRole("button", { name: "带着这条建议再拍一次" }).click();
   await uploadCaptureAndEvaluate(page, 2);
-  await page.getByRole("button", { name: "查看最终结果" }).click();
-  await expect(page.getByText("以下图片来自本 Session 的真实 Round 1 / Round 2 上传。")).toBeVisible();
+  await page.getByRole("button", { name: "查看我的作品" }).click();
+  await expect(page.getByText("这里展示的照片都来自本次旅拍。")).toBeVisible();
 });
 
 for (const source of ["preset", "custom"] as const) {
   test(`${source} reference reaches a Live scene-adapted ShotPlan`, async ({ page }) => {
     await installApiRoutes(page);
     await page.goto("/");
-    await page.getByRole("button", { name: /场景适配/ }).click();
+    await page.getByRole("button", { name: /灵感迁移/ }).click();
     if (source === "preset") {
       await selectPreset(page);
       await page.getByRole("checkbox").check();
     } else {
       await selectCustom(page);
     }
-    await page.getByRole("button", { name: "开始参考分析" }).click();
-    await page.getByRole("button", { name: "添加当前现场" }).click();
+    await page.getByRole("button", { name: "交给 SoloShot" }).click();
+    await page.getByRole("button", { name: "看看我眼前的现场" }).click();
     await page.getByLabel("从相册选择").setInputFiles(testImagePath);
-    await expect(page.getByText("已就绪")).toBeVisible();
-    await page.getByRole("button", { name: "适配现场并生成 ShotPlan" }).click();
-    await expect(page.getByRole("heading", { name: "ShotPlan 拍摄任务" })).toBeVisible();
-    await expect(page.getByText("Live", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText("已选好")).toBeVisible();
+    await page.getByRole("button", { name: "为此刻生成 ShotPlan" }).click();
+    await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
+    await expect(page.getByText("实时分析", { exact: true }).first()).toBeVisible();
   });
 }
 
@@ -392,9 +392,9 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
   await installApiRoutes(page);
   await page.goto("/");
   await selectPreset(page);
-  await page.getByRole("button", { name: "开始参考分析" }).click();
-  await page.getByRole("button", { name: "生成 ShotPlan" }).click();
-  await page.getByRole("button", { name: "在 iPhone 继续" }).click();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.getByRole("button", { name: "让 iPhone 现场陪我拍" }).click();
 
   await expect(page.getByLabel("任务码 ABC234")).toBeVisible();
   await expect(page.getByAltText("iPhone 接力二维码")).toBeVisible();
@@ -409,7 +409,7 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
       body: JSON.stringify({ schema_version: "1.0", client_instance_id: "ios-e2e" }),
     });
   });
-  await expect(page.getByText("iPhone 正在安全缓存任务")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("正在同步到 iPhone")).toBeVisible({ timeout: 5_000 });
 
   await page.evaluate(async () => {
     await fetch("http://localhost:8000/api/v1/handoffs/ABC234/complete", {
@@ -422,7 +422,7 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
       body: JSON.stringify({ schema_version: "1.0", client_instance_id: "ios-e2e" }),
     });
   });
-  await expect(page.getByText("任务已成功导入 iPhone")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("iPhone 已就绪").first()).toBeVisible({ timeout: 5_000 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
@@ -430,9 +430,9 @@ test("W5 cross-device handoff follows two iOS rounds into the honest result", as
   await installApiRoutes(page);
   await page.goto("/");
   await selectPreset(page);
-  await page.getByRole("button", { name: "开始参考分析" }).click();
-  await page.getByRole("button", { name: "生成 ShotPlan" }).click();
-  await page.getByRole("button", { name: "在 iPhone 继续" }).click();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.getByRole("button", { name: "让 iPhone 现场陪我拍" }).click();
 
   await page.evaluate(async () => {
     const json = (method: string, body: unknown, key: string) => ({
@@ -452,7 +452,7 @@ test("W5 cross-device handoff follows two iOS rounds into the honest result", as
       },
     });
   });
-  await expect(page.getByText("任务已成功导入 iPhone")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("iPhone 已就绪").first()).toBeVisible({ timeout: 5_000 });
 
   const submitRound = async (round: 1 | 2) => {
     await page.evaluate(async (roundIndex) => {
@@ -501,13 +501,13 @@ test("W5 cross-device handoff follows two iOS rounds into the honest result", as
   };
 
   await submitRound(1);
-  await expect(page.getByText("第一轮建议已生成，iPhone 正在准备第二轮。")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("第一次建议已生成，iPhone 正在准备调整后的拍摄。")).toBeVisible({ timeout: 5_000 });
   await page.reload();
-  await expect(page.getByText("第一轮建议已生成，iPhone 正在准备第二轮。")).toBeVisible({ timeout: 5_000 });
+  await expect(page.getByText("第一次建议已生成，iPhone 正在准备调整后的拍摄。")).toBeVisible({ timeout: 5_000 });
   await submitRound(2);
-  await expect(page.getByRole("button", { name: "查看两轮结果" })).toBeVisible({ timeout: 5_000 });
-  await page.getByRole("button", { name: "查看两轮结果" }).click();
-  await expect(page.getByText(/照片可以是真实拍摄，但以下建议和准备度来自固定演示数据/)).toBeVisible();
-  await expect(page.getByText(/评分是 Fixture 固定演示，不代表模型比较/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "查看我的作品" })).toBeVisible({ timeout: 5_000 });
+  await page.getByRole("button", { name: "查看我的作品" }).click();
+  await expect(page.getByText(/从第一拍到第二拍，SoloShot 只让你改最关键的一步/)).toBeVisible();
+  await expect(page.getByText(/作品就绪度为演示参考，不代表 AI 对照片的判断/)).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });

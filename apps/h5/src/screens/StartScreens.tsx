@@ -25,14 +25,16 @@ import { PageHeader, StateNotice } from "../components/AppChrome";
 import { SelectionEditor } from "../components/SelectionEditor";
 import { findTestImageCase, testImageDataset, type TestImageCase } from "../dataset";
 import { useFlow, type FlowMode, type ReferenceSource } from "../flow/FlowProvider";
+import { presetCopy, productErrorCopy } from "../productCopy";
 
 function PresetCard({ item, onClick }: { item: TestImageCase; onClick: () => void }) {
+  const copy = presetCopy(item.caseId, item.title, item.subtitle);
   return (
     <button type="button" className="preset-card" onClick={onClick}>
       <img src={item.publicAssets.thumbnail} alt="" />
       <span>
-        <strong>{item.title}</strong>
-        <small>{item.subtitle}</small>
+        <strong>{copy.title}</strong>
+        <small>{copy.subtitle}</small>
       </span>
       <ArrowRight size={18} aria-hidden="true" />
     </button>
@@ -59,13 +61,12 @@ export function EntryScreen() {
   return (
     <section className="page entry-page">
       <div className="hero-card">
-        <p className="kicker">W2 · H5 END-TO-END</p>
-        <h1>从参考画面，到第二次拍得更好。</h1>
-        <p>无需登录。预设原图复刻可直接体验 Fixture；自定义和场景适配使用方舟 Live。</p>
+        <h1>一个人旅行，也能拍出想要的画面</h1>
+        <p>收藏过的灵感，SoloShot 会把它变成你此刻就能完成的旅拍作品。</p>
       </div>
 
       <fieldset className="option-group">
-        <legend>1. 选择拍摄模式</legend>
+        <legend>你想留下怎样的旅行记忆？</legend>
         <button
           type="button"
           className={state.mode === "original_replication" ? "option-card selected" : "option-card"}
@@ -74,7 +75,7 @@ export function EntryScreen() {
           <Sparkle size={24} aria-hidden="true" />
           <span>
             <strong>原图复刻</strong>
-            <small>复制人物位置、比例、机位与动作方向</small>
+            <small>把喜欢的构图与动作，变成你的这一张</small>
           </span>
           {state.mode === "original_replication" ? <CheckCircle weight="fill" /> : null}
         </button>
@@ -85,22 +86,22 @@ export function EntryScreen() {
         >
           <Mountains size={24} aria-hidden="true" />
           <span>
-            <strong>场景适配</strong>
-            <small>保留参考意图，按当前现场重新规划</small>
+            <strong>灵感迁移</strong>
+            <small>换一个地点，保留同一种氛围与镜头感</small>
           </span>
           {state.mode === "scene_adaptation" ? <CheckCircle weight="fill" /> : null}
         </button>
       </fieldset>
 
       <fieldset className="option-group compact-options">
-        <legend>2. 参考来源</legend>
+        <legend>灵感从哪里开始？</legend>
         <button
           type="button"
           className={state.referenceSource === "preset" ? "source-button selected" : "source-button"}
           onClick={() => chooseSource("preset")}
         >
           <ImageSquare size={21} aria-hidden="true" />
-          预设参考
+          精选灵感
         </button>
         <button
           type="button"
@@ -108,7 +109,7 @@ export function EntryScreen() {
           onClick={() => chooseSource("upload")}
         >
           <UploadSimple size={21} aria-hidden="true" />
-          自定义参考
+          我的参考
         </button>
       </fieldset>
 
@@ -120,8 +121,8 @@ export function EntryScreen() {
         }
       >
         {state.referenceSource === "preset" && state.mode === "original_replication"
-          ? "确定性演示数据；不会调用付费模型，也不伪造实拍照片。"
-          : "媒体会在你明确同意后发送至火山方舟分析。"}
+          ? "使用精选样例体验完整旅拍闭环。"
+          : "素材只会在你同意后用于本次创作。"}
       </StateNotice>
 
       <button
@@ -139,7 +140,7 @@ export function EntryScreen() {
           navigate("/reference");
         }}
       >
-        选择参考画面 <ArrowRight size={20} aria-hidden="true" />
+        开始创作 <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
   );
@@ -168,13 +169,13 @@ export function ReferenceScreen() {
 
   return (
     <section className="page reference-page">
-      <PageHeader title="选择并圈出人物" backTo="/" />
+      <PageHeader title="选中你想复刻的瞬间" backTo="/" />
       {state.referenceSource === "preset" ? (
         <>
           <div className="section-heading">
             <span>
-              <strong>4 个公开预设</strong>
-              <small>全部经过真实圈选页，不直接跳过</small>
+              <strong>精选旅拍灵感</strong>
+              <small>让 SoloShot 看见画面里真正打动你的主角。</small>
             </span>
           </div>
           <div className="preset-grid">
@@ -199,7 +200,7 @@ export function ReferenceScreen() {
       ) : (
         <MediaPicker
           value={state.referenceMedia}
-          title="上传自己的参考图片或短视频"
+          title="加入你的旅拍灵感"
           onChange={(referenceMedia) => {
             dispatch({
               type: "patch",
@@ -215,7 +216,7 @@ export function ReferenceScreen() {
 
       {preview !== undefined && dimensions !== null ? (
         <>
-          <h2 className="subheading">圈出需要复刻的人物</h2>
+          <h2 className="subheading">框住画面里的主角</h2>
           <SelectionEditor
             src={preview}
             width={dimensions.width}
@@ -228,8 +229,8 @@ export function ReferenceScreen() {
       ) : (
         <div className="empty-card">
           <ImageSquare size={30} aria-hidden="true" />
-          <strong>{state.referenceSource === "preset" ? "先选择一个预设" : "先添加参考画面"}</strong>
-          <small>完成后会在这里进行人物圈选。</small>
+          <strong>选择一张打动你的画面</strong>
+          <small>从上方灵感开始。</small>
         </div>
       )}
 
@@ -242,7 +243,7 @@ export function ReferenceScreen() {
           navigate("/constraints");
         }}
       >
-        确认圈选 <ArrowRight size={20} aria-hidden="true" />
+        就是这个瞬间 <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
   );
@@ -283,16 +284,17 @@ function ChoiceRow({
 }
 
 function ErrorCard({ error, onRetry }: { error: SoloShotApiError; onRetry: () => void }) {
+  const copy = productErrorCopy(error.code);
   return (
     <div className="error-card" role="alert">
       <Warning size={22} weight="fill" aria-hidden="true" />
       <span>
-        <strong>{error.message}</strong>
-        <small>{error.code} · 未切换到 Fixture</small>
+        <strong>{copy.title}</strong>
+        <small>{copy.detail}</small>
       </span>
       {error.recoverable ? (
         <button type="button" onClick={onRetry}>
-          <Repeat size={17} aria-hidden="true" /> 重试
+          <Repeat size={17} aria-hidden="true" /> 再试一次
         </button>
       ) : null}
     </div>
@@ -317,7 +319,7 @@ export function ConstraintsScreen() {
     if (isLive && !state.consent) {
       setError(
         new SoloShotApiError(
-          "Live 流程需要先同意媒体发送至火山方舟分析。",
+          "还需要你的同意，才能开始本次分析。",
           "CONSENT_REQUIRED",
           true,
         ),
@@ -415,37 +417,37 @@ export function ConstraintsScreen() {
 
   return (
     <section className="page constraints-page">
-      <PageHeader title="拍摄条件" backTo="/reference" />
+      <PageHeader title="让这次拍摄更像你" backTo="/reference" />
       <div className="choice-panel">
         <ChoiceRow
           icon={<User size={20} aria-hidden="true" />}
-          title="独自旅行"
-          description="按单人可执行方式规划"
+          title="一个人出发"
+          description="每一步都能独自完成"
           value={state.constraints.solo_traveler}
           onChange={(solo_traveler) => updateConstraints({ solo_traveler })}
         />
         <ChoiceRow
           icon={<Camera size={20} aria-hidden="true" />}
-          title="有三脚架"
-          description="没有也会给出稳定支撑方案"
+          title="有稳定支撑"
+          description="三脚架、安全台面或固定支点"
           value={state.constraints.tripod_available}
           onChange={(tripod_available) => updateConstraints({ tripod_available })}
         />
         <ChoiceRow
           icon={<Suitcase size={20} aria-hidden="true" />}
-          title="携带行李"
-          description="避免复杂移动与危险动作"
+          title="需要带着行李"
+          description="动作更轻松，移动更从容"
           value={state.constraints.has_luggage}
           onChange={(has_luggage) => updateConstraints({ has_luggage })}
         />
       </div>
 
       <label className="text-field">
-        其他备注
+        还有什么需要照顾？
         <input
           value={state.constraints.notes ?? ""}
           maxLength={120}
-          placeholder="例如：时间紧、脚下有台阶"
+          placeholder="比如：时间很赶、脚下有台阶"
           onChange={(event) => updateConstraints({ notes: event.target.value || null })}
         />
       </label>
@@ -458,19 +460,19 @@ export function ConstraintsScreen() {
             onChange={(event) => dispatch({ type: "patch", value: { consent: event.target.checked } })}
           />
           <span>
-            <strong>我同意媒体发送至火山方舟分析</strong>
-            <small>未同意时服务端不会创建媒体上传；临时媒体默认保留 24 小时。</small>
+            <strong>我同意将所选素材发送至火山方舟进行本次 AI 分析</strong>
+            <small>临时媒体仅用于本次任务，24 小时后自动清理。</small>
           </span>
         </label>
       ) : (
-        <StateNotice mode="fixture">预设原图复刻使用确定性 Fixture，无外部 AI 媒体调用。</StateNotice>
+        <StateNotice mode="fixture">使用精选样例生成 ShotPlan，不会发送你的媒体。</StateNotice>
       )}
 
       {busy ? <UploadProgress value={progress} onCancel={() => controller?.abort()} /> : null}
       {error !== null ? <ErrorCard error={error} onRetry={() => void submit()} /> : null}
 
       <button type="button" className="primary-button" disabled={busy} onClick={() => void submit()}>
-        {busy ? "正在准备任务…" : "开始参考分析"} <ArrowRight size={20} aria-hidden="true" />
+        {busy ? "正在理解这个瞬间…" : "交给 SoloShot"} <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
   );

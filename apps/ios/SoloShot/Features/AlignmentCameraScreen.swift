@@ -42,11 +42,11 @@ struct AlignmentCameraScreen: View {
         .preferredColorScheme(.dark)
         .onChange(of: voiceEnabled) { _, _ in updateFeedback() }
         .onChange(of: hapticsEnabled) { _, _ in updateFeedback() }
-        .alert("手动确认已就位？", isPresented: $showManualConfirmation) {
+        .alert("这次改用手动确认？", isPresented: $showManualConfirmation) {
             Button("取消", role: .cancel) {}
-            Button("确认未验证就位") { session.confirmManualReady() }
+            Button("继续使用手动确认") { session.confirmManualReady() }
         } message: {
-            Text("系统没有验证人物姿势或构图。该结果会明确标记为手动降级。")
+            Text("SoloShot 尚未验证构图与动作，结果会标记为手动完成。")
         }
     }
 
@@ -79,9 +79,9 @@ struct AlignmentCameraScreen: View {
                     .frame(width: 44, height: 44)
                     .background(.black.opacity(0.55), in: Circle())
             }
-            .accessibilityLabel("退出实时对齐")
+            .accessibilityLabel("退出现场陪拍")
 
-            Label(session.isFixture ? "Fixture 本地对齐" : "本地实时对齐", systemImage: "circle.fill")
+            Label(session.isFixture ? "演示陪拍" : "本地实时陪拍", systemImage: "circle.fill")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(session.isFixture ? .orange : .green)
                 .padding(.horizontal, 12)
@@ -132,12 +132,12 @@ struct AlignmentCameraScreen: View {
             }
             .accessibilityLabel(voiceEnabled ? "关闭语音提示" : "开启语音提示")
             if session.manualOverrideAvailable {
-                Button("手动已就位") { showManualConfirmation = true }
+                Button("我已就位") { showManualConfirmation = true }
                     .font(.caption.weight(.bold))
                     .frame(minHeight: 48)
                     .padding(.horizontal, 12)
                     .background(.orange, in: Capsule())
-                    .accessibilityHint("需要再次确认，结果不会标记为 Vision 验证")
+                    .accessibilityHint("需要再次确认，本次会标记为手动完成")
             }
         }
     }
@@ -165,12 +165,12 @@ struct AlignmentCameraScreen: View {
 
     private var interruptionBanner: some View {
         VStack(spacing: 8) {
-            Label("相机被系统中断", systemImage: "pause.circle.fill")
+            Label("相机暂时停下了", systemImage: "pause.circle.fill")
             if session.interruptionEnded {
-                Button("继续相机") { Task { await session.resumeAfterInterruption() } }
+                Button("继续陪拍") { Task { await session.resumeAfterInterruption() } }
                     .frame(minHeight: 44)
             } else {
-                Text("等待系统释放相机…").font(.caption)
+                Text("正在等待相机恢复…").font(.caption)
             }
         }
         .padding(12)
@@ -181,7 +181,7 @@ struct AlignmentCameraScreen: View {
     private func failureBanner(_ failure: CameraFailure) -> some View {
         VStack(spacing: 8) {
             Label(failure.localizedDescription, systemImage: "exclamationmark.triangle.fill")
-            Button("返回准备页") { flow.returnToSetup(session.task) }
+            Button("返回准备") { flow.returnToSetup(session.task) }
                 .frame(minHeight: 44)
         }
         .padding(12)
@@ -190,7 +190,7 @@ struct AlignmentCameraScreen: View {
     }
 
     private var pressureBanner: some View {
-        Label("设备压力过高，Vision 已暂停；可退出降温或手动确认。", systemImage: "thermometer.high")
+        Label("手机有点热，实时识别已暂停。可稍后继续或手动确认。", systemImage: "thermometer.high")
             .font(.caption.weight(.semibold))
             .padding(12)
             .frame(maxWidth: .infinity)

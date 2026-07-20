@@ -28,6 +28,15 @@ import { PageHeader, StateNotice } from "../components/AppChrome";
 import { MediaPicker, UploadProgress } from "../components/MediaPicker";
 import { findTestImageCase } from "../dataset";
 import { useFlow } from "../flow/FlowProvider";
+import {
+  cameraAngleLabel,
+  cameraHeightLabel,
+  captureModeLabel,
+  lensLabel,
+  poseLabel,
+  productErrorCopy,
+  roundLabel,
+} from "../productCopy";
 
 function useSession() {
   const params = useParams<{ id: string }>();
@@ -41,12 +50,12 @@ function useSession() {
   return { sessionId, query };
 }
 
-function Loading({ label = "正在恢复任务…" }: { label?: string }) {
+function Loading({ label = "正在找回你的 ShotPlan…" }: { label?: string }) {
   return (
     <div className="center-state" role="status">
       <CircleNotch className="spin" size={34} aria-hidden="true" />
       <strong>{label}</strong>
-      <small>以服务端 Session 状态为准</small>
+      <small>上次进度已为你保留</small>
     </div>
   );
 }
@@ -56,15 +65,15 @@ function AsyncError({ error, onRetry }: { error: unknown; onRetry: () => void })
     error instanceof SoloShotApiError
       ? error
       : new SoloShotApiError("当前步骤没有完成。", "REQUEST_FAILED", true);
+  const copy = productErrorCopy(apiError.code);
   return (
     <div className="center-state error-state" role="alert">
       <Warning size={34} weight="fill" aria-hidden="true" />
-      <strong>{apiError.message}</strong>
-      <code>{apiError.code}</code>
-      <small>没有静默切换到 Fixture。</small>
+      <strong>{copy.title}</strong>
+      <small>{copy.detail}</small>
       {apiError.recoverable ? (
         <button type="button" className="secondary-button" onClick={onRetry}>
-          <Repeat size={18} aria-hidden="true" /> 重试
+          <Repeat size={18} aria-hidden="true" /> 再试一次
         </button>
       ) : null}
     </div>
@@ -97,7 +106,7 @@ export function AnalysisScreen() {
   const [error, setError] = useState<unknown>(null);
 
   if (query.isLoading) {
-    return <Loading label="正在读取参考分析…" />;
+    return <Loading label="正在读懂你的灵感…" />;
   }
   if (query.error !== null || query.data === undefined) {
     return <AsyncError error={query.error} onRetry={() => void query.refetch()} />;
@@ -129,30 +138,18 @@ export function AnalysisScreen() {
 
   return (
     <section className="page analysis-page">
-      <PageHeader title="参考分析" backTo="/constraints" />
+      <PageHeader title="你的灵感，已经读懂" backTo="/constraints" />
       <div className="analysis-success">
         <span>
           <Check size={28} weight="bold" aria-hidden="true" />
         </span>
-        <p className="kicker">ACTIVE ANALYSIS</p>
-        <h1>参考画面已经理解完成</h1>
-        <p>后续步骤会复用这份 active analysis，不会再次调用参考理解。</p>
+        <p>人物、构图与氛围已经整理成一份可执行的拍摄意图。</p>
       </div>
       <StateNotice mode={mode}>
         {mode === "fixture"
-          ? "预设原图复刻使用确定性 ShotPlan。"
-          : "当前分析来自 Live 路径；刷新后可从 Session 继续。"}
+          ? "接下来将生成一份精选样例 ShotPlan。"
+          : "你的灵感已安全保存，可以继续创作。"}
       </StateNotice>
-      <div className="analysis-facts">
-        <span>
-          <strong>模式</strong>
-          <small>{session.mode === "original_replication" ? "原图复刻" : "场景适配"}</small>
-        </span>
-        <span>
-          <strong>参考状态</strong>
-          <small>{session.active_reference_analysis_id === null ? "待恢复" : "已激活"}</small>
-        </span>
-      </div>
 
       {error !== null ? <AsyncError error={error} onRetry={() => void createPlan()} /> : null}
       <button
@@ -168,10 +165,10 @@ export function AnalysisScreen() {
         }}
       >
         {busy
-          ? "正在生成 ShotPlan…"
+          ? "AI 摄影导演正在设计…"
           : session.mode === "scene_adaptation"
-            ? "添加当前现场"
-            : "生成 ShotPlan"}
+            ? "看看我眼前的现场"
+            : "生成我的 ShotPlan"}
         <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
@@ -241,18 +238,17 @@ export function SceneScreen() {
 
   return (
     <section className="page scene-page">
-      <PageHeader title="添加当前现场" backTo={`/session/${sessionId}/analysis`} />
+      <PageHeader title="让灵感，发生在你眼前" backTo={`/session/${sessionId}/analysis`} />
       <div className="page-intro">
         <Mountains size={28} aria-hidden="true" />
         <span>
-          <h1>让参考构图适应你眼前的环境</h1>
-          <p>现场图只用于重新规划人物位置与机位，不改变原参考意图。</p>
+          <p>拍下此刻的场景，SoloShot 会保留镜头感，重新安排机位与站位。</p>
         </span>
       </div>
-      <StateNotice mode="live">场景适配始终走方舟 Live；未配置 Provider 时会明确报错。</StateNotice>
+      <StateNotice mode="live">现场素材仅用于本次 ShotPlan。</StateNotice>
       <MediaPicker
         value={state.sceneMedia}
-        title="拍摄或选择当前现场"
+        title="拍下你眼前的场景"
         onChange={(sceneMedia) => dispatch({ type: "patch", value: { sceneMedia } })}
       />
       {busy ? <UploadProgress value={progress} onCancel={() => controller?.abort()} /> : null}
@@ -263,7 +259,7 @@ export function SceneScreen() {
         disabled={busy || state.sceneMedia === null}
         onClick={() => void adapt()}
       >
-        {busy ? "正在重新规划…" : "适配现场并生成 ShotPlan"}
+        {busy ? "正在为这个场景重新设计…" : "为此刻生成 ShotPlan"}
         <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
@@ -285,12 +281,12 @@ function MediaImage({
     staleTime: 240_000,
   });
   if (access.isLoading) {
-    return <div className="media-placeholder">正在获取短期预览…</div>;
+    return <div className="media-placeholder">正在准备画面…</div>;
   }
   if (access.error !== null || access.data === undefined) {
     return (
       <div className="media-placeholder media-expired" role="status">
-        媒体已过期或不可访问，请重新开始。
+        这张画面已无法显示，请重新开始。
       </div>
     );
   }
@@ -338,27 +334,27 @@ export function PlanScreen() {
   const mode = modeForSession(session, state.executionMode);
   return (
     <section className="page plan-page">
-      <PageHeader title="ShotPlan 拍摄任务" backTo={`/session/${sessionId}/analysis`} />
+      <PageHeader title="你的专属 ShotPlan" backTo={`/session/${sessionId}/analysis`} />
       <div className="plan-reference">
         <ReferenceImage session={session} />
         <span>
-          <small>目标构图</small>
-          <strong>{plan.target_layout.pose_template}</strong>
+          <small>这就是你要留下的画面</small>
+          <strong>{poseLabel(plan.target_layout.pose_template)}</strong>
         </span>
       </div>
       <StateNotice mode={mode}>
-        Agent 已完成 · {session.selected_skills.map((item) => item.name).join(" → ")}
+        ShotPlan 已就绪
       </StateNotice>
       <div className="plan-facts">
         <span>
           <DeviceMobile size={20} aria-hidden="true" />
-          <strong>机位</strong>
-          <small>{plan.camera_height} · {plan.camera_angle}</small>
+          <strong>手机放这里</strong>
+          <small>{cameraHeightLabel(plan.camera_height)} · {cameraAngleLabel(plan.camera_angle)}</small>
         </span>
         <span>
           <Camera size={20} aria-hidden="true" />
-          <strong>镜头</strong>
-          <small>{plan.lens} · {plan.capture_mode}</small>
+          <strong>这样取景</strong>
+          <small>{lensLabel(plan.lens)} · {captureModeLabel(plan.capture_mode)}</small>
         </span>
       </div>
       <div className="plan-card">
@@ -376,7 +372,7 @@ export function PlanScreen() {
       <div className="safety-card">
         <ShieldCheck size={22} weight="fill" aria-hidden="true" />
         <span>
-          <strong>安全检查</strong>
+          <strong>出发前，再确认一件事</strong>
           <small>{plan.safety_notes[0]}</small>
         </span>
       </div>
@@ -385,7 +381,7 @@ export function PlanScreen() {
         className="primary-button"
         onClick={() => navigate(`/session/${sessionId}/handoff`)}
       >
-        <DeviceMobile size={20} aria-hidden="true" /> 在 iPhone 继续
+        <DeviceMobile size={20} aria-hidden="true" /> 让 iPhone 现场陪我拍
       </button>
       <button
         type="button"
@@ -393,10 +389,10 @@ export function PlanScreen() {
         disabled={session.state === "handoff_ready"}
         onClick={() => navigate(`/session/${sessionId}/capture/1`)}
       >
-        留在网页拍摄 <ArrowRight size={20} aria-hidden="true" />
+        继续在网页完成 <ArrowRight size={20} aria-hidden="true" />
       </button>
       {session.state === "handoff_ready" ? (
-        <p className="handoff-plan-note">接力期间网页拍摄已锁定；先在接力页撤销任务码才能恢复。</p>
+        <p className="handoff-plan-note">任务已交给 iPhone；取消接力后可回到网页继续。</p>
       ) : null}
     </section>
   );
@@ -424,7 +420,10 @@ export function CaptureScreen() {
   if (session.state === "handoff_ready") {
     return (
       <section className="page capture-page">
-        <PageHeader title={`第 ${round} 轮拍摄`} backTo={`/session/${sessionId}/plan`} />
+        <PageHeader
+          title={round === 1 ? "第一次，先完整拍下来" : "第二次，只改最关键的一点"}
+          backTo={`/session/${sessionId}/plan`}
+        />
         <AsyncError
           error={new SoloShotApiError(
             "此任务正在接力到 iPhone，请先撤销任务码再回到网页拍摄。",
@@ -450,7 +449,7 @@ export function CaptureScreen() {
       if (fixture) {
         const caseId = state.caseId;
         if (caseId === null) {
-          throw new SoloShotApiError("Fixture 案例标识已丢失，请重新开始。", "INVALID_STATE", true);
+          throw new SoloShotApiError("精选样例已失效，请重新开始。", "INVALID_STATE", true);
         }
         capture = (await soloShotApi.createFixtureCapture(sessionId, caseId, round)).data;
         setProgress(55);
@@ -497,29 +496,35 @@ export function CaptureScreen() {
 
   return (
     <section className="page capture-page">
-      <PageHeader title={`第 ${round} 轮拍摄`} backTo={`/session/${sessionId}/plan`} />
+      <PageHeader
+        title={round === 1 ? "第一次，先完整拍下来" : "第二次，只改最关键的一点"}
+        backTo={`/session/${sessionId}/plan`}
+      />
       <div className="page-intro">
         <Camera size={28} aria-hidden="true" />
         <span>
-          <h1>{round === 1 ? "按 ShotPlan 完成首拍" : "只修正上一轮的一个问题"}</h1>
-          <p>拍照和相册上传始终是 H5 的可靠后备；视频会在浏览器内抽帧。</p>
+          <p>
+            {round === 1
+              ? "跟着 ShotPlan 完成第一张作品。"
+              : "保留上一轮做对的，只调整 SoloShot 指出的那一步。"}
+          </p>
         </span>
       </div>
       {fixture ? (
         <>
           <StateNotice mode="fixture">
-            该预设没有真实 Round 1 / Round 2 配对图，本页只运行确定性评分卡，不接收照片冒充 Live 判断。
+            当前结果来自精选样例，不代表 AI 对本次照片的判断。
           </StateNotice>
           <div className="fixture-capture-card">
             <Sparkle size={28} weight="fill" aria-hidden="true" />
-            <strong>运行第 {round} 轮 Fixture 评价</strong>
-            <small>结果来自 test-image-v1 固定案例。</small>
+            <strong>{round === 1 ? "第一次建议已准备好" : "看看调整后的变化"}</strong>
+            <small>体验一次完整的旅拍优化节奏。</small>
           </div>
         </>
       ) : (
         <MediaPicker
           value={localMedia}
-          title={`添加第 ${round} 轮拍摄结果`}
+          title={round === 1 ? "加入第一次成片" : "加入调整后的成片"}
           onChange={(value) => dispatch({ type: "capture", round, value })}
         />
       )}
@@ -531,7 +536,13 @@ export function CaptureScreen() {
         disabled={busy || (!fixture && localMedia === null)}
         onClick={() => void evaluate()}
       >
-        {busy ? "正在评价…" : fixture ? `运行第 ${round} 轮评分` : "上传并评价"}
+        {busy
+          ? "AI 摄影导演正在复盘…"
+          : fixture
+            ? round === 1
+              ? "查看第一次建议"
+              : "查看第二次变化"
+            : "看看这一拍"}
         <ArrowRight size={20} aria-hidden="true" />
       </button>
     </section>
@@ -560,8 +571,8 @@ function EvaluationCard({ evaluation, round }: { evaluation: ResultEvaluation; r
       <div className="evaluation-success">
         <CheckCircle size={34} weight="fill" aria-hidden="true" />
         <span>
-          <strong>第 {round} 轮已达到目标</strong>
-          <small>发布准备度 {Math.round(evaluation.publish_readiness * 100)}%</small>
+          <strong>这一次，你拍到了</strong>
+          <small>作品就绪度 {Math.round(evaluation.publish_readiness * 100)}%</small>
         </span>
       </div>
     );
@@ -569,7 +580,7 @@ function EvaluationCard({ evaluation, round }: { evaluation: ResultEvaluation; r
   return (
     <>
       <div className="issue-card">
-        <p>本次唯一主要问题</p>
+        <p>最值得调整的是</p>
         <h2>{issueLabels[evaluation.issue_code ?? ""] ?? "仍可继续改进"}</h2>
         <span>{evaluation.top_issue ?? "本轮已完成，请查看结果。"}</span>
       </div>
@@ -577,7 +588,7 @@ function EvaluationCard({ evaluation, round }: { evaluation: ResultEvaluation; r
         <div className="instruction-card">
           <Footprints size={24} weight="fill" aria-hidden="true" />
           <span>
-            <small>下一步唯一指令</small>
+            <small>下一拍，照这一句做</small>
             <strong>{evaluation.next_instruction}</strong>
           </span>
         </div>
@@ -593,7 +604,7 @@ export function EvaluationScreen() {
   const { state } = useFlow();
   const { sessionId, query } = useSession();
   if (query.isLoading) {
-    return <Loading label="正在恢复评价…" />;
+    return <Loading label="正在找回上一轮建议…" />;
   }
   if (query.error !== null || query.data === undefined) {
     return <AsyncError error={query.error} onRetry={() => void query.refetch()} />;
@@ -613,24 +624,27 @@ export function EvaluationScreen() {
   const capture = session.capture_rounds.find((item) => item.round_index === round);
   return (
     <section className="page evaluation-page">
-      <PageHeader title={`第 ${round} 轮评价`} backTo={`/session/${sessionId}/capture/${round}`} />
+      <PageHeader
+        title={evaluation.goal_satisfied ? "这一次，你拍到了" : "这一拍，可以更好"}
+        backTo={`/session/${sessionId}/capture/${round}`}
+      />
       <StateNotice mode={mode}>
         {mode === "fixture"
-          ? "演示评分卡，不代表真实照片比较。"
-          : "评价使用参考媒体、active analysis、ShotPlan 与本轮拍摄。"}
+          ? "以下结果来自精选样例。"
+          : "这条建议来自本次成片。"}
       </StateNotice>
       {mode === "live" && capture !== undefined ? (
         <div className="capture-result-image">
           <MediaImage
             sessionId={sessionId}
             mediaAssetId={capture.media_asset_id}
-            alt={`第 ${round} 轮真实拍摄`}
+            alt={round === 1 ? "第一次成片" : "调整后的成片"}
           />
         </div>
       ) : null}
       <EvaluationCard evaluation={evaluation} round={round} />
       {!evaluation.goal_satisfied && round === 1 ? (
-        <p className="single-change-rule">只改这一点，其他位置、距离和动作保持不变。</p>
+        <p className="single-change-rule">其他都保持不变。</p>
       ) : null}
       <button
         type="button"
@@ -643,7 +657,7 @@ export function EvaluationScreen() {
           )
         }
       >
-        {evaluation.goal_satisfied || round === 2 ? "查看最终结果" : "按建议再拍一次"}
+        {evaluation.goal_satisfied || round === 2 ? "查看我的作品" : "带着这条建议再拍一次"}
         {evaluation.goal_satisfied || round === 2 ? (
           <ArrowRight size={20} aria-hidden="true" />
         ) : (
@@ -660,9 +674,9 @@ function RoundMedia({ session, capture }: { session: SoloShotSession; capture: C
       <MediaImage
         sessionId={session.session_id}
         mediaAssetId={capture.media_asset_id}
-        alt={`第 ${capture.round_index} 轮真实拍摄`}
+        alt={capture.round_index === 1 ? "第一次成片" : "调整后的成片"}
       />
-      <strong>Round {capture.round_index}</strong>
+      <strong>{roundLabel(capture.round_index)}</strong>
     </div>
   );
 }
@@ -672,7 +686,7 @@ export function ResultScreen() {
   const { state, reset } = useFlow();
   const { sessionId, query } = useSession();
   if (query.isLoading) {
-    return <Loading label="正在恢复结果…" />;
+    return <Loading label="正在整理你的作品…" />;
   }
   if (query.error !== null || query.data === undefined) {
     return <AsyncError error={query.error} onRetry={() => void query.refetch()} />;
@@ -693,22 +707,27 @@ export function ResultScreen() {
         <span>
           {satisfied ? <Check size={30} weight="bold" /> : <Sparkle size={30} weight="fill" />}
         </span>
-        <p className="kicker">TWO-ROUND RESULT</p>
-        <h1>{mode === "fixture" ? "两轮拍摄结果" : satisfied ? "目标已满足" : "两轮拍摄已完成"}</h1>
+        <h1>
+          {mode === "fixture"
+            ? "一次调整，画面已经不同"
+            : satisfied
+              ? "你把喜欢的瞬间，拍成了自己的作品"
+              : "这次旅拍，已经有了自己的样子"}
+        </h1>
         <p>
           {mode === "fixture"
-            ? "照片可以是真实拍摄，但以下建议和准备度来自固定演示数据。"
+            ? "从第一拍到第二拍，SoloShot 只让你改最关键的一步。"
             : satisfied
-              ? "本次任务可以结束。"
-              : "第二轮仍有改进空间；系统不会伪造达标结论。"}
+              ? "灵感、现场与动作，终于落在同一张画面里。"
+              : "已经完成两次拍摄，把这份 ShotPlan 留给下一次继续。"}
         </p>
       </div>
       <StateNotice mode={mode}>
         {mode === "fixture"
           ? hasRealCaptureMedia
-            ? "以下照片来自本 Session；评分是 Fixture 固定演示，不代表模型比较。"
-            : "仅展示评分变化卡；没有真实配对图时不生成 Before / After 照片。"
-          : "以下图片来自本 Session 的真实 Round 1 / Round 2 上传。"}
+            ? "照片来自本次拍摄，作品就绪度为演示参考，不代表 AI 对照片的判断。"
+            : "作品就绪度来自精选样例，不生成虚构的前后对比照片。"
+          : "这里展示的照片都来自本次旅拍。"}
       </StateNotice>
 
       {mode === "live" || hasRealCaptureMedia ? (
@@ -722,8 +741,8 @@ export function ResultScreen() {
           {evaluations.map((evaluation, index) => (
             <div key={evaluation.evaluation_id}>
               {index === 0 ? <Warning size={25} weight="fill" /> : <CheckCircle size={25} weight="fill" />}
-              <strong>Round {index + 1}</strong>
-              <small>{Math.round(evaluation.publish_readiness * 100)}% 准备度</small>
+              <strong>{roundLabel(index + 1)}</strong>
+              <small>{Math.round(evaluation.publish_readiness * 100)}% 作品就绪度</small>
             </div>
           ))}
         </div>
@@ -732,13 +751,12 @@ export function ResultScreen() {
       {first !== undefined && latest !== undefined ? (
         <div className="readiness-card">
           <span>
-            <strong>发布准备度</strong>
+            <strong>作品就绪度</strong>
             <small>
               {Math.round(first.publish_readiness * 100)}% → {Math.round(latest.publish_readiness * 100)}%
-              {mode === "fixture" ? "（Fixture）" : ""}
             </small>
           </span>
-          <div aria-label={`发布准备度 ${Math.round(latest.publish_readiness * 100)}%`}>
+          <div aria-label={`作品就绪度 ${Math.round(latest.publish_readiness * 100)}%`}>
             <span style={{ width: `${latest.publish_readiness * 100}%` }} />
           </div>
         </div>
@@ -752,9 +770,9 @@ export function ResultScreen() {
           navigate("/");
         }}
       >
-        开始新的任务 <ArrowRight size={20} aria-hidden="true" />
+        开始下一次旅拍 <ArrowRight size={20} aria-hidden="true" />
       </button>
-      <p className="retention-note">Session 临时媒体默认保留 24 小时；可通过删除 Session 立即清理。</p>
+      <p className="retention-note">临时素材将在 24 小时后自动清理。</p>
     </section>
   );
 }
@@ -765,9 +783,9 @@ export function NotFoundScreen() {
     <section className="page">
       <div className="center-state error-state">
         <Warning size={34} weight="fill" aria-hidden="true" />
-        <strong>没有找到这个页面</strong>
+        <strong>这段旅程走丢了</strong>
         <button type="button" className="secondary-button" onClick={() => navigate("/")}>
-          返回首页
+          回到 SoloShot
         </button>
       </div>
     </section>

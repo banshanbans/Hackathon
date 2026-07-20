@@ -19,32 +19,32 @@ final class W4AlignmentUITests: XCTestCase {
     func testFixtureSequenceMovesFromSummaryThroughOverlayToReady() {
         let app = launch()
         app.buttons["开始现场陪拍"].tap()
-        app.switches["手机已固定，脚下环境安全"].tap()
-        app.buttons["进入实时对齐"].tap()
-        XCTAssertTrue(app.staticTexts["Fixture 本地对齐"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["构图已就位"].waitForExistence(timeout: 8))
-        XCTAssertTrue(app.buttons["准备动作并拍摄"].exists)
-        XCTAssertTrue(app.buttons["准备动作并拍摄"].isEnabled)
+        app.switches["手机已固定，周围安全"].tap()
+        app.buttons["开始实时陪拍"].tap()
+        XCTAssertTrue(app.staticTexts["演示陪拍"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["构图已经对上了"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.buttons["准备动作"].exists)
+        XCTAssertTrue(app.buttons["准备动作"].isEnabled)
     }
 
     func testManualFallbackRequiresConfirmationAndIsLabeledUnverified() {
         let app = launch(scenario: "manual")
         app.buttons["开始现场陪拍"].tap()
-        app.switches["手机已固定，脚下环境安全"].tap()
-        app.buttons["进入实时对齐"].tap()
-        XCTAssertTrue(app.buttons["手动已就位"].waitForExistence(timeout: 8))
-        app.buttons["手动已就位"].tap()
-        XCTAssertTrue(app.alerts["手动确认已就位？"].exists)
-        app.alerts.buttons["确认未验证就位"].tap()
-        XCTAssertTrue(app.staticTexts["这是手动确认结果，姿势和构图未经 Vision 验证。"].waitForExistence(timeout: 3))
+        app.switches["手机已固定，周围安全"].tap()
+        app.buttons["开始实时陪拍"].tap()
+        XCTAssertTrue(app.buttons["我已就位"].waitForExistence(timeout: 8))
+        app.buttons["我已就位"].tap()
+        XCTAssertTrue(app.alerts["这次改用手动确认？"].exists)
+        app.alerts.buttons["继续使用手动确认"].tap()
+        XCTAssertTrue(app.staticTexts["这是手动确认，SoloShot 尚未验证构图与动作。"].waitForExistence(timeout: 3))
     }
 
     func testFixturePermissionFailureHasRecoveryPath() {
         let app = launch(denyPermission: true)
         app.buttons["开始现场陪拍"].tap()
-        app.switches["手机已固定，脚下环境安全"].tap()
-        app.buttons["进入实时对齐"].tap()
-        XCTAssertTrue(app.staticTexts["相机暂不可用"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["返回准备页"].exists)
+        app.switches["手机已固定，周围安全"].tap()
+        app.buttons["开始实时陪拍"].tap()
+        XCTAssertTrue(app.staticTexts["相机还没准备好"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["返回准备"].exists)
     }
 }
