@@ -94,7 +94,7 @@ services:
       context: ../..
       dockerfile: apps/h5/Dockerfile
       args:
-        VITE_API_BASE_URL: http://shotapi.socialdog.cn
+        VITE_API_BASE_URL: https://shotapi.socialdog.cn
     restart: unless-stopped
 
   caddy:
