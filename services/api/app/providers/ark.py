@@ -114,6 +114,8 @@ class VolcengineArkProvider:
         payload: JsonObject = {
             "model": self.model_id,
             "store": False,
+            "thinking": {"type": "disabled"},
+            "max_output_tokens": 2048,
             "instructions": prompt_path.read_text(encoding="utf-8"),
             "input": [{"role": "user", "content": content}],
             "text": {

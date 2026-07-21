@@ -97,6 +97,8 @@ def test_ark_sends_verified_media_as_data_url_and_requests_json_schema() -> None
     payload = captured["payload"]
     assert payload["model"] == "test-endpoint-id"
     assert payload["store"] is False
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["max_output_tokens"] == 2048
     assert payload["text"]["format"]["type"] == "json_schema"
     content = payload["input"][0]["content"]
     assert content[0]["type"] == "input_image"
