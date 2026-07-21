@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import pytest
 
-from app.application.service import W1Service
+from app.application.service import ServiceResult, W1Service
 from app.domain.errors import DomainError
 from app.providers.base import ProviderResult
 from app.providers.mock import DeterministicMockProvider, SafeRuleFallbackProvider
@@ -57,10 +58,10 @@ def test_failed_skill_trace_is_persisted_outside_the_rolled_back_transaction() -
             self.skill_runs: list[dict[str, object]] = []
 
         @asynccontextmanager
-        async def transaction(self):
+        async def transaction(self) -> AsyncIterator[None]:
             yield
 
-        async def get_idempotency(self, operation: str, key: str):
+        async def get_idempotency(self, operation: str, key: str) -> None:
             return None
 
         async def put_skill_run(
@@ -87,7 +88,7 @@ def test_failed_skill_trace_is_persisted_outside_the_rolled_back_transaction() -
         service = object.__new__(W1Service)
         service.store = store  # type: ignore[assignment]
 
-        async def action():
+        async def action() -> ServiceResult:
             raise failure
 
         with pytest.raises(SkillInvocationError):

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql://soloshot:local-development-only@localhost:5432/soloshot"
     model_provider: str = "unconfigured"
     mock_ai_enabled: bool = False
-    skill_timeout_seconds: float = Field(default=8.0, gt=0, le=30)
+    skill_timeout_seconds: float = Field(default=8.0, gt=0, le=120)
     h5_allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     object_storage_endpoint: str = "http://localhost:9000"
     object_storage_public_endpoint: str = "http://localhost:9000"
@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     ark_api_key: str = ""
     ark_model_id: str = ""
     ark_base_url: str = "https://ark.cn-beijing.volces.com/api/v3"
-    ark_timeout_seconds: float = Field(default=8.0, gt=0, le=30)
+    ark_timeout_seconds: float = Field(default=8.0, gt=0, le=120)
 
     @property
     def allowed_origins(self) -> list[str]:
