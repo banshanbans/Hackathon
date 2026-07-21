@@ -34,6 +34,31 @@ class SkillInvocation:
     execution_mode: str
 
 
+class SkillInvocationError(DomainError):
+    """A stable API error paired with the failed Skill trace that produced it."""
+
+    def __init__(self, error: DomainError, run: SkillRun) -> None:
+        super().__init__(
+            error.code,
+            error.message,
+            status_code=error.status_code,
+            recoverable=error.recoverable,
+            retry_after=error.retry_after,
+        )
+        self.run = run
+        self.session_id: str | None = None
+        self.agent_run_id: str | None = None
+        self.position = 0
+
+    def attach(
+        self, session_id: str, agent_run_id: str | None, position: int
+    ) -> SkillInvocationError:
+        self.session_id = session_id
+        self.agent_run_id = agent_run_id
+        self.position = position
+        return self
+
+
 class Skill:
     version = "1.0.0"
 
@@ -97,10 +122,10 @@ class Skill:
             raise DomainError("VALIDATION_FAILED", str(error)) from error
 
     async def invoke(self, input_data: JsonObject) -> SkillInvocation:
-        self.validate_input(input_data)
         started = perf_counter()
         repair_count = 0
         try:
+            self.validate_input(input_data)
             async with asyncio.timeout(self.timeout_seconds):
                 result = await self.provider.invoke(self.name, input_data)
                 try:
@@ -122,12 +147,15 @@ class Skill:
                             recoverable=True,
                         ) from final_error
         except TimeoutError as error:
-            raise DomainError(
+            domain_error = DomainError(
                 "MODEL_TIMEOUT",
                 f"Skill {self.name} exceeded its {self.timeout_seconds:g}s timeout",
                 status_code=503,
                 recoverable=True,
-            ) from error
+            )
+            raise self._failed_invocation(domain_error, started, repair_count) from error
+        except DomainError as error:
+            raise self._failed_invocation(error, started, repair_count) from error
 
         latency_ms = max(0, round((perf_counter() - started) * 1000))
         warnings = list(result.warnings)
@@ -163,6 +191,39 @@ class Skill:
         )
         output = output_model.model_dump(mode="json")
         return SkillInvocation(run=run, output=output, execution_mode=execution_mode)
+
+    def _failed_invocation(
+        self, error: DomainError, started: float, repair_count: int
+    ) -> SkillInvocationError:
+        provider = self.provider
+        model = getattr(provider, "model_id", None)
+        live_provider = getattr(provider, "live", None)
+        if model is None and live_provider is not None:
+            model = getattr(live_provider, "model_id", None)
+        latency_ms = max(0, round((perf_counter() - started) * 1000))
+        run = SkillRun(
+            skill_run_id=new_id("skr"),
+            skill=SkillRef(name=self.name, version=self.version),
+            status="failed",
+            latency_ms=latency_ms,
+            estimated_cost_usd=0,
+            confidence=0,
+            fallback_used=False,
+            provider=provider.name,
+            model=model if isinstance(model, str) else None,
+            warnings=[],
+            repair_count=repair_count,
+            error_code=error.code,
+        )
+        logger.warning(
+            "skill_failed name=%s version=%s provider=%s latency_ms=%d error_code=%s",
+            self.name,
+            self.version,
+            provider.name,
+            latency_ms,
+            error.code,
+        )
+        return SkillInvocationError(error, run)
 
     def _validate_output(self, output: JsonObject, input_data: JsonObject) -> BaseModel:
         model = self.output_model.model_validate(output)

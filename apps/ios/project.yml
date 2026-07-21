@@ -43,7 +43,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: ai.soloshot.app
         PRODUCT_NAME: SoloShot
         GENERATE_INFOPLIST_FILE: NO
-        SOLOSHOT_API_BASE_URL: http://127.0.0.1:8000
+        SOLOSHOT_API_BASE_URL: https://shotapi.socialdog.cn
         TARGETED_DEVICE_FAMILY: "1"
   SoloShotTests:
     type: bundle.unit-test

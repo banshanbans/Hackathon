@@ -32,6 +32,7 @@ describe("产品文案映射", () => {
 
   it("将稳定错误码转换成可恢复的用户语言", () => {
     expect(productErrorCopy("PROVIDER_UNAVAILABLE").title).toBe("AI 摄影导演暂时离线");
+    expect(productErrorCopy("PROVIDER_REJECTED").title).toBe("这张画面暂时没有分析完成");
     expect(productErrorCopy("HANDOFF_EXPIRED").title).toBe("任务码已过期");
     expect(productErrorCopy("UNKNOWN_CODE").detail).toBe("你的进度还在，请再试一次。");
   });

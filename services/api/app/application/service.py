@@ -26,7 +26,7 @@ from app.domain.models import (
 from app.media.service import MediaService
 from app.persistence.store import IdempotencyRecord, StateStore
 from app.skills.registry import SkillRegistry
-from app.skills.runtime import SkillInvocation
+from app.skills.runtime import SkillInvocation, SkillInvocationError
 
 
 @dataclass(frozen=True)
@@ -91,36 +91,65 @@ class W1Service:
         action: Callable[[], Awaitable[ServiceResult]],
     ) -> ServiceResult:
         fingerprint = _fingerprint(payload)
-        async with self.store.transaction():
-            existing = await self.store.get_idempotency(operation, key)
-            if existing is not None:
-                if existing.fingerprint != fingerprint:
-                    raise DomainError(
-                        "IDEMPOTENCY_CONFLICT",
-                        "Idempotency-Key was already used with a different request",
-                        status_code=409,
+        try:
+            async with self.store.transaction():
+                existing = await self.store.get_idempotency(operation, key)
+                if existing is not None:
+                    if existing.fingerprint != fingerprint:
+                        raise DomainError(
+                            "IDEMPOTENCY_CONFLICT",
+                            "Idempotency-Key was already used with a different request",
+                            status_code=409,
+                        )
+                    return ServiceResult(
+                        data=existing.data,
+                        status_code=existing.status_code,
+                        execution_mode=("cache" if existing.execution_mode is not None else None),
                     )
-                return ServiceResult(
-                    data=existing.data,
-                    status_code=existing.status_code,
-                    execution_mode=("cache" if existing.execution_mode is not None else None),
+                result = await action()
+                owner_session_id = result.data.get("session_id") or payload.get("session_id")
+                if not isinstance(owner_session_id, str) or operation.startswith("delete_session:"):
+                    owner_session_id = None
+                await self.store.put_idempotency(
+                    operation,
+                    key,
+                    IdempotencyRecord(
+                        fingerprint=fingerprint,
+                        status_code=result.status_code,
+                        data=result.data,
+                        execution_mode=result.execution_mode,
+                        owner_session_id=owner_session_id,
+                    ),
                 )
-            result = await action()
-            owner_session_id = result.data.get("session_id") or payload.get("session_id")
-            if not isinstance(owner_session_id, str) or operation.startswith("delete_session:"):
-                owner_session_id = None
-            await self.store.put_idempotency(
-                operation,
-                key,
-                IdempotencyRecord(
-                    fingerprint=fingerprint,
-                    status_code=result.status_code,
-                    data=result.data,
-                    execution_mode=result.execution_mode,
-                    owner_session_id=owner_session_id,
-                ),
-            )
-            return result
+                return result
+        except SkillInvocationError as error:
+            if error.session_id is not None:
+                await self.store.put_skill_run(
+                    error.run.skill_run_id,
+                    error.agent_run_id,
+                    error.session_id,
+                    error.position,
+                    error.run.model_dump(mode="json"),
+                    {},
+                )
+            raise
+
+    async def _invoke_skill(
+        self,
+        name: str,
+        input_data: JsonObject,
+        session_id: str,
+        *,
+        version: str | None = None,
+        run_id: str | None = None,
+        position: int = 0,
+    ) -> SkillInvocation:
+        skill = self.registry.get(name, version) if version is not None else self.registry.get(name)
+        try:
+            return await skill.invoke(input_data)
+        except SkillInvocationError as error:
+            error.attach(session_id, run_id, position)
+            raise
 
     async def require_session(self, session_id: str) -> SoloShotSession:
         payload = await self.store.get_session(session_id)
@@ -296,8 +325,10 @@ class W1Service:
                         status_code=422,
                     )
                 await self._require_media(session, asset.media_asset_id, "reference")
-            invocation = await self.registry.get("reference_understanding").invoke(
-                {"reference_asset": asset.model_dump(mode="json")}
+            invocation = await self._invoke_skill(
+                "reference_understanding",
+                {"reference_asset": asset.model_dump(mode="json")},
+                session.session_id,
             )
             analysis_payload = {
                 **invocation.output,
@@ -357,13 +388,15 @@ class W1Service:
             scene_asset_id = str(payload["scene_asset_id"])
             await self._require_media(session, scene_asset_id, "scene")
             current_analysis = await self._active_analysis(session)
-            invocation = await self.registry.get("scene_adaptation").invoke(
+            invocation = await self._invoke_skill(
+                "scene_adaptation",
                 {
                     "reference_asset": session.reference_asset.model_dump(mode="json"),
                     "reference_analysis": current_analysis.model_dump(mode="json"),
                     "scene_asset_id": scene_asset_id,
                     "user_constraints": session.user_constraints.model_dump(mode="json"),
-                }
+                },
+                session.session_id,
             )
             analysis = ReferenceAnalysis.model_validate(
                 {
@@ -446,14 +479,16 @@ class W1Service:
                     "INVALID_STATE", "Scene adaptation is required before planning", status_code=409
                 )
             run = new_agent_run(session.session_id, payload["intent"], self.provider_name, None)
-            invocation = await self.registry.get("shooting_plan").invoke(
+            invocation = await self._invoke_skill(
+                "shooting_plan",
                 {
                     "reference_asset": session.reference_asset.model_dump(mode="json"),
                     "reference_analysis": analysis.model_dump(mode="json"),
                     "user_constraints": session.user_constraints.model_dump(mode="json"),
                     "mode": session.mode,
                     "scene_asset_id": session.scene_asset_id,
-                }
+                },
+                session.session_id,
             )
             plan = ShotPlan.model_validate({**invocation.output, "plan_id": new_id("sp")})
             run = append_skill_runs(run, [invocation.run])
@@ -497,12 +532,18 @@ class W1Service:
                     "INVALID_STATE", "Agent run has already evaluated a capture", status_code=409
                 )
             capture = await self._require_latest_capture(session, str(payload["capture_id"]))
-            evaluation, evaluation_invocation = await self._evaluate(session, capture)
-            content_invocation = await self.registry.get("content_composer").invoke(
-                {"session_id": session.session_id, "format": "before_after_image"}
+            position = len(await self.store.get_skill_runs(run_id))
+            evaluation, evaluation_invocation = await self._evaluate(
+                session, capture, run_id=run_id, position=position
+            )
+            content_invocation = await self._invoke_skill(
+                "content_composer",
+                {"session_id": session.session_id, "format": "before_after_image"},
+                session.session_id,
+                run_id=run_id,
+                position=position + 1,
             )
             post = PostJob.model_validate(content_invocation.output)
-            position = len(await self.store.get_skill_runs(run_id))
             for offset, invocation in enumerate((evaluation_invocation, content_invocation)):
                 await self._persist_skill_invocation(
                     invocation, session.session_id, run_id, position + offset
@@ -554,8 +595,12 @@ class W1Service:
                     "W2 only supports before_after_image content jobs",
                     status_code=404,
                 )
-            skill = self.registry.get(skill_name, str(payload["skill_version"]))
-            invocation = await skill.invoke(payload["input"])
+            invocation = await self._invoke_skill(
+                skill_name,
+                payload["input"],
+                session.session_id,
+                version=str(payload["skill_version"]),
+            )
             await self._persist_skill_invocation(invocation, session.session_id, None, 0)
             return ServiceResult(
                 data={
@@ -749,7 +794,9 @@ class W1Service:
                 )
             if session.evaluation is None or session.state not in {"coaching", "completed"}:
                 raise DomainError("INVALID_STATE", "Evaluation is required first", status_code=409)
-            invocation = await self.registry.get("content_composer").invoke(payload)
+            invocation = await self._invoke_skill(
+                "content_composer", payload, session.session_id
+            )
             post = PostJob.model_validate(invocation.output)
             await self._persist_skill_invocation(invocation, session.session_id, None, 0)
             await self.store.put_post(
@@ -876,7 +923,12 @@ class W1Service:
         return capture
 
     async def _evaluate(
-        self, session: SoloShotSession, capture: Capture
+        self,
+        session: SoloShotSession,
+        capture: Capture,
+        *,
+        run_id: str | None = None,
+        position: int = 0,
     ) -> tuple[ResultEvaluation, SkillInvocation]:
         if session.reference_asset is None or session.shot_plan is None:
             raise DomainError(
@@ -902,7 +954,13 @@ class W1Service:
             skill_input["previous_capture"] = previous_capture.model_dump(mode="json")
             skill_input["previous_evaluation"] = session.evaluations[-1].model_dump(mode="json")
         try:
-            invocation = await self.registry.get("result_evaluation").invoke(skill_input)
+            invocation = await self._invoke_skill(
+                "result_evaluation",
+                skill_input,
+                session.session_id,
+                run_id=run_id,
+                position=position,
+            )
         except Exception:
             restored = session.model_copy(
                 update={"state": "capturing", "updated_at": datetime.now(UTC)}

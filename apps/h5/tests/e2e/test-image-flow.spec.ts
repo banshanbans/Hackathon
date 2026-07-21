@@ -50,9 +50,22 @@ async function fulfill(route: Route, data: unknown, status = 200, mode?: "fixtur
   });
 }
 
-async function installApiRoutes(page: Page) {
+async function fulfillError(route: Route, code: string, status: number) {
+  await route.fulfill({
+    status,
+    contentType: "application/json",
+    body: JSON.stringify({
+      schema_version: "1.0",
+      request_id: "req_e2e",
+      error: { code, message: "safe test error", recoverable: true },
+    }),
+  });
+}
+
+async function installApiRoutes(page: Page, options: { adaptFailures?: number } = {}) {
   const now = new Date().toISOString();
   let counter = 0;
+  let remainingAdaptFailures = options.adaptFailures ?? 0;
   let session: Json = {};
   const media = new Map<string, Json>();
   let handoffStatus: "created" | "claimed" | "completed" = "created";
@@ -193,6 +206,11 @@ async function installApiRoutes(page: Page) {
       return;
     }
     if (url.pathname === "/api/v1/references/adapt") {
+      if (remainingAdaptFailures > 0) {
+        remainingAdaptFailures -= 1;
+        await fulfillError(route, "PROVIDER_REJECTED", 422);
+        return;
+      }
       session = {
         ...session,
         state: "reference_ready",
@@ -303,6 +321,7 @@ async function installApiRoutes(page: Page) {
     }
     await route.abort("failed");
   });
+  return { mediaUploadCount: () => counter };
 }
 
 async function selectPreset(page: Page) {
@@ -387,6 +406,22 @@ for (const source of ["preset", "custom"] as const) {
     await expect(page.getByText("实时分析", { exact: true }).first()).toBeVisible();
   });
 }
+
+test("scene retry reuses the uploaded image after a model rejection", async ({ page }) => {
+  const diagnostics = await installApiRoutes(page, { adaptFailures: 1 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /灵感迁移/ }).click();
+  await selectPreset(page);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "看看我眼前的现场" }).click();
+  await page.getByLabel("从相册选择").setInputFiles(testImagePath);
+  await page.getByRole("button", { name: "为此刻生成 ShotPlan" }).click();
+  await expect(page.getByText("这张画面暂时没有分析完成", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "再试一次" }).click();
+  await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
+  expect(diagnostics.mediaUploadCount()).toBe(1);
+});
 
 test("H5 handoff survives refresh and follows iOS claim through completion", async ({ page }) => {
   await installApiRoutes(page);

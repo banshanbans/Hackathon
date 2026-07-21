@@ -55,7 +55,7 @@ final class AppFlowModel: ObservableObject {
         networkMonitor: any NetworkRecoveryMonitoring = SystemNetworkRecoveryMonitor()
     ) {
         let configured = Bundle.main.object(forInfoDictionaryKey: "SoloShotAPIBaseURL") as? String
-        let baseURL = URL(string: configured ?? "http://127.0.0.1:8000")!
+        let baseURL = URL(string: configured ?? "https://shotapi.socialdog.cn")!
         self.api = api ?? HandoffAPI(baseURL: baseURL)
         self.secrets = secrets
         self.tasks = tasks

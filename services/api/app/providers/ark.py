@@ -172,10 +172,55 @@ class VolcengineArkProvider:
         return any(token in detail for token in ("json_schema", "text.format", "response_format"))
 
     @staticmethod
-    def _raise_for_status(response: httpx.Response) -> None:
+    def _upstream_error_code(response: httpx.Response) -> str | None:
+        try:
+            payload = response.json()
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            return None
+        if not isinstance(payload, dict):
+            return None
+        error = payload.get("error")
+        code = error.get("code") if isinstance(error, dict) else payload.get("code")
+        return code if isinstance(code, str) else None
+
+    @classmethod
+    def _raise_for_status(cls, response: httpx.Response) -> None:
         if response.is_success:
             return
-        if response.status_code in {401, 403, 429} or response.status_code >= 500:
+        upstream_code = cls._upstream_error_code(response)
+        request_id = next(
+            (
+                response.headers[name]
+                for name in ("x-request-id", "x-tt-logid", "x-log-id")
+                if name in response.headers
+            ),
+            None,
+        )
+        logger.warning(
+            "ark_request_failed status=%d upstream_code=%s request_id=%s",
+            response.status_code,
+            upstream_code or "unknown",
+            request_id or "unknown",
+        )
+        diagnostic = " ".join(
+            value for value in (upstream_code, response.text[:512]) if value
+        ).lower()
+        configuration_error = response.status_code == 404 or any(
+            token in diagnostic
+            for token in (
+                "invalidendpointormodel",
+                "model_not_found",
+                "model not found",
+                "invalid model",
+                "model does not exist",
+                "model id",
+            )
+        )
+        if (
+            configuration_error
+            or response.status_code in {401, 403, 429}
+            or response.status_code >= 500
+        ):
             raise DomainError(
                 "PROVIDER_UNAVAILABLE",
                 "Volcengine Ark rejected or could not process the request",

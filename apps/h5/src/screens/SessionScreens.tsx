@@ -209,14 +209,21 @@ export function SceneScreen() {
     setBusy(true);
     setError(null);
     try {
-      const media = await soloShotApi.uploadMedia(sessionId, "scene", state.sceneMedia.blob, {
-        signal: abortController.signal,
-        onProgress: setProgress,
-      });
+      let sceneAssetId = state.sceneAssetId;
+      if (sceneAssetId === null) {
+        const media = await soloShotApi.uploadMedia(sessionId, "scene", state.sceneMedia.blob, {
+          signal: abortController.signal,
+          onProgress: setProgress,
+        });
+        sceneAssetId = media.media_asset_id;
+        dispatch({ type: "patch", value: { sceneAssetId } });
+      } else {
+        setProgress(80);
+      }
       const adapted = await soloShotApi.adaptReference(
         sessionId,
         session.reference_asset.reference_id,
-        media.media_asset_id,
+        sceneAssetId,
       );
       setProgress(92);
       const run = await soloShotApi.createAgentRun(sessionId, "scene_adaptation");
@@ -249,7 +256,9 @@ export function SceneScreen() {
       <MediaPicker
         value={state.sceneMedia}
         title="拍下你眼前的场景"
-        onChange={(sceneMedia) => dispatch({ type: "patch", value: { sceneMedia } })}
+        onChange={(sceneMedia) =>
+          dispatch({ type: "patch", value: { sceneMedia, sceneAssetId: null } })
+        }
       />
       {busy ? <UploadProgress value={progress} onCancel={() => controller?.abort()} /> : null}
       {error !== null ? <AsyncError error={error} onRetry={() => void adapt()} /> : null}

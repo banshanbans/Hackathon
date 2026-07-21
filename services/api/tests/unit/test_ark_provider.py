@@ -167,6 +167,39 @@ def test_ark_maps_auth_rate_and_content_rejection_to_stable_errors(
     assert caught.value.recoverable is True
 
 
+def test_ark_maps_invalid_model_to_unavailable_and_logs_only_safe_diagnostics(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            400,
+            headers={"x-tt-logid": "log-safe-123"},
+            json={
+                "error": {
+                    "code": "InvalidEndpointOrModel.NotFound",
+                    "message": "secret-media-url ark-secret-value",
+                }
+            },
+        )
+
+    provider = provider_with_handler(httpx.MockTransport(handler))
+    with (
+        caplog.at_level("WARNING", logger="soloshot.providers.ark"),
+        pytest.raises(DomainError) as caught,
+    ):
+        asyncio.run(
+            provider.invoke(
+                "reference_understanding", {"reference_asset": reference_asset()}
+            )
+        )
+
+    assert caught.value.code == "PROVIDER_UNAVAILABLE"
+    assert "InvalidEndpointOrModel.NotFound" in caplog.text
+    assert "log-safe-123" in caplog.text
+    assert "secret-media-url" not in caplog.text
+    assert "ark-secret-value" not in caplog.text
+
+
 def test_ark_timeout_and_missing_configuration_fail_without_fixture_output() -> None:
     def timeout_handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ReadTimeout("timeout", request=request)

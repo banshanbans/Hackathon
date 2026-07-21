@@ -539,7 +539,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
 				PRODUCT_NAME = SoloShot;
 				SDKROOT = iphoneos;
-				SOLOSHOT_API_BASE_URL = "http://127.0.0.1:8000";
+				SOLOSHOT_API_BASE_URL = "https://shotapi.socialdog.cn";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Debug;
@@ -730,7 +730,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.soloshot.app;
 				PRODUCT_NAME = SoloShot;
 				SDKROOT = iphoneos;
-				SOLOSHOT_API_BASE_URL = "http://127.0.0.1:8000";
+				SOLOSHOT_API_BASE_URL = "https://shotapi.socialdog.cn";
 				TARGETED_DEVICE_FAMILY = 1;
 			};
 			name = Release;

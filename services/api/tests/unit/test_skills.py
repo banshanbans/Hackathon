@@ -1,14 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import asynccontextmanager
 
 import pytest
 
+from app.application.service import W1Service
 from app.domain.errors import DomainError
 from app.providers.base import ProviderResult
 from app.providers.mock import DeterministicMockProvider, SafeRuleFallbackProvider
 from app.skills.registry import SkillRegistry
-from app.skills.runtime import build_skills
+from app.skills.runtime import SkillInvocationError, build_skills
 
 
 def test_registry_distinguishes_missing_skill_and_version() -> None:
@@ -44,6 +46,58 @@ def test_skill_timeout_fails_closed() -> None:
         asyncio.run(skill.invoke({"session_id": "ss_timeout", "format": "before_after_image"}))
     assert timeout_error.value.code == "MODEL_TIMEOUT"
     assert timeout_error.value.recoverable is True
+    assert isinstance(timeout_error.value, SkillInvocationError)
+    assert timeout_error.value.run.status == "failed"
+    assert timeout_error.value.run.error_code == "MODEL_TIMEOUT"
+
+
+def test_failed_skill_trace_is_persisted_outside_the_rolled_back_transaction() -> None:
+    class RecordingStore:
+        def __init__(self) -> None:
+            self.skill_runs: list[dict[str, object]] = []
+
+        @asynccontextmanager
+        async def transaction(self):
+            yield
+
+        async def get_idempotency(self, operation: str, key: str):
+            return None
+
+        async def put_skill_run(
+            self,
+            skill_run_id: str,
+            run_id: str | None,
+            session_id: str,
+            position: int,
+            run: dict[str, object],
+            output: dict[str, object],
+        ) -> None:
+            self.skill_runs.append(run)
+
+    async def scenario() -> RecordingStore:
+        skill = SkillRegistry(build_skills(SlowProvider(), 0.001)).get("content_composer")
+        try:
+            await skill.invoke({"session_id": "ss_failed_trace", "format": "before_after_image"})
+        except SkillInvocationError as error:
+            failure = error.attach("ss_failed_trace", None, 0)
+        else:  # pragma: no cover - the provider always exceeds the timeout
+            raise AssertionError("expected the Skill to fail")
+
+        store = RecordingStore()
+        service = object.__new__(W1Service)
+        service.store = store  # type: ignore[assignment]
+
+        async def action():
+            raise failure
+
+        with pytest.raises(SkillInvocationError):
+            await service._idempotent("failed-skill", "key", {}, action)
+        return store
+
+    store = asyncio.run(scenario())
+    assert len(store.skill_runs) == 1
+    assert store.skill_runs[0]["status"] == "failed"
+    assert store.skill_runs[0]["error_code"] == "MODEL_TIMEOUT"
 
 
 class RepairingProvider:

@@ -132,6 +132,10 @@ const errorCopyByCode: Readonly<Record<string, ProductErrorCopy>> = {
     title: "AI 摄影导演暂时离线",
     detail: "你的进度还在，稍后再试一次。",
   },
+  PROVIDER_REJECTED: {
+    title: "这张画面暂时没有分析完成",
+    detail: "无需重新选择，稍后再试一次。",
+  },
   MODEL_TIMEOUT: {
     title: "AI 摄影导演还在路上",
     detail: "你的进度还在，请再试一次。",

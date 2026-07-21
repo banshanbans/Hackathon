@@ -24,6 +24,7 @@ export type FlowState = {
   executionMode: string | null;
   referenceMedia: PreparedImage | null;
   sceneMedia: PreparedImage | null;
+  sceneAssetId: string | null;
   captureMedia: Partial<Record<1 | 2, PreparedImage>>;
 };
 
@@ -62,6 +63,7 @@ export const initialFlow: FlowState = {
   executionMode: null,
   referenceMedia: null,
   sceneMedia: null,
+  sceneAssetId: null,
   captureMedia: {},
 };
 
@@ -80,6 +82,7 @@ function restore(): FlowState {
       ...value,
       referenceMedia: null,
       sceneMedia: null,
+      sceneAssetId: null,
       captureMedia: {},
     };
   } catch {
@@ -116,6 +119,9 @@ function reducer(state: FlowState, action: FlowAction): FlowState {
   }
   if (action.value.sceneMedia !== undefined) {
     revoke(state.sceneMedia);
+    if (action.value.sceneAssetId === undefined) {
+      return { ...state, ...action.value, sceneAssetId: null };
+    }
   }
   return { ...state, ...action.value };
 }

@@ -38,7 +38,7 @@ make dev-h5
 xcrun simctl openurl booted 'soloshot://handoff/ABC234'
 ```
 
-iOS Debug 构建默认访问 `http://127.0.0.1:8000`。测试环境构建应通过 `SOLOSHOT_API_BASE_URL=https://api.example.test` 覆盖，且 H5 的 `PUBLIC_HANDOFF_BASE_URL` 必须指向同一套可访问环境。
+iOS Debug 和 Release 构建默认访问 `https://shotapi.socialdog.cn`。需要连接本机 API 时，应通过 `SOLOSHOT_API_BASE_URL=http://<Mac局域网IP>:8000` 覆盖；真机不能使用 `127.0.0.1` 访问 Mac。H5 的 `PUBLIC_HANDOFF_BASE_URL` 必须指向同一套可访问环境。
 
 ## W4 本地对齐与 Simulator Fixture
 
