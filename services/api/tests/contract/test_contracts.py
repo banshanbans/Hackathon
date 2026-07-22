@@ -194,9 +194,7 @@ def test_handoff_public_contract_contains_no_session_or_capability() -> None:
     assert "session_id" not in properties
     assert "management_token" not in properties
     assert "claim_token" not in properties
-    assert schema["properties"]["code"]["pattern"] == (
-        "^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$"
-    )
+    assert schema["properties"]["code"]["pattern"] == "^[0-9]{6}$"
 
     document = load_openapi()
     assert document["components"]["schemas"]["HandoffClaimResult"]["properties"][

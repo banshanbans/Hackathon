@@ -52,6 +52,8 @@ struct AlignmentEngine: Sendable {
         var rawCompletionMode: AlignmentCompletionMode?
         var poseSupported = false
         var stabilityScore = 0.0
+        var overlapRatio = 0.0
+        var countdownStillValid = false
 
         if multiplePeople {
             rawInstruction = .multiplePeople
@@ -73,6 +75,7 @@ struct AlignmentEngine: Sendable {
                 resetAlignedState()
             } else {
                 let targetRect = target.rect
+                overlapRatio = person.boundingBox.intersectionOverUnion(with: targetRect)
                 let heightError = abs(person.boundingBox.height - targetRect.height) / max(targetRect.height, 0.001)
                 let heightTolerance = scaleWasCorrect
                     ? configuration.heightExitTolerance
@@ -116,17 +119,28 @@ struct AlignmentEngine: Sendable {
                         rawInstruction = instruction
                         resetAlignedState()
                     } else {
-                        if alignedSince == nil {
-                            alignedSince = now
-                            alignedSamples = 1
+                        countdownStillValid = overlapRatio >= configuration.overlapExitThreshold
+                        if overlapRatio >= configuration.overlapEnterThreshold {
+                            if alignedSince == nil {
+                                alignedSince = now
+                                alignedSamples = 1
+                            } else {
+                                alignedSamples += 1
+                            }
+                            let duration = now.timeIntervalSince(alignedSince ?? now)
+                            let isReady = alignedSamples >= configuration.readyMinimumSamples
+                                && duration >= configuration.readyMinimumDuration
+                            rawInstruction = isReady ? .readyToCapture : .holdStill
+                            rawCompletionMode = isReady ? (pose.supported ? .verified : .compositionOnly) : nil
                         } else {
-                            alignedSamples += 1
+                            rawInstruction = overlapCorrection(person: person, targetRect: targetRect)
+                            applyOverlapCorrectionStatus(
+                                rawInstruction,
+                                positionStatus: &positionStatus,
+                                scaleStatus: &scaleStatus
+                            )
+                            resetAlignedState()
                         }
-                        let duration = now.timeIntervalSince(alignedSince ?? now)
-                        let isReady = alignedSamples >= configuration.readyMinimumSamples
-                            && duration >= configuration.readyMinimumDuration
-                        rawInstruction = isReady ? .readyToCapture : .holdStill
-                        rawCompletionMode = isReady ? (pose.supported ? .verified : .compositionOnly) : nil
                     }
                 }
 
@@ -165,6 +179,9 @@ struct AlignmentEngine: Sendable {
         return AlignmentDecision(
             alignment: alignment,
             selectedPerson: selected,
+            overlapRatio: overlapRatio,
+            countdownStillValid: countdownStillValid,
+            stableDuration: alignedSince.map { now.timeIntervalSince($0) } ?? 0,
             completionMode: completionMode,
             manualReadyAvailable: selected == nil
                 && now.timeIntervalSince(noUsablePersonSince ?? now) >= configuration.manualFallbackDelay,
@@ -192,6 +209,9 @@ struct AlignmentEngine: Sendable {
                 stabilityScore: 0
             ),
             selectedPerson: nil,
+            overlapRatio: 0,
+            countdownStillValid: true,
+            stableDuration: 0,
             completionMode: .manual,
             manualReadyAvailable: true,
             poseCheckSupported: false,
@@ -244,6 +264,41 @@ struct AlignmentEngine: Sendable {
                 instruction: nil,
                 supported: directionSupported
             )
+        }
+    }
+
+    private func overlapCorrection(
+        person: PersonObservation,
+        targetRect: NormalizedRect
+    ) -> CurrentAlignment.InstructionCode {
+        let horizontalError = person.boundingBox.center.x - targetRect.center.x
+        let normalizedHorizontalError = abs(horizontalError) / max(targetRect.width, 0.001)
+        let personArea = person.boundingBox.width * person.boundingBox.height
+        let targetArea = targetRect.width * targetRect.height
+        let normalizedAreaError = abs(personArea - targetArea) / max(targetArea, 0.001)
+
+        if normalizedHorizontalError >= normalizedAreaError, abs(horizontalError) > 0.001 {
+            return horizontalError < 0 ? .moveRight : .moveLeft
+        }
+        return personArea < targetArea ? .moveForward : .moveBackward
+    }
+
+    private func applyOverlapCorrectionStatus(
+        _ instruction: CurrentAlignment.InstructionCode,
+        positionStatus: inout CurrentAlignment.PositionStatus,
+        scaleStatus: inout CurrentAlignment.ScaleStatus
+    ) {
+        switch instruction {
+        case .moveLeft:
+            positionStatus = .moveLeft
+        case .moveRight:
+            positionStatus = .moveRight
+        case .moveForward:
+            scaleStatus = .moveForward
+        case .moveBackward:
+            scaleStatus = .moveBackward
+        default:
+            break
         }
     }
 

@@ -770,7 +770,7 @@ components:
       required: true
       schema:
         type: string
-        pattern: ^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$
+        pattern: ^[0-9]{6}$
     HandoffManagementToken:
       name: X-Handoff-Management-Token
       in: header

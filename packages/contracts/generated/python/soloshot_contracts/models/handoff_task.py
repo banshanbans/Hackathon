@@ -63,8 +63,8 @@ class HandoffTask(BaseModel):
         if not isinstance(value, str):
             value = str(value)
 
-        if not re.match(r"^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$", value):
-            raise ValueError(r"must validate the regular expression /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/")
+        if not re.match(r"^[0-9]{6}$", value):
+            raise ValueError(r"must validate the regular expression /^[0-9]{6}$/")
         return value
 
     @field_validator('status')

@@ -13,6 +13,8 @@ struct AlignmentConfiguration: Equatable, Sendable {
     let horizontalExitTolerance: Double
     let heightEnterTolerance: Double
     let heightExitTolerance: Double
+    let overlapEnterThreshold: Double
+    let overlapExitThreshold: Double
     let instructionConfirmationSamples: Int
     let readyMinimumSamples: Int
     let readyMinimumDuration: TimeInterval
@@ -29,6 +31,8 @@ struct AlignmentConfiguration: Equatable, Sendable {
         horizontalExitTolerance: 0.12,
         heightEnterTolerance: 0.10,
         heightExitTolerance: 0.18,
+        overlapEnterThreshold: 0.80,
+        overlapExitThreshold: 0.70,
         instructionConfirmationSamples: 3,
         readyMinimumSamples: 3,
         readyMinimumDuration: 1.2,
@@ -50,4 +54,3 @@ struct AlignmentConfiguration: Equatable, Sendable {
         ]
     )
 }
-

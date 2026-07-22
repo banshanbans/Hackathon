@@ -52,20 +52,20 @@ Simulator 没有真实后置相机。Debug 构建可通过以下启动参数进�
 -W4FixtureScenario ready
 ```
 
-将 `ready` 改为 `manual` 可验证连续五秒没有可用人体结果后的二次手动确认。增加 `-W4FixturePermissionDenied` 可验证权限拒绝恢复。推荐直接运行：
+正常 Fixture 会依次模拟无人、多人、偏移和完全重合；IoU 达到 80%并稳定 1.2 秒后留在相机页自动倒数三秒。将 `ready` 改为 `auto_cancel` 可验证倒计时中 IoU 低于 70%后取消并重新触发；改为 `manual` 可验证连续五秒没有可用人体结果后的二次手动确认。增加 `-W4FixturePermissionDenied` 可验证权限拒绝恢复。推荐直接运行：
 
 ```bash
 make test-ios
 make e2e-ios-w4
 ```
 
-`make test-ios` 会运行 W3/W4 单元测试并构建通用 Simulator 目标；`make e2e-ios-w4` 会验证 Fixture 正常就位、未验证手动降级和权限拒绝三条 UI 路径。可通过 `IOS_SIMULATOR_NAME='iPhone 17 Pro'` 覆盖默认设备名。
+`make test-ios` 会运行 W3/W4/W5 单元测试并构建通用 Simulator 目标；`make e2e-ios-w4` 会验证 80%自动触发、70%取消重试、未验证手动降级和权限拒绝四条 UI 路径。可通过 `IOS_SIMULATOR_NAME='iPhone 17 Pro'` 覆盖默认设备名。
 
 部分 Simulator runtime 可能不包含 `VNDetectHumanBodyPoseRequest` 的系统模型权重。此时真实图片 Vision smoke 会明确显示为 skipped；Vision 关节过滤与坐标转换、AlignmentEngine 和 Overlay 测试仍必须通过。只有真机结果才能关闭真实 Vision 能力验收。
 
 ## W5 录制、候选帧、评价与第二轮
 
-W5 从 W4 的 ready 状态继续使用同一个 Camera Session。`photo` 模式进行三张短间隔连拍；`short_video` 模式录制 5–8 秒、720p、后置 1×、无声 MOV，并在设备内抽取最多六张候选。视频失败、空间不足或关键系统压力会明确提供照片降级，不会伪装成视频成功。
+W5 从 W4 的自动对齐状态继续使用同一个 Camera Session，不经过独立 ready 或动作确认页。`photo` 模式在三秒倒计时后进行三张短间隔连拍；`short_video` 模式在倒计时后录制 6 秒、720p、后置 1×、无声 MOV，并在设备内抽取最多六张候选。视频失败、空间不足或关键系统压力会明确提供照片降级；用户选择降级后需重新完成对齐，再自动连拍。
 
 候选帧按完整入镜、目标位置、人物比例、清晰度和受控姿势规则进行确定性本地推荐。未知姿势模板不会被猜测；用户可以选择任意候选。确认后会删除源视频和未选候选，只在明确同意后上传所选 JPEG。应用不申请麦克风或照片库权限，也不会上传预览帧、Vision 坐标或原始视频。
 
@@ -77,7 +77,7 @@ Simulator 使用 Release 无法启用的 Debug Fixture：
 -W4SeedTask
 -W4FixtureCamera
 -W4FixtureScenario ready
--W5FixtureCaptureMode short_video
+-W5FixtureShortVideo
 ```
 
 增加 `-W5FixtureVideoFailure` 可验证视频失败后的照片降级。运行：
@@ -97,16 +97,17 @@ make e2e-w5
 - 自定义参考以及所有场景适配走火山方舟 Live。首次创建 Live Session 前，用户必须勾选“媒体将发送至火山方舟分析”。
 - Live 需要在 `.env` 中填写 `ARK_API_KEY` 和 `ARK_MODEL_ID`。缺少配置时返回可恢复的 `PROVIDER_UNAVAILABLE`，不会静默切换为 Fixture。
 - `ARK_BASE_URL` 默认使用 `https://ark.cn-beijing.volces.com/api/v3`，模型 ID 不写入代码。
+- `SCENE_ADAPTATION_TIMEOUT_SECONDS=35` 是现场视觉推理的硬超时。现场模式随后由 `shooting_plan@1.1.0` 服务端规则生成 ShotPlan，不再次读取图片或调用 Ark；原图复刻仍使用 `shooting_plan@1.0.0` 模型路径。
 
 真实 Live smoke test 会产生外部模型调用和可能的费用，因此不属于默认 CI。仅在确认凭据和费用后手动填写 `.env`，再从 H5 选择自定义参考执行完整流程。
 
 ## 媒体规则与恢复
 
-- H5 会将图片归一化为 JPEG，最长边不超过 2048px，上传文件不超过 8MB。
+- H5 会将所有用户图片归一化为 JPEG，最长边不超过 1280px，并按 0.82、0.78、0.75 质量逐级尝试；仍超出 2MB 时继续等比缩小。API 继续兼容最长边 2048px、最大 8MB 的既有上限。
 - 视频只在浏览器内暂停并抽取 JPEG 帧，不上传原视频；限制为 30 秒和 100MB。
 - 上传地址有效 10 分钟，预览地址有效 5 分钟，媒体默认保留 24 小时。
 - API 每小时清理过期媒体；删除 Session 会立即清理其媒体和关联记录。
-- 刷新后以服务端 Session 为准恢复路由、ShotPlan 和两轮评价。本地尚未提交的文件不能跨刷新恢复，页面会要求重新选择。
+- 刷新后以服务端 Session 为准恢复路由、ShotPlan 和两轮评价。现场图已上传时会恢复 `sceneAssetId`、阶段和稳定操作键，并继续未完成的适配或规则生成；尚未上传的本地文件不能跨刷新恢复。
 - localStorage 只保存 Session ID、路由草稿和非敏感选项，不保存媒体、Base64 或签名 URL。
 
 ## 完整验证

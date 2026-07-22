@@ -229,7 +229,7 @@ HandoffStatus = Literal["created", "claimed", "completed", "revoked", "expired"]
 class HandoffTask(StrictModel):
     schema_version: SchemaVersion = "1.0"
     handoff_id: str = Field(pattern=r"^handoff_[A-Za-z0-9_-]+$")
-    code: str = Field(pattern=r"^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$")
+    code: str = Field(pattern=r"^\d{6}$")
     status: HandoffStatus
     mode: Literal["original_replication", "scene_adaptation"]
     created_at: datetime

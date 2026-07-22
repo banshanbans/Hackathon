@@ -4,7 +4,7 @@ import Foundation
 func makeW4ImportedTask(now: Date = Date(timeIntervalSince1970: 1_750_000_000)) -> ImportedTask {
     ImportedTask(
         schemaVersion: "2.0",
-        code: "ABC234",
+        code: "294816",
         sessionID: "ss_w4_test",
         planID: "sp_w4_test",
         mode: "original_replication",

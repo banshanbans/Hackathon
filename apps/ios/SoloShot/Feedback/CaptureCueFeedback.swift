@@ -3,16 +3,18 @@ import Foundation
 import UIKit
 
 enum CaptureCue: Equatable, Sendable {
-    case prepareAction
+    case autoReady
     case countdown(Int)
+    case alignmentLost
     case start
     case hold
     case completed
 
     var text: String {
         switch self {
-        case .prepareAction: "准备动作"
+        case .autoReady: "已就位"
         case let .countdown(value): String(value)
+        case .alignmentLost: "请重新进入轮廓"
         case .start: "开始"
         case .hold: "保持"
         case .completed: "完成"
@@ -40,9 +42,20 @@ final class CaptureCueFeedbackController {
             speech.speak(utterance)
         }
         if hapticsEnabled {
-            let generator = UIImpactFeedbackGenerator(style: cue == .completed ? .heavy : .medium)
-            generator.prepare()
-            generator.impactOccurred()
+            switch cue {
+            case .autoReady:
+                let generator = UINotificationFeedbackGenerator()
+                generator.prepare()
+                generator.notificationOccurred(.success)
+            case .alignmentLost:
+                let generator = UINotificationFeedbackGenerator()
+                generator.prepare()
+                generator.notificationOccurred(.warning)
+            default:
+                let generator = UIImpactFeedbackGenerator(style: cue == .completed ? .heavy : .medium)
+                generator.prepare()
+                generator.impactOccurred()
+            }
         }
     }
 

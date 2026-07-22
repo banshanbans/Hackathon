@@ -62,7 +62,15 @@ async function fulfillError(route: Route, code: string, status: number) {
   });
 }
 
-async function installApiRoutes(page: Page, options: { adaptFailures?: number } = {}) {
+async function installApiRoutes(
+  page: Page,
+  options: {
+    adaptFailures?: number;
+    uploadDelayMs?: number;
+    adaptDelayMs?: number;
+    planDelayMs?: number;
+  } = {},
+) {
   const now = new Date().toISOString();
   let counter = 0;
   let remainingAdaptFailures = options.adaptFailures ?? 0;
@@ -72,7 +80,7 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
   const handoff = () => ({
     schema_version: "1.0",
     handoff_id: "handoff_e2e",
-    code: "ABC234",
+    code: "294816",
     status: handoffStatus,
     mode: "original_replication",
     created_at: now,
@@ -81,7 +89,12 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
     completed_at: handoffStatus === "completed" ? now : null,
   });
 
-  await page.route("**/upload/**", (route) => route.fulfill({ status: 200, body: "" }));
+  await page.route("**/upload/**", async (route) => {
+    if ((options.uploadDelayMs ?? 0) > 0) {
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, options.uploadDelayMs));
+    }
+    await route.fulfill({ status: 200, body: "" });
+  });
   await page.route("**/api/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -92,11 +105,11 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
         schema_version: "1.0",
         handoff: handoff(),
         management_token: "management-token-e2e-management-token",
-        qr_payload: "https://handoff.example.test/handoff/ABC234",
+        qr_payload: "https://handoff.example.test/handoff/294816",
       }, 201);
       return;
     }
-    if (url.pathname === "/api/v1/handoffs/ABC234/claim") {
+    if (url.pathname === "/api/v1/handoffs/294816/claim") {
       handoffStatus = "claimed";
       await fulfill(route, {
         schema_version: "1.0",
@@ -107,12 +120,12 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
       });
       return;
     }
-    if (url.pathname === "/api/v1/handoffs/ABC234/complete") {
+    if (url.pathname === "/api/v1/handoffs/294816/complete") {
       handoffStatus = "completed";
       await fulfill(route, handoff());
       return;
     }
-    if (url.pathname === "/api/v1/handoffs/ABC234" && request.method() === "GET") {
+    if (url.pathname === "/api/v1/handoffs/294816" && request.method() === "GET") {
       await fulfill(route, handoff());
       return;
     }
@@ -206,6 +219,9 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
       return;
     }
     if (url.pathname === "/api/v1/references/adapt") {
+      if ((options.adaptDelayMs ?? 0) > 0) {
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, options.adaptDelayMs));
+      }
       if (remainingAdaptFailures > 0) {
         remainingAdaptFailures -= 1;
         await fulfillError(route, "PROVIDER_REJECTED", 422);
@@ -236,11 +252,15 @@ async function installApiRoutes(page: Page, options: { adaptFailures?: number } 
       return;
     }
     if (url.pathname === "/api/v1/agent/runs") {
+      if ((options.planDelayMs ?? 0) > 0) {
+        await new Promise((resolveDelay) => setTimeout(resolveDelay, options.planDelayMs));
+      }
+      const sceneMode = body.intent === "scene_adaptation";
       session = {
         ...session,
         state: "shot_plan_ready",
         shot_plan: plan,
-        selected_skills: [{ name: "shooting_plan", version: "1.0.0" }],
+        selected_skills: [{ name: "shooting_plan", version: sceneMode ? "1.1.0" : "1.0.0" }],
       };
       const mode = body.intent === "original_replication" && (session.reference_asset as Json).source_type === "preset" ? "fixture" : "live";
       await fulfill(route, { run_id: "run_e2e", selected_skills: session.selected_skills }, 202, mode);
@@ -357,7 +377,7 @@ test("public preset completes the honest two-round flow with refresh recovery", 
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
-  await page.getByRole("button", { name: "继续在网页完成" }).click();
+  await page.getByRole("button", { name: "继续在网页轻量完成" }).click();
   await page.getByRole("button", { name: "查看第一次建议" }).click();
   await expect(page.getByRole("heading", { name: "人物比例偏小" })).toBeVisible();
   await page.reload();
@@ -378,12 +398,25 @@ test("custom original replication completes a real-media Live mock flow", async 
   await selectCustom(page);
   await page.getByRole("button", { name: "交给 SoloShot" }).click();
   await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
-  await page.getByRole("button", { name: "继续在网页完成" }).click();
+  await page.getByRole("button", { name: "继续在网页轻量完成" }).click();
   await uploadCaptureAndEvaluate(page, 1);
   await page.getByRole("button", { name: "带着这条建议再拍一次" }).click();
   await uploadCaptureAndEvaluate(page, 2);
   await page.getByRole("button", { name: "查看我的作品" }).click();
   await expect(page.getByText("这里展示的照片都来自本次旅拍。")).toBeVisible();
+  await expect(page.locator(".live-comparison .round-media")).toHaveCount(3);
+  await expect(page.locator(".live-comparison").getByText("参考", { exact: true })).toBeVisible();
+  await expect(page.locator(".live-comparison").getByText("第一拍", { exact: true })).toBeVisible();
+  await expect(page.locator(".live-comparison").getByText("第二拍", { exact: true })).toBeVisible();
+  const comparisonLayout = await page.locator(".live-comparison").evaluate((element) => ({
+    display: getComputedStyle(element).display,
+    scrollable: element.scrollWidth > element.clientWidth,
+  }));
+  if ((page.viewportSize()?.width ?? 0) >= 900) {
+    expect(comparisonLayout.display).toBe("grid");
+  } else {
+    expect(comparisonLayout.scrollable).toBe(true);
+  }
 });
 
 for (const source of ["preset", "custom"] as const) {
@@ -401,8 +434,8 @@ for (const source of ["preset", "custom"] as const) {
     await page.getByRole("button", { name: "看看我眼前的现场" }).click();
     await page.getByLabel("从相册选择").setInputFiles(testImagePath);
     await expect(page.getByText("已选好")).toBeVisible();
-    await page.getByRole("button", { name: "为此刻生成 ShotPlan" }).click();
     await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
+    await expect(page.getByLabel("现场人物目标布局")).toBeVisible();
     await expect(page.getByText("实时分析", { exact: true }).first()).toBeVisible();
   });
 }
@@ -416,11 +449,26 @@ test("scene retry reuses the uploaded image after a model rejection", async ({ p
   await page.getByRole("button", { name: "交给 SoloShot" }).click();
   await page.getByRole("button", { name: "看看我眼前的现场" }).click();
   await page.getByLabel("从相册选择").setInputFiles(testImagePath);
-  await page.getByRole("button", { name: "为此刻生成 ShotPlan" }).click();
   await expect(page.getByText("这张画面暂时没有分析完成", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "再试一次" }).click();
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
   expect(diagnostics.mediaUploadCount()).toBe(1);
+});
+
+test("scene selection exposes real upload, recognition and planning stages", async ({ page }) => {
+  await installApiRoutes(page, { uploadDelayMs: 250, adaptDelayMs: 250, planDelayMs: 250 });
+  await page.goto("/");
+  await page.getByRole("button", { name: /灵感迁移/ }).click();
+  await selectPreset(page);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "看看我眼前的现场" }).click();
+  await page.getByLabel("从相册选择").setInputFiles(testImagePath);
+
+  await expect(page.getByText("正在上传现场图")).toBeVisible();
+  await expect(page.getByText("正在识别人物与构图")).toBeVisible();
+  await expect(page.getByText("正在生成拍摄步骤")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
 });
 
 test("H5 handoff survives refresh and follows iOS claim through completion", async ({ page }) => {
@@ -430,15 +478,36 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
   await page.getByRole("button", { name: "交给 SoloShot" }).click();
   await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
   await page.getByRole("button", { name: "让 iPhone 现场陪我拍" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByLabel("任务码 294816")).toHaveCount(0);
+  await page.waitForTimeout(300);
+  const sheetMetrics = await page.getByRole("dialog").evaluate((sheet) => {
+    const sheetBox = sheet.getBoundingClientRect();
+    const actionsBox = sheet.querySelector(".ios-experience-actions")?.getBoundingClientRect();
+    return {
+      top: sheetBox.top,
+      bottom: sheetBox.bottom,
+      height: sheetBox.height,
+      actionsBottom: actionsBox?.bottom ?? 0,
+      viewportHeight: window.innerHeight,
+      fitsWidth: document.documentElement.scrollWidth <= window.innerWidth,
+    };
+  });
+  expect(sheetMetrics.top).toBeGreaterThanOrEqual(0);
+  expect(sheetMetrics.bottom).toBeLessThanOrEqual(sheetMetrics.viewportHeight + 1);
+  expect(sheetMetrics.height).toBeLessThanOrEqual(sheetMetrics.viewportHeight * 0.88 + 1);
+  expect(Math.abs(sheetMetrics.actionsBottom - sheetMetrics.bottom)).toBeLessThanOrEqual(1);
+  expect(sheetMetrics.fitsWidth).toBe(true);
+  await page.getByRole("button", { name: "生成现场体验码" }).click();
 
-  await expect(page.getByLabel("任务码 ABC234")).toBeVisible();
+  await expect(page.getByLabel("任务码 294816")).toBeVisible();
   await expect(page.getByAltText("iPhone 接力二维码")).toBeVisible();
   expect(await page.evaluate(() => localStorage.getItem("soloshot:handoff:v1:ss_e2e"))).toBeNull();
   await page.reload();
-  await expect(page.getByLabel("任务码 ABC234")).toBeVisible();
+  await expect(page.getByLabel("任务码 294816")).toBeVisible();
 
   await page.evaluate(async () => {
-    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/claim", {
+    await fetch("http://localhost:8000/api/v1/handoffs/294816/claim", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Idempotency-Key": "ios-e2e-claim" },
       body: JSON.stringify({ schema_version: "1.0", client_instance_id: "ios-e2e" }),
@@ -447,7 +516,7 @@ test("H5 handoff survives refresh and follows iOS claim through completion", asy
   await expect(page.getByText("正在同步到 iPhone")).toBeVisible({ timeout: 5_000 });
 
   await page.evaluate(async () => {
-    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/complete", {
+    await fetch("http://localhost:8000/api/v1/handoffs/294816/complete", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -468,6 +537,7 @@ test("W5 cross-device handoff follows two iOS rounds into the honest result", as
   await page.getByRole("button", { name: "交给 SoloShot" }).click();
   await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
   await page.getByRole("button", { name: "让 iPhone 现场陪我拍" }).click();
+  await page.getByRole("button", { name: "生成现场体验码" }).click();
 
   await page.evaluate(async () => {
     const json = (method: string, body: unknown, key: string) => ({
@@ -475,10 +545,10 @@ test("W5 cross-device handoff follows two iOS rounds into the honest result", as
       headers: { "Content-Type": "application/json", "Idempotency-Key": key },
       body: JSON.stringify(body),
     });
-    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/claim", json("POST", {
+    await fetch("http://localhost:8000/api/v1/handoffs/294816/claim", json("POST", {
       schema_version: "1.0", client_instance_id: "ios-w5-e2e",
     }, "claim-w5"));
-    await fetch("http://localhost:8000/api/v1/handoffs/ABC234/complete", {
+    await fetch("http://localhost:8000/api/v1/handoffs/294816/complete", {
       ...json("POST", { schema_version: "1.0", client_instance_id: "ios-w5-e2e" }, "complete-w5"),
       headers: {
         "Content-Type": "application/json",

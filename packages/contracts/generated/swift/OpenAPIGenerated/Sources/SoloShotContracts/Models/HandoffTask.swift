@@ -25,7 +25,7 @@ public struct HandoffTask: Sendable, Codable, Hashable {
         case sceneAdaptation = "scene_adaptation"
     }
     public static let handoffIdRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^handoff_[A-Za-z0-9_-]+$/")
-    public static let codeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/")
+    public static let codeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[0-9]{6}$/")
     public var schemaVersion: SchemaVersion
     public var handoffId: String
     public var code: String

@@ -1,1 +1,1 @@
-{"name":"scene_adaptation","version":"1.0.0","timeout_seconds":8,"max_repairs":1,"fallback":"fail_closed_without_fabricated_scene_plan"}
+{"name":"scene_adaptation","version":"1.0.0","timeout_seconds":35,"max_repairs":1,"fallback":"fail_closed_without_fabricated_scene_plan"}

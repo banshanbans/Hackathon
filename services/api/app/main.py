@@ -117,7 +117,13 @@ def create_app(
         )
     else:
         provider = UnconfiguredProvider()
-    registry = SkillRegistry(build_skills(provider, resolved_settings.skill_timeout_seconds))
+    registry = SkillRegistry(
+        build_skills(
+            provider,
+            resolved_settings.skill_timeout_seconds,
+            resolved_settings.scene_adaptation_timeout_seconds,
+        )
+    )
     capture_authorization = CaptureAuthorizationService(resolved_store, handoff_signer)
 
     async def cleanup_media_loop() -> None:

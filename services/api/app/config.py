@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     model_provider: str = "unconfigured"
     mock_ai_enabled: bool = False
     skill_timeout_seconds: float = Field(default=8.0, gt=0, le=120)
+    scene_adaptation_timeout_seconds: float = Field(default=35.0, gt=0, le=120)
     h5_allowed_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     object_storage_endpoint: str = "http://localhost:9000"
     object_storage_public_endpoint: str = "http://localhost:9000"

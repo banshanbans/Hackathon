@@ -204,6 +204,137 @@ make seed-demo
 
 For iOS, use the documented scheme and destination. Simulator success does not replace required device validation for camera/Vision behavior.
 
+## Production update and deployment workflow
+
+The canonical single-server deployment target is `ubuntu@1.14.75.189:/opt/soloshot`. The H5 and API public endpoints are `https://shot.socialdog.cn` and `https://shotapi.socialdog.cn`. Use the repository-root `Hackathon.pem` only as the local SSH identity. Keep it mode `600`; never commit it, copy it into the release, print it, or place it in a container image.
+
+The production secret file is `/opt/soloshot/infra/deployment/.env.production`. It is server-owned state: never overwrite it from a local `.env` or `.env.production.example`. Database and object-storage Docker volumes are also server-owned state and must not be deleted during an application update.
+
+### 1. Prepare one deployable local revision
+
+- Review `git status --short` and include only the intended product changes.
+- Regenerate clients when contracts changed, and run the validations required by the change-type table above.
+- At minimum run `make lint`, `make typecheck`, and the relevant tests. Run `make e2e-h5` for a changed critical H5 path and the documented simulator tests for changed iOS code.
+- Commit the intended revision before deployment and record `git rev-parse --short HEAD`. Do not deploy an ambiguous dirty worktree. A user may explicitly authorize a dirty emergency deployment, but its diff and recovery point must be recorded first.
+- Confirm the SSH key locally:
+
+```bash
+chmod 600 ./Hackathon.pem
+ssh -i ./Hackathon.pem ubuntu@1.14.75.189
+```
+
+### 2. Back up the current server revision before synchronization
+
+On the server, create a timestamped source snapshot and PostgreSQL dump. Preserve the printed `DEPLOY_STAMP`; it identifies the rollback point.
+
+```bash
+cd /opt/soloshot
+DEPLOY_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+echo "$DEPLOY_STAMP"
+sudo install -d -o ubuntu -g ubuntu "/opt/soloshot-backups/$DEPLOY_STAMP/source"
+rsync -a --delete \
+  --exclude '.git/' \
+  --exclude 'Hackathon.pem' \
+  --exclude '*.pem' \
+  --exclude 'infra/deployment/.env.production' \
+  /opt/soloshot/ "/opt/soloshot-backups/$DEPLOY_STAMP/source/"
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  exec -T postgres sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
+  > "/opt/soloshot-backups/$DEPLOY_STAMP/postgres.dump"
+test -s "/opt/soloshot-backups/$DEPLOY_STAMP/postgres.dump"
+```
+
+Stop if the current stack is unhealthy or the dump is empty. Do not make a schema-changing deployment without a valid database backup.
+
+### 3. Preview and synchronize the local revision
+
+Run the preview locally from the repository root. Inspect every deletion, especially under `infra/deployment/`, before running the real synchronization.
+
+```bash
+rsync --dry-run --archive --compress --delete --itemize-changes \
+  --exclude '.git/' \
+  --exclude 'Hackathon.pem' \
+  --exclude '*.pem' \
+  --exclude '.env' \
+  --exclude 'infra/deployment/.env.production' \
+  --exclude '.venv/' \
+  --exclude 'node_modules/' \
+  --exclude 'DerivedData/' \
+  --exclude 'dist/' \
+  --exclude 'test-results/' \
+  --exclude 'playwright-report/' \
+  -e 'ssh -i ./Hackathon.pem' \
+  ./ ubuntu@1.14.75.189:/opt/soloshot/
+```
+
+If the preview is correct, repeat the same command without `--dry-run`. Never add `--delete-excluded`; excluded production secrets and server state must survive the update.
+
+### 4. Rebuild and restart on the server
+
+Run from `/opt/soloshot`. `docker compose config -q` validates the resolved production configuration without printing secrets. The Compose graph runs the one-shot Alembic `migrate` service successfully before starting the API.
+
+```bash
+cd /opt/soloshot
+test -s infra/deployment/.env.production
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  config -q
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  build api h5
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  up -d --remove-orphans
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  ps -a
+```
+
+The deployment is failed if `migrate` did not exit with code `0`, a long-running service is restarting/unhealthy, or Caddy/API logs contain startup errors. Inspect bounded logs rather than streaming indefinitely:
+
+```bash
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  logs --tail=200 migrate api h5 caddy
+```
+
+### 5. Verify from outside the server
+
+Run these checks locally so DNS, TLS, Caddy, and the public route are all exercised:
+
+```bash
+curl --fail --show-error --silent https://shotapi.socialdog.cn/health
+curl --fail --show-error --silent --output /dev/null https://shot.socialdog.cn/
+```
+
+Then smoke-test the changed user path. For model, upload, handoff, or media changes, perform one controlled live run with `MOCK_AI_ENABLED=false`; verify that one upload is not duplicated during retry, the expected result renders, and logs contain no key, signed URL, token, or media bytes. HTTPS health alone is not a complete product acceptance test.
+
+### 6. Record or roll back
+
+After successful verification, append the UTC time, local commit SHA, operator, and backup `DEPLOY_STAMP` to `/opt/soloshot-backups/deployments.log`. Do not put secrets in this log.
+
+For an application-only rollback, first determine that all applied migrations are backward-compatible. Then restore the recorded source snapshot and rebuild:
+
+```bash
+rsync -a --delete \
+  --exclude 'infra/deployment/.env.production' \
+  "/opt/soloshot-backups/<DEPLOY_STAMP>/source/" /opt/soloshot/
+cd /opt/soloshot
+sudo docker compose \
+  -f infra/deployment/docker-compose.production.yml \
+  --env-file infra/deployment/.env.production \
+  up -d --build --remove-orphans
+```
+
+Do not automatically restore `postgres.dump`: a database restore discards newer production writes and requires an explicit outage and data-loss decision. If a migration is not backward-compatible, stop, preserve logs and current data, and agree on the database recovery plan before changing the database. Re-run the external health and changed-path smoke checks after any rollback.
+
 ## Work-package discipline
 
 Work in order unless the user explicitly changes priorities:

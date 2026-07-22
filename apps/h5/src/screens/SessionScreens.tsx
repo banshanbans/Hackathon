@@ -8,26 +8,39 @@ import {
   Footprints,
   Mountains,
   Repeat,
-  ShieldCheck,
   Sparkle,
   Warning,
 } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import {
   SoloShotApiError,
   soloShotApi,
   type Capture,
   type ExecutionMode,
+  type ReferenceAnalysis,
   type ResultEvaluation,
   type SoloShotSession,
 } from "../apiClient";
 import { analytics } from "../analytics";
 import { PageHeader, StateNotice } from "../components/AppChrome";
+import {
+  IOSExperienceSheet,
+  type IOSExperienceState,
+} from "../components/IOSExperienceSheet";
 import { MediaPicker, UploadProgress } from "../components/MediaPicker";
 import { findTestImageCase } from "../dataset";
-import { useFlow } from "../flow/FlowProvider";
+import {
+  type SceneOperationKeys,
+  type SceneStage,
+  useFlow,
+} from "../flow/FlowProvider";
+import {
+  createHandoffDraft,
+  loadHandoffDraft,
+  saveHandoffDraft,
+} from "../handoff/storage";
 import {
   cameraAngleLabel,
   cameraHeightLabel,
@@ -37,6 +50,7 @@ import {
   productErrorCopy,
   roundLabel,
 } from "../productCopy";
+import { buildResultComparisonItems, type ResultComparisonItem } from "../resultComparison";
 
 function useSession() {
   const params = useParams<{ id: string }>();
@@ -180,10 +194,35 @@ export function SceneScreen() {
   const queryClient = useQueryClient();
   const { state, dispatch } = useFlow();
   const { sessionId, query } = useSession();
-  const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<unknown>(null);
-  const [controller, setController] = useState<AbortController | null>(null);
+  const [layout, setLayout] = useState<ReferenceAnalysis["target_layout"] | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const runningRef = useRef(false);
+
+  useEffect(() => () => controllerRef.current?.abort(), []);
+
+  useEffect(() => {
+    const session = query.data?.data;
+    if (
+      session === undefined ||
+      session.mode !== "scene_adaptation" ||
+      runningRef.current ||
+      (state.sceneStage !== "recognizing" && state.sceneStage !== "generating")
+    ) {
+      return;
+    }
+    if (session.shot_plan !== null) {
+      navigate(`/session/${sessionId}/plan`, { replace: true });
+      return;
+    }
+    const assetId = session.scene_asset_id ?? state.sceneAssetId;
+    if (assetId === null) {
+      return;
+    }
+    const keys = state.sceneOperationKeys ?? createSceneOperationKeys();
+    void runSceneFlow(session, null, assetId, keys);
+  }, [query.data, sessionId, state.sceneAssetId, state.sceneOperationKeys, state.sceneStage]);
 
   if (query.isLoading) {
     return <Loading />;
@@ -193,8 +232,13 @@ export function SceneScreen() {
   }
   const session = query.data.data;
 
-  async function adapt(): Promise<void> {
-    if (state.sceneMedia === null || session.reference_asset === null) {
+  async function runSceneFlow(
+    currentSession: SoloShotSession,
+    media: typeof state.sceneMedia,
+    existingAssetId: string | null,
+    keys: SceneOperationKeys,
+  ): Promise<void> {
+    if ((media === null && existingAssetId === null) || currentSession.reference_asset === null) {
       setError(
         new SoloShotApiError(
           "刷新后尚未提交的本地现场图无法恢复，请重新选择。",
@@ -205,43 +249,143 @@ export function SceneScreen() {
       return;
     }
     const abortController = new AbortController();
-    setController(abortController);
-    setBusy(true);
+    controllerRef.current?.abort();
+    controllerRef.current = abortController;
+    const isCurrentOperation = () => controllerRef.current === abortController;
+    runningRef.current = true;
     setError(null);
+    let activeStage: "uploading" | "recognizing" | "generating" =
+      existingAssetId === null ? "uploading" : "recognizing";
+    let stageStartedAt = performance.now();
     try {
-      let sceneAssetId = state.sceneAssetId;
+      let sceneAssetId = existingAssetId;
       if (sceneAssetId === null) {
-        const media = await soloShotApi.uploadMedia(sessionId, "scene", state.sceneMedia.blob, {
+        if (media === null) {
+          throw new SoloShotApiError("请重新选择现场图。", "MEDIA_NOT_READY", true);
+        }
+        dispatch({ type: "patch", value: { sceneStage: "uploading", sceneOperationKeys: keys } });
+        const uploadStarted = performance.now();
+        const uploaded = await soloShotApi.uploadMedia(sessionId, "scene", media.blob, {
           signal: abortController.signal,
           onProgress: setProgress,
+          createIdempotencyKey: keys.uploadCreate,
+          completeIdempotencyKey: keys.uploadComplete,
         });
-        sceneAssetId = media.media_asset_id;
-        dispatch({ type: "patch", value: { sceneAssetId } });
-      } else {
-        setProgress(80);
+        sceneAssetId = uploaded.media_asset_id;
+        dispatch({ type: "patch", value: { sceneAssetId, sceneStage: "recognizing" } });
+        analytics.track(
+          "reference_upload",
+          { source: "scene", status: "completed", latency_ms: Math.round(performance.now() - uploadStarted) },
+          sessionId,
+        );
+        activeStage = "recognizing";
+        stageStartedAt = performance.now();
       }
-      const adapted = await soloShotApi.adaptReference(
+      let adaptedMode: ExecutionMode | null = null;
+      if (currentSession.scene_asset_id !== sceneAssetId) {
+        dispatch({ type: "patch", value: { sceneStage: "recognizing" } });
+        const recognitionStarted = performance.now();
+        const adapted = await soloShotApi.adaptReference(
+          sessionId,
+          currentSession.reference_asset.reference_id,
+          sceneAssetId,
+          keys.adapt,
+          abortController.signal,
+        );
+        adaptedMode = adapted.executionMode;
+        setLayout(adapted.data.target_layout);
+        analytics.track(
+          "agent_success",
+          { mode: "scene_adaptation", status: "recognized", latency_ms: Math.round(performance.now() - recognitionStarted) },
+          sessionId,
+        );
+      }
+      activeStage = "generating";
+      stageStartedAt = performance.now();
+      dispatch({ type: "patch", value: { sceneStage: "generating" } });
+      const run = await soloShotApi.createAgentRun(
         sessionId,
-        session.reference_asset.reference_id,
-        sceneAssetId,
+        "scene_adaptation",
+        keys.plan,
+        abortController.signal,
       );
-      setProgress(92);
-      const run = await soloShotApi.createAgentRun(sessionId, "scene_adaptation");
-      setProgress(100);
+      analytics.track(
+        "shot_plan_view",
+        { mode: "scene_adaptation", status: "generated", latency_ms: Math.round(performance.now() - stageStartedAt) },
+        sessionId,
+      );
       dispatch({
         type: "patch",
-        value: { executionMode: run.executionMode ?? adapted.executionMode ?? "live" },
+        value: {
+          executionMode: run.executionMode ?? adaptedMode ?? "live",
+          sceneStage: "idle",
+        },
       });
+      await analytics.flush(sessionId);
       await queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
       navigate(`/session/${sessionId}/plan`);
     } catch (caught) {
+      if (!isCurrentOperation()) {
+        return;
+      }
+      if (
+        (caught instanceof DOMException && caught.name === "AbortError") ||
+        (caught instanceof SoloShotApiError && caught.code === "UPLOAD_CANCELED")
+      ) {
+        analytics.track(
+          "reference_upload",
+          { source: "scene", status: "canceled", latency_ms: Math.round(performance.now() - stageStartedAt) },
+          sessionId,
+        );
+        void analytics.flush(sessionId);
+        dispatch({ type: "patch", value: { sceneStage: "idle" } });
+        return;
+      }
+      const errorCode = caught instanceof SoloShotApiError ? caught.code : "REQUEST_FAILED";
+      analytics.track(
+        activeStage === "uploading"
+          ? "reference_upload"
+          : activeStage === "recognizing"
+            ? "agent_fail"
+            : "shot_plan_view",
+        {
+          mode: "scene_adaptation",
+          source: "scene",
+          status: "failed",
+          error_code: errorCode,
+          latency_ms: Math.round(performance.now() - stageStartedAt),
+        },
+        sessionId,
+      );
+      void analytics.flush(sessionId);
       setError(caught);
-      dispatch({ type: "patch", value: { executionMode: "error" } });
+      dispatch({ type: "patch", value: { executionMode: "error", sceneStage: "failed" } });
     } finally {
-      setBusy(false);
-      setController(null);
+      if (isCurrentOperation()) {
+        runningRef.current = false;
+        controllerRef.current = null;
+      }
     }
   }
+
+  function selectScene(sceneMedia: NonNullable<typeof state.sceneMedia>): void {
+    const keys = createSceneOperationKeys();
+    setLayout(null);
+    setProgress(0);
+    dispatch({
+      type: "patch",
+      value: {
+        sceneMedia,
+        sceneAssetId: null,
+        sceneStage: "uploading",
+        sceneOperationKeys: keys,
+      },
+    });
+    void runSceneFlow(session, sceneMedia, null, keys);
+  }
+
+  const stage = state.sceneStage;
+  const locked = stage === "recognizing" || stage === "generating";
 
   return (
     <section className="page scene-page">
@@ -256,22 +400,93 @@ export function SceneScreen() {
       <MediaPicker
         value={state.sceneMedia}
         title="拍下你眼前的场景"
-        onChange={(sceneMedia) =>
-          dispatch({ type: "patch", value: { sceneMedia, sceneAssetId: null } })
-        }
+        disabled={locked}
+        overlay={layout === null ? null : <TargetLayoutOverlay layout={layout} />}
+        onChange={selectScene}
       />
-      {busy ? <UploadProgress value={progress} onCancel={() => controller?.abort()} /> : null}
-      {error !== null ? <AsyncError error={error} onRetry={() => void adapt()} /> : null}
-      <button
-        type="button"
-        className="primary-button"
-        disabled={busy || state.sceneMedia === null}
-        onClick={() => void adapt()}
-      >
-        {busy ? "正在为这个场景重新设计…" : "为此刻生成 ShotPlan"}
-        <ArrowRight size={20} aria-hidden="true" />
-      </button>
+      <SceneStageStatus
+        stage={stage}
+        progress={progress}
+        onCancel={() => controllerRef.current?.abort()}
+      />
+      {error !== null ? (
+        <AsyncError
+          error={error}
+          onRetry={() => {
+            const keys = state.sceneOperationKeys ?? createSceneOperationKeys();
+            void runSceneFlow(session, state.sceneMedia, state.sceneAssetId, keys);
+          }}
+        />
+      ) : null}
     </section>
+  );
+}
+
+function createSceneOperationKeys(): SceneOperationKeys {
+  const operationId = crypto.randomUUID().replaceAll("-", "");
+  return {
+    uploadCreate: `h5-scene-upload-${operationId}`,
+    uploadComplete: `h5-scene-complete-${operationId}`,
+    adapt: `h5-scene-adapt-${operationId}`,
+    plan: `h5-scene-plan-${operationId}`,
+  };
+}
+
+function SceneStageStatus({
+  stage,
+  progress,
+  onCancel,
+}: {
+  stage: SceneStage;
+  progress: number;
+  onCancel: () => void;
+}) {
+  if (stage === "uploading") {
+    return <UploadProgress value={progress} label="正在上传现场图" onCancel={onCancel} />;
+  }
+  if (stage === "recognizing" || stage === "generating") {
+    return (
+      <div className="scene-stage-status" role="status" aria-live="polite">
+        <CircleNotch className="spin" size={23} aria-hidden="true" />
+        <span>
+          <strong>
+            {stage === "recognizing" ? "正在识别人物与构图" : "正在生成拍摄步骤"}
+          </strong>
+          <small>
+            {stage === "recognizing"
+              ? "现场图会一直保留在这里"
+              : "人物布局已经识别完成"}
+          </small>
+        </span>
+      </div>
+    );
+  }
+  return null;
+}
+
+function TargetLayoutOverlay({
+  layout,
+}: {
+  layout: ReferenceAnalysis["target_layout"];
+}) {
+  return (
+    <div className="target-layout-overlay" aria-label="现场人物目标布局">
+      <span
+        className="target-layout-box"
+        style={{
+          left: `${(layout.center_x - layout.width / 2) * 100}%`,
+          top: `${(layout.center_y - layout.height / 2) * 100}%`,
+          width: `${layout.width * 100}%`,
+          height: `${layout.height * 100}%`,
+        }}
+      />
+      <span
+        className="target-head-point"
+        style={{ left: `${layout.head_point.x * 100}%`, top: `${layout.head_point.y * 100}%` }}
+      />
+      <span className="target-foot-line" style={{ top: `${layout.foot_line_y * 100}%` }} />
+      <small>{layout.body_direction.replaceAll("_", " ")}</small>
+    </div>
   );
 }
 
@@ -320,10 +535,50 @@ function ReferenceImage({ session }: { session: SoloShotSession }) {
   return <div className="media-placeholder">参考画面不可用</div>;
 }
 
+function SceneLayoutImage({
+  sessionId,
+  mediaAssetId,
+  layout,
+}: {
+  sessionId: string;
+  mediaAssetId: string;
+  layout: ReferenceAnalysis["target_layout"];
+}) {
+  const access = useQuery({
+    queryKey: ["media-access", mediaAssetId],
+    queryFn: () => soloShotApi.getMediaAccess(sessionId, mediaAssetId),
+    staleTime: 240_000,
+  });
+  if (access.isLoading) {
+    return <div className="media-placeholder">正在准备现场画面…</div>;
+  }
+  if (access.error !== null || access.data === undefined) {
+    return <div className="media-placeholder media-expired">现场画面已过期</div>;
+  }
+  const asset = access.data.data.asset;
+  return (
+    <div
+      className="target-layout-preview"
+      style={
+        asset.width !== null && asset.height !== null
+          ? { aspectRatio: `${asset.width} / ${asset.height}` }
+          : undefined
+      }
+    >
+      <img src={access.data.data.download_url} alt="现场构图预览" />
+      <TargetLayoutOverlay layout={layout} />
+    </div>
+  );
+}
+
 export function PlanScreen() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { state } = useFlow();
   const { sessionId, query } = useSession();
+  const iosExperienceTriggerRef = useRef<HTMLButtonElement>(null);
+  const [iosExperienceState, setIosExperienceState] =
+    useState<IOSExperienceState>("closed");
   if (query.isLoading) {
     return <Loading label="正在恢复 ShotPlan…" />;
   }
@@ -341,13 +596,68 @@ export function PlanScreen() {
     );
   }
   const mode = modeForSession(session, state.executionMode);
+  const existingHandoff =
+    session.state === "handoff_ready" ? loadHandoffDraft(sessionId) : null;
+
+  async function prepareHandoff(): Promise<void> {
+    if (iosExperienceState === "creating") {
+      return;
+    }
+    if (existingHandoff?.code !== undefined) {
+      setIosExperienceState("closed");
+      navigate(`/session/${sessionId}/handoff`);
+      return;
+    }
+
+    const savedDraft = loadHandoffDraft(sessionId);
+    const draft =
+      savedDraft !== null && savedDraft.code === undefined
+        ? savedDraft
+        : createHandoffDraft(sessionId);
+    setIosExperienceState("creating");
+    try {
+      const result = await soloShotApi.createHandoff(
+        sessionId,
+        draft.createIdempotencyKey,
+      );
+      const nextDraft = {
+        ...draft,
+        code: result.data.handoff.code,
+        managementToken: result.data.management_token,
+        qrPayload: result.data.qr_payload,
+      };
+      saveHandoffDraft(nextDraft);
+      analytics.track(
+        "handoff_qr_create",
+        { mode: result.data.handoff.mode },
+        sessionId,
+      );
+      void analytics.flush(sessionId);
+      await queryClient.invalidateQueries({ queryKey: ["session", sessionId] });
+      setIosExperienceState("closed");
+      navigate(`/session/${sessionId}/handoff`);
+    } catch {
+      setIosExperienceState("error");
+    }
+  }
+
   return (
     <section className="page plan-page">
       <PageHeader title="你的专属 ShotPlan" backTo={`/session/${sessionId}/analysis`} />
       <div className="plan-reference">
-        <ReferenceImage session={session} />
+        {session.mode === "scene_adaptation" && session.scene_asset_id != null ? (
+          <SceneLayoutImage
+            sessionId={sessionId}
+            mediaAssetId={session.scene_asset_id}
+            layout={plan.target_layout}
+          />
+        ) : (
+          <div className="target-layout-preview">
+            <ReferenceImage session={session} />
+          </div>
+        )}
         <span>
-          <small>这就是你要留下的画面</small>
+          <small>{session.mode === "scene_adaptation" ? "现场站位已经安排好" : "这就是你要留下的画面"}</small>
           <strong>{poseLabel(plan.target_layout.pose_template)}</strong>
         </span>
       </div>
@@ -357,7 +667,7 @@ export function PlanScreen() {
       <div className="plan-facts">
         <span>
           <DeviceMobile size={20} aria-hidden="true" />
-          <strong>手机放这里</strong>
+          <strong>手机放置位置</strong>
           <small>{cameraHeightLabel(plan.camera_height)} · {cameraAngleLabel(plan.camera_angle)}</small>
         </span>
         <span>
@@ -378,17 +688,11 @@ export function PlanScreen() {
           ))}
         </ol>
       </div>
-      <div className="safety-card">
-        <ShieldCheck size={22} weight="fill" aria-hidden="true" />
-        <span>
-          <strong>出发前，再确认一件事</strong>
-          <small>{plan.safety_notes[0]}</small>
-        </span>
-      </div>
       <button
+        ref={iosExperienceTriggerRef}
         type="button"
         className="primary-button"
-        onClick={() => navigate(`/session/${sessionId}/handoff`)}
+        onClick={() => setIosExperienceState("open")}
       >
         <DeviceMobile size={20} aria-hidden="true" /> 让 iPhone 现场陪我拍
       </button>
@@ -398,11 +702,22 @@ export function PlanScreen() {
         disabled={session.state === "handoff_ready"}
         onClick={() => navigate(`/session/${sessionId}/capture/1`)}
       >
-        继续在网页完成 <ArrowRight size={20} aria-hidden="true" />
+        继续在网页轻量完成 <ArrowRight size={20} aria-hidden="true" />
       </button>
       {session.state === "handoff_ready" ? (
         <p className="handoff-plan-note">任务已交给 iPhone；取消接力后可回到网页继续。</p>
       ) : null}
+      <IOSExperienceSheet
+        state={iosExperienceState}
+        hasExistingHandoff={existingHandoff?.code !== undefined}
+        triggerRef={iosExperienceTriggerRef}
+        onClose={() => setIosExperienceState("closed")}
+        onConfirm={() => void prepareHandoff()}
+        onContinueOnWeb={() => {
+          setIosExperienceState("closed");
+          navigate(`/session/${sessionId}/capture/1`);
+        }}
+      />
     </section>
   );
 }
@@ -677,15 +992,30 @@ export function EvaluationScreen() {
   );
 }
 
-function RoundMedia({ session, capture }: { session: SoloShotSession; capture: Capture }) {
+function RoundMedia({
+  session,
+  item,
+}: {
+  session: SoloShotSession;
+  item: Exclude<ResultComparisonItem, { kind: "reference" }>;
+}) {
   return (
     <div className="round-media">
       <MediaImage
         sessionId={session.session_id}
-        mediaAssetId={capture.media_asset_id}
-        alt={capture.round_index === 1 ? "第一次成片" : "调整后的成片"}
+        mediaAssetId={item.capture.media_asset_id}
+        alt={item.accessibilityLabel}
       />
-      <strong>{roundLabel(capture.round_index)}</strong>
+      <strong>{item.label}</strong>
+    </div>
+  );
+}
+
+function ReferenceResultMedia({ session }: { session: SoloShotSession }) {
+  return (
+    <div className="round-media reference-media">
+      <ReferenceImage session={session} />
+      <strong>参考</strong>
     </div>
   );
 }
@@ -709,6 +1039,8 @@ export function ResultScreen() {
   const realCaptures = session.capture_rounds.filter(
     (capture) => !capture.media_asset_id.startsWith("media_fixture_"),
   );
+  const displayedCaptures = mode === "live" ? session.capture_rounds : realCaptures;
+  const comparisonItems = buildResultComparisonItems(displayedCaptures);
   const hasRealCaptureMedia = realCaptures.length > 0;
   return (
     <section className="page result-page">
@@ -741,9 +1073,13 @@ export function ResultScreen() {
 
       {mode === "live" || hasRealCaptureMedia ? (
         <div className="live-comparison">
-          {(mode === "live" ? session.capture_rounds : realCaptures).map((capture) => (
-            <RoundMedia key={capture.capture_id} session={session} capture={capture} />
-          ))}
+          {comparisonItems.map((item) =>
+            item.kind === "reference" ? (
+              <ReferenceResultMedia key={item.kind} session={session} />
+            ) : (
+              <RoundMedia key={item.capture.capture_id} session={session} item={item} />
+            ),
+          )}
         </div>
       ) : (
         <div className="fixture-score-grid">

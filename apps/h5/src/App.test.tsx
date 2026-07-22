@@ -38,6 +38,22 @@ const plan: ShotPlan = {
   ios_execution: { supported: true, instruction: "使用本地 Vision 对齐。", requires_realtime_alignment: true },
   confidence: 0.92,
 };
+const handoff = {
+  schema_version: "1.0" as const,
+  handoff: {
+    schema_version: "1.0" as const,
+    handoff_id: "handoff_h5_test",
+    code: "294816",
+    status: "created" as const,
+    mode: "original_replication" as const,
+    created_at: "2099-01-01T00:00:00Z",
+    expires_at: "2099-01-01T00:10:00Z",
+    claimed_at: null,
+    completed_at: null,
+  },
+  management_token: "management-secret-h5-test-management-secret",
+  qr_payload: "https://handoff.example.test/handoff/294816",
+};
 
 function newSession(): SoloShotSession {
   const now = new Date().toISOString();
@@ -83,8 +99,11 @@ function response(data: unknown, status = 200, mode: "fixture" | "live" | null =
   });
 }
 
-function installFixtureApiMock() {
+function installFixtureApiMock(
+  options: { handoffFailures?: number; handoffGate?: Promise<void> } = {},
+) {
   let session = newSession();
+  let remainingHandoffFailures = options.handoffFailures ?? 0;
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = new URL(String(input));
     if (url.pathname === "/api/v1/sessions" && init?.method === "POST") {
@@ -110,6 +129,18 @@ function installFixtureApiMock() {
     }
     if (url.pathname === "/api/v1/sessions/ss_h5_test" && init?.method === "GET") {
       return response(session);
+    }
+    if (url.pathname === "/api/v1/handoffs" && init?.method === "POST") {
+      await options.handoffGate;
+      if (remainingHandoffFailures > 0) {
+        remainingHandoffFailures -= 1;
+        throw new Error("offline");
+      }
+      session = { ...session, state: "handoff_ready" };
+      return response(handoff, 201);
+    }
+    if (url.pathname === "/api/v1/handoffs/294816" && init?.method === "GET") {
+      return response(handoff.handoff);
     }
     if (url.pathname === "/api/v1/captures") {
       const body = JSON.parse(String(init?.body)) as { round_index: 1 | 2; media_asset_id: string };
@@ -189,11 +220,22 @@ async function choosePreset(user: ReturnType<typeof userEvent.setup>): Promise<v
   await user.click(screen.getByRole("button", { name: "就是这个瞬间" }));
 }
 
+async function reachShotPlan(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  await choosePreset(user);
+  await user.click(screen.getByRole("button", { name: "交给 SoloShot" }));
+  await screen.findByRole("heading", { name: "你的灵感，已经读懂" });
+  await user.click(screen.getByRole("button", { name: "生成我的 ShotPlan" }));
+  await screen.findByRole("heading", { name: "你的专属 ShotPlan" });
+}
+
 describe("W2 H5 flow", () => {
   beforeEach(() => {
-    const storage = memoryStorage();
-    Object.defineProperty(window, "localStorage", { configurable: true, value: storage });
-    vi.stubGlobal("localStorage", storage);
+    const local = memoryStorage();
+    const session = memoryStorage();
+    Object.defineProperty(window, "localStorage", { configurable: true, value: local });
+    Object.defineProperty(window, "sessionStorage", { configurable: true, value: session });
+    vi.stubGlobal("localStorage", local);
+    vi.stubGlobal("sessionStorage", session);
     window.history.replaceState({}, "", "/");
     window.scrollTo = vi.fn();
   });
@@ -229,7 +271,7 @@ describe("W2 H5 flow", () => {
     expect(await screen.findByRole("heading", { name: "你的灵感，已经读懂" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "生成我的 ShotPlan" }));
     expect(await screen.findByRole("heading", { name: "你的专属 ShotPlan" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "继续在网页完成" }));
+    await user.click(screen.getByRole("button", { name: "继续在网页轻量完成" }));
     await user.click(screen.getByRole("button", { name: "查看第一次建议" }));
     expect(await screen.findByRole("heading", { name: "人物比例偏小" })).toBeTruthy();
     expect(screen.getByText("以下结果来自精选样例。")).toBeTruthy();
@@ -260,5 +302,132 @@ describe("W2 H5 flow", () => {
     expect(document.body.textContent).not.toMatch(/Fixture|Live|Fallback|Round|Session|Provider|W2|W5/);
     await user.click(screen.getByRole("button", { name: "再试一次" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
+
+  it("opens the iPhone explanation without creating a handoff and restores focus on Escape", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFixtureApiMock();
+    render(<App />);
+    await reachShotPlan(user);
+
+    const trigger = screen.getByRole("button", { name: "让 iPhone 现场陪我拍" });
+    await user.click(trigger);
+
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    expect(screen.getByText("体验我们的全部功能")).toBeTruthy();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(
+        screen.getByRole("heading", { name: "来游园会，用 iPhone 体验完整陪拍" }),
+      ),
+    );
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "继续在网页轻量完成" }),
+    );
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "关闭 iPhone 现场陪拍说明" }),
+    );
+    expect(
+      fetchMock.mock.calls.filter(([input, init]) =>
+        new URL(String(input)).pathname === "/api/v1/handoffs" && init?.method === "POST",
+      ),
+    ).toHaveLength(0);
+
+    const backdrop = screen.getByRole("dialog").parentElement;
+    expect(backdrop).not.toBeNull();
+    await user.click(backdrop as HTMLElement);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+
+    await user.click(trigger);
+    await screen.findByRole("dialog");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(trigger));
+  });
+
+  it("continues on the lightweight web path without creating a handoff", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFixtureApiMock();
+    render(<App />);
+    await reachShotPlan(user);
+    await user.click(screen.getByRole("button", { name: "让 iPhone 现场陪我拍" }));
+    await user.click(screen.getByRole("button", { name: "继续在网页轻量完成" }));
+
+    expect(await screen.findByRole("heading", { name: "第一次，先完整拍下来" })).toBeTruthy();
+    expect(
+      fetchMock.mock.calls.some(([input, init]) =>
+        new URL(String(input)).pathname === "/api/v1/handoffs" && init?.method === "POST",
+      ),
+    ).toBe(false);
+  });
+
+  it("creates one handoff after confirmation and disables every exit while loading", async () => {
+    const user = userEvent.setup();
+    let releaseHandoff: (() => void) | undefined;
+    const handoffGate = new Promise<void>((resolve) => {
+      releaseHandoff = resolve;
+    });
+    const fetchMock = installFixtureApiMock({ handoffGate });
+    render(<App />);
+    await reachShotPlan(user);
+    await user.click(screen.getByRole("button", { name: "让 iPhone 现场陪我拍" }));
+    await user.click(screen.getByRole("button", { name: "生成现场体验码" }));
+
+    const loadingButton = screen.getByRole("button", { name: "正在准备任务…" });
+    expect(loadingButton.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "继续在网页轻量完成" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: "关闭 iPhone 现场陪拍说明" }).hasAttribute("disabled")).toBe(true);
+    await user.click(screen.getByRole("dialog").parentElement as HTMLElement);
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    await user.keyboard("{Escape}");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+
+    releaseHandoff?.();
+    expect(await screen.findByLabelText("任务码 294816")).toBeTruthy();
+    expect(
+      fetchMock.mock.calls.filter(([input, init]) =>
+        new URL(String(input)).pathname === "/api/v1/handoffs" && init?.method === "POST",
+      ),
+    ).toHaveLength(1);
+    expect(sessionStorage.getItem("soloshot:handoff:v1:ss_h5_test")).toContain(
+      handoff.management_token,
+    );
+
+    await user.click(screen.getByRole("button", { name: "返回 ShotPlan" }));
+    await screen.findByRole("heading", { name: "你的专属 ShotPlan" });
+    await user.click(screen.getByRole("button", { name: "让 iPhone 现场陪我拍" }));
+    await user.click(screen.getByRole("button", { name: "查看现场体验码" }));
+    expect(await screen.findByLabelText("任务码 294816")).toBeTruthy();
+    expect(
+      fetchMock.mock.calls.filter(([input, init]) =>
+        new URL(String(input)).pathname === "/api/v1/handoffs" && init?.method === "POST",
+      ),
+    ).toHaveLength(1);
+  });
+
+  it("retries a failed creation with the same idempotency key", async () => {
+    const user = userEvent.setup();
+    const fetchMock = installFixtureApiMock({ handoffFailures: 1 });
+    render(<App />);
+    await reachShotPlan(user);
+    await user.click(screen.getByRole("button", { name: "让 iPhone 现场陪我拍" }));
+    await user.click(screen.getByRole("button", { name: "生成现场体验码" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain(
+      "现场任务暂时没有准备好，请检查网络后重试。",
+    );
+    await user.click(screen.getByRole("button", { name: "重新生成体验码" }));
+    expect(await screen.findByLabelText("任务码 294816")).toBeTruthy();
+
+    const createCalls = fetchMock.mock.calls.filter(([input, init]) =>
+      new URL(String(input)).pathname === "/api/v1/handoffs" && init?.method === "POST",
+    );
+    expect(createCalls).toHaveLength(2);
+    const firstKey = new Headers(createCalls[0]?.[1]?.headers).get("Idempotency-Key");
+    const secondKey = new Headers(createCalls[1]?.[1]?.headers).get("Idempotency-Key");
+    expect(firstKey).toBeTruthy();
+    expect(secondKey).toBe(firstKey);
   });
 });

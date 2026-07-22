@@ -32,7 +32,7 @@ const created = {
   handoff: {
     schema_version: "1.0" as const,
     handoff_id: "handoff_test",
-    code: "ABC234",
+    code: "294816",
     status: "created" as const,
     mode: "original_replication" as const,
     created_at: "2099-01-01T00:00:00Z",
@@ -41,7 +41,7 @@ const created = {
     completed_at: null,
   },
   management_token: "management-secret-not-for-url",
-  qr_payload: "https://handoff.example.test/handoff/ABC234",
+  qr_payload: "https://handoff.example.test/handoff/294816",
 };
 
 function wrapper(path: string, element: React.ReactNode) {
@@ -85,7 +85,7 @@ describe("W3 handoff screens", () => {
         if (url.pathname === "/api/v1/handoffs" && init?.method === "POST") {
           return response(created, 201);
         }
-        if (url.pathname === "/api/v1/handoffs/ABC234") {
+        if (url.pathname === "/api/v1/handoffs/294816") {
           return response(created.handoff);
         }
         if (url.pathname === "/api/v1/events/batch") {
@@ -97,7 +97,7 @@ describe("W3 handoff screens", () => {
 
     wrapper("/session/ss_w3/handoff", <HandoffScreen />);
 
-    expect(await screen.findByLabelText("任务码 ABC234")).toBeTruthy();
+    expect(await screen.findByLabelText("任务码 294816")).toBeTruthy();
     expect(await screen.findByAltText("iPhone 接力二维码")).toBeTruthy();
     await waitFor(() => expect(sessionStorage.length).toBe(1));
     expect(sessionStorage.getItem("soloshot:handoff:v1:ss_w3")).toContain(
@@ -113,7 +113,7 @@ describe("W3 handoff screens", () => {
 
   it("renders only the safe public preview on the HTTPS landing route", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => response(created.handoff)));
-    wrapper("/handoff/ABC234", <HandoffLandingScreen />);
+    wrapper("/handoff/294816", <HandoffLandingScreen />);
 
     expect(await screen.findByRole("button", { name: "在 SoloShot 中继续" })).toBeTruthy();
     expect(screen.getByText("原图复刻")).toBeTruthy();
@@ -132,17 +132,17 @@ describe("W3 handoff screens", () => {
       JSON.stringify({
         sessionId: "ss_w3",
         createIdempotencyKey: "h5-create-claimed-test",
-        code: "ABC234",
+        code: "294816",
         managementToken: created.management_token,
         qrPayload: created.qr_payload,
       }),
     );
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = new URL(String(input));
-      if (url.pathname === "/api/v1/handoffs/ABC234" && init?.method === "DELETE") {
+      if (url.pathname === "/api/v1/handoffs/294816" && init?.method === "DELETE") {
         return response({ ...claimed, status: "revoked" });
       }
-      if (url.pathname === "/api/v1/handoffs/ABC234") {
+      if (url.pathname === "/api/v1/handoffs/294816") {
         return response(claimed);
       }
       throw new Error(`unexpected ${url.pathname}`);
@@ -154,7 +154,7 @@ describe("W3 handoff screens", () => {
 
     await waitFor(() =>
       expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining("/api/v1/handoffs/ABC234"),
+        expect.stringContaining("/api/v1/handoffs/294816"),
         expect.objectContaining({ method: "DELETE" }),
       ),
     );

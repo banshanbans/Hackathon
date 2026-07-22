@@ -12,6 +12,13 @@ import type { PreparedImage } from "../media/processing";
 
 export type FlowMode = "original_replication" | "scene_adaptation";
 export type ReferenceSource = "preset" | "upload";
+export type SceneStage = "idle" | "uploading" | "recognizing" | "generating" | "failed";
+export type SceneOperationKeys = {
+  uploadCreate: string;
+  uploadComplete: string;
+  adapt: string;
+  plan: string;
+};
 
 export type FlowState = {
   mode: FlowMode;
@@ -25,6 +32,8 @@ export type FlowState = {
   referenceMedia: PreparedImage | null;
   sceneMedia: PreparedImage | null;
   sceneAssetId: string | null;
+  sceneStage: SceneStage;
+  sceneOperationKeys: SceneOperationKeys | null;
   captureMedia: Partial<Record<1 | 2, PreparedImage>>;
 };
 
@@ -38,6 +47,9 @@ type PersistedFlow = Pick<
   | "consent"
   | "sessionId"
   | "executionMode"
+  | "sceneAssetId"
+  | "sceneStage"
+  | "sceneOperationKeys"
 >;
 
 type FlowAction =
@@ -64,6 +76,8 @@ export const initialFlow: FlowState = {
   referenceMedia: null,
   sceneMedia: null,
   sceneAssetId: null,
+  sceneStage: "idle",
+  sceneOperationKeys: null,
   captureMedia: {},
 };
 
@@ -77,12 +91,14 @@ function restore(): FlowState {
       return initialFlow;
     }
     const value = JSON.parse(raw) as Partial<PersistedFlow>;
+    const sceneAssetId = typeof value.sceneAssetId === "string" ? value.sceneAssetId : null;
     return {
       ...initialFlow,
       ...value,
       referenceMedia: null,
       sceneMedia: null,
-      sceneAssetId: null,
+      sceneAssetId,
+      sceneStage: sceneAssetId === null ? "idle" : (value.sceneStage ?? "recognizing"),
       captureMedia: {},
     };
   } catch {
@@ -142,6 +158,9 @@ export function FlowProvider({ children }: { children: ReactNode }) {
       consent: state.consent,
       sessionId: state.sessionId,
       executionMode: state.executionMode,
+      sceneAssetId: state.sceneAssetId,
+      sceneStage: state.sceneStage,
+      sceneOperationKeys: state.sceneOperationKeys,
     };
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
   }, [state]);

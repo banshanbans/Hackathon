@@ -270,15 +270,22 @@ export const soloShotApi = {
     sessionId: string,
     referenceId: string,
     sceneAssetId: string,
+    stableIdempotencyKey?: string,
+    signal?: AbortSignal,
   ): Promise<ApiEnvelope<ReferenceAnalysis>> {
     return request(
       "/api/v1/references/adapt",
-      jsonRequest("adapt", {
-        schema_version: "1.0",
-        session_id: sessionId,
-        reference_id: referenceId,
-        scene_asset_id: sceneAssetId,
-      }),
+      jsonRequest(
+        "adapt",
+        {
+          schema_version: "1.0",
+          session_id: sessionId,
+          reference_id: referenceId,
+          scene_asset_id: sceneAssetId,
+        },
+        signal,
+        stableIdempotencyKey,
+      ),
       isReferenceAnalysis,
     );
   },
@@ -286,14 +293,21 @@ export const soloShotApi = {
   createAgentRun(
     sessionId: string,
     intent: "original_replication" | "scene_adaptation",
+    stableIdempotencyKey?: string,
+    signal?: AbortSignal,
   ): Promise<ApiEnvelope<AgentRun>> {
     return request(
       "/api/v1/agent/runs",
-      jsonRequest("agent", {
-        schema_version: "1.0",
-        session_id: sessionId,
-        intent,
-      }),
+      jsonRequest(
+        "agent",
+        {
+          schema_version: "1.0",
+          session_id: sessionId,
+          intent,
+        },
+        signal,
+        stableIdempotencyKey,
+      ),
       isAgentRun,
     );
   },
@@ -371,6 +385,7 @@ export const soloShotApi = {
     blob: Blob,
     digest: string,
     signal?: AbortSignal,
+    stableIdempotencyKey?: string,
   ): Promise<ApiEnvelope<MediaUploadTicket>> {
     return request(
       "/api/v1/media/uploads",
@@ -385,6 +400,7 @@ export const soloShotApi = {
           sha256: digest,
         },
         signal,
+        stableIdempotencyKey,
       ),
       isUploadTicket,
     );
@@ -394,6 +410,7 @@ export const soloShotApi = {
     sessionId: string,
     mediaAssetId: string,
     signal?: AbortSignal,
+    stableIdempotencyKey?: string,
   ): Promise<ApiEnvelope<MediaAsset>> {
     return request(
       `/api/v1/media/uploads/${encodeURIComponent(mediaAssetId)}/complete`,
@@ -401,6 +418,7 @@ export const soloShotApi = {
         "media-complete",
         { schema_version: "1.0", session_id: sessionId },
         signal,
+        stableIdempotencyKey,
       ),
       isMediaAsset,
     );
@@ -410,7 +428,12 @@ export const soloShotApi = {
     sessionId: string,
     purpose: MediaPurpose,
     blob: Blob,
-    options: { signal?: AbortSignal; onProgress?: (value: number) => void } = {},
+    options: {
+      signal?: AbortSignal;
+      onProgress?: (value: number) => void;
+      createIdempotencyKey?: string;
+      completeIdempotencyKey?: string;
+    } = {},
   ): Promise<MediaAsset> {
     options.onProgress?.(5);
     const digest = await sha256(blob);
@@ -421,6 +444,7 @@ export const soloShotApi = {
       blob,
       digest,
       options.signal,
+      options.createIdempotencyKey,
     );
     options.onProgress?.(35);
     let uploadResponse: Response;
@@ -448,6 +472,7 @@ export const soloShotApi = {
       sessionId,
       ticket.data.asset.media_asset_id,
       options.signal,
+      options.completeIdempotencyKey,
     );
     options.onProgress?.(100);
     return completed.data;

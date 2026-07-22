@@ -19,7 +19,7 @@
       "properties": {
         "schema_version": { "$ref": "common.schema.json#/$defs/SchemaVersion" },
         "handoff_id": { "type": "string", "pattern": "^handoff_[A-Za-z0-9_-]+$" },
-        "code": { "type": "string", "pattern": "^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$" },
+        "code": { "type": "string", "pattern": "^[0-9]{6}$" },
         "status": { "type": "string", "enum": ["created", "claimed", "completed", "revoked", "expired"] },
         "mode": { "type": "string", "enum": ["original_replication", "scene_adaptation"] },
         "created_at": { "type": "string", "format": "date-time" },

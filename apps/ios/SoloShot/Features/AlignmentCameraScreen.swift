@@ -33,6 +33,7 @@ struct AlignmentCameraScreen: View {
                 }
                 Spacer()
                 if debugEnabled { debugPanel }
+                actionPanel
                 instructionPanel
                 bottomBar
             }
@@ -103,8 +104,15 @@ struct AlignmentCameraScreen: View {
 
     private var instructionPanel: some View {
         let instruction = session.decision?.alignment.instructionCode
-        let presentation = instruction.map(CoachPresentation.from)
+        let overlap = session.decision?.overlapRatio ?? 0
+        let basePresentation = instruction.map(CoachPresentation.from)
             ?? CoachPresentation(text: "正在寻找人物", symbol: "viewfinder")
+        let presentation = instruction == .holdStill
+            && overlap >= AlignmentConfiguration.production.overlapEnterThreshold
+            ? CoachPresentation(text: "已进入轮廓，请保持", symbol: "checkmark.circle")
+            : basePresentation
+        let overlapPercent = Int((overlap * 100).rounded())
+        let targetPercent = Int((AlignmentConfiguration.production.overlapEnterThreshold * 100).rounded())
         return VStack(spacing: 10) {
             Label(presentation.text, systemImage: presentation.symbol)
                 .font(.title3.weight(.bold))
@@ -112,11 +120,31 @@ struct AlignmentCameraScreen: View {
                 .frame(minHeight: 52)
                 .background(.black.opacity(0.72), in: Capsule())
                 .accessibilityLabel("当前指令：\(presentation.text)")
-            ProgressView(value: session.decision?.alignment.stabilityScore ?? 0)
+            HStack {
+                Text("轮廓匹配度 \(overlapPercent)%")
+                Spacer()
+                Text("目标 \(targetPercent)%")
+            }
+            .font(.caption.weight(.semibold))
+            ProgressView(value: overlap)
                 .tint(.green)
-                .accessibilityLabel("对齐稳定度")
-                .accessibilityValue("\(Int((session.decision?.alignment.stabilityScore ?? 0) * 100))%")
+                .accessibilityLabel("轮廓匹配度")
+                .accessibilityValue("\(overlapPercent)%，目标 \(targetPercent)%")
         }
+        .padding(12)
+        .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 15))
+    }
+
+    private var actionPanel: some View {
+        Label(
+            session.task.actions.first?.instruction ?? "保持自然动作并看向镜头。",
+            systemImage: "figure.stand"
+        )
+        .font(.subheadline.weight(.semibold))
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 13))
+        .accessibilityLabel("拍摄动作：\(session.task.actions.first?.instruction ?? "保持自然动作并看向镜头。")")
     }
 
     private var bottomBar: some View {
@@ -204,6 +232,7 @@ struct AlignmentCameraScreen: View {
             Text("FPS \(session.observedFramesPerSecond.formatted(.number.precision(.fractionLength(1))))")
             Text("Instruction \(session.decision?.alignment.instructionCode.rawValue ?? "waiting")")
             Text("Confidence \((session.decision?.selectedPerson?.confidence ?? 0).formatted(.percent.precision(.fractionLength(0))))")
+            Text("IoU \((session.decision?.overlapRatio ?? 0).formatted(.percent.precision(.fractionLength(1))))")
         }
         .font(.caption.monospaced())
         .padding(10)

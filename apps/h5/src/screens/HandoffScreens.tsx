@@ -25,7 +25,7 @@ import {
 } from "../handoff/storage";
 import { creationModeLabels, productErrorCopy, roundLabel } from "../productCopy";
 
-const handoffCodePattern = /^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
+const handoffCodePattern = /^\d{6}$/;
 
 function messageForStatus(status: HandoffTask["status"]): string {
   switch (status) {

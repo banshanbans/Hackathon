@@ -1,7 +1,9 @@
-export const MAX_IMAGE_BYTES = 8_000_000;
-export const MAX_IMAGE_EDGE = 2048;
+export const MAX_IMAGE_BYTES = 2_000_000;
+export const MAX_IMAGE_EDGE = 1280;
 export const MAX_VIDEO_BYTES = 100_000_000;
 export const MAX_VIDEO_SECONDS = 30;
+const JPEG_QUALITIES = [0.82, 0.78, 0.75] as const;
+const MIN_IMAGE_EDGE = 320;
 
 export type PreparedImage = {
   blob: Blob;
@@ -21,12 +23,33 @@ function canvasToBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob>
   });
 }
 
-async function encodeWithinLimit(canvas: HTMLCanvasElement): Promise<Blob> {
-  for (const quality of [0.9, 0.82, 0.72, 0.62]) {
-    const blob = await canvasToBlob(canvas, quality);
-    if (blob.size <= MAX_IMAGE_BYTES) {
-      return blob;
+async function encodeWithinLimit(
+  source: CanvasImageSource,
+  initialWidth: number,
+  initialHeight: number,
+): Promise<{ blob: Blob; width: number; height: number }> {
+  let width = initialWidth;
+  let height = initialHeight;
+  let firstAttempt = true;
+  while (Math.max(width, height) >= MIN_IMAGE_EDGE) {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (context === null) {
+      throw new Error("CANVAS_UNAVAILABLE");
     }
+    context.drawImage(source, 0, 0, width, height);
+    const qualities = firstAttempt ? JPEG_QUALITIES : ([0.75] as const);
+    for (const quality of qualities) {
+      const blob = await canvasToBlob(canvas, quality);
+      if (blob.size <= MAX_IMAGE_BYTES) {
+        return { blob, width, height };
+      }
+    }
+    firstAttempt = false;
+    width = Math.max(1, Math.round(width * 0.85));
+    height = Math.max(1, Math.round(height * 0.85));
   }
   throw new Error("MEDIA_TOO_LARGE");
 }
@@ -46,20 +69,12 @@ export async function normalizeImage(
   const bitmap = await createImageBitmap(source, { imageOrientation: "from-image" });
   try {
     const size = fitSize(bitmap.width, bitmap.height);
-    const canvas = document.createElement("canvas");
-    canvas.width = size.width;
-    canvas.height = size.height;
-    const context = canvas.getContext("2d");
-    if (context === null) {
-      throw new Error("CANVAS_UNAVAILABLE");
-    }
-    context.drawImage(bitmap, 0, 0, size.width, size.height);
-    const blob = await encodeWithinLimit(canvas);
+    const encoded = await encodeWithinLimit(bitmap, size.width, size.height);
     return {
-      blob,
-      previewUrl: URL.createObjectURL(blob),
-      width: size.width,
-      height: size.height,
+      blob: encoded.blob,
+      previewUrl: URL.createObjectURL(encoded.blob),
+      width: encoded.width,
+      height: encoded.height,
       mediaType,
     };
   } finally {

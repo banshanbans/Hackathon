@@ -1,5 +1,6 @@
 import Combine
 import Foundation
+import OSLog
 import SoloShotContracts
 
 enum AppFlowState: Equatable {
@@ -10,8 +11,6 @@ enum AppFlowState: Equatable {
     case setup(ImportedTask)
     case cameraPreparing(ImportedTask)
     case aligning(ImportedTask)
-    case ready(ImportedTask, AlignmentCompletion)
-    case actionBrief(ImportedTask, AlignmentCompletion, LocalCaptureMethod)
     case countdown(ImportedTask, AlignmentCompletion, LocalCaptureMethod, seconds: Int)
     case recording(ImportedTask, LocalCaptureMethod, roundIndex: Int)
     case processingFrames(ImportedTask, roundIndex: Int)
@@ -26,6 +25,13 @@ enum AppFlowState: Equatable {
     case captureError(ImportedTask, message: String, canUsePhotoFallback: Bool)
     case cameraError(ImportedTask, CameraFailure)
     case recoverableError(message: String, code: String)
+}
+
+private enum CountdownInvalidation: String {
+    case alignmentLost = "alignment_lost"
+    case cameraInterrupted = "camera_interrupted"
+    case cameraFailure = "camera_failure"
+    case criticalPressure = "critical_pressure"
 }
 
 @MainActor
@@ -43,7 +49,10 @@ final class AppFlowModel: ObservableObject {
     private let captureOutbox: CaptureOutbox
     private let networkMonitor: any NetworkRecoveryMonitoring
     private let captureCues = CaptureCueFeedbackController()
+    private let logger = Logger(subsystem: "ai.soloshot.app", category: "auto-capture")
     private var operation: Task<Void, Never>?
+    private var pendingCaptureMethod: LocalCaptureMethod?
+    private var countdownCancellationCount = 0
 
     init(
         api: HandoffAPI? = nil,
@@ -210,6 +219,7 @@ final class AppFlowModel: ObservableObject {
         hapticsEnabled: Bool
     ) {
         operation?.cancel()
+        pendingCaptureMethod = .planned(task.captureMode)
         state = .cameraPreparing(task)
         operation = Task { [weak self] in
             guard let self else { return }
@@ -287,13 +297,9 @@ final class AppFlowModel: ObservableObject {
         captureCues.stop()
         let session = alignmentSession
         alignmentSession = nil
+        pendingCaptureMethod = nil
         state = .referenceSummary(task)
         Task { await session?.stop() }
-    }
-
-    func openActionBrief(_ task: ImportedTask, completion: AlignmentCompletion) {
-        let planned = LocalCaptureMethod.planned(task.captureMode)
-        state = .actionBrief(task, completion, planned)
     }
 
     func beginCountdown(
@@ -302,23 +308,36 @@ final class AppFlowModel: ObservableObject {
         method: LocalCaptureMethod
     ) {
         operation?.cancel()
+        alignmentSession?.stopAlignmentFeedback()
+        logger.info("auto_capture_triggered method=\(method.rawValue, privacy: .public) overlap=\(completion.overlapRatio, privacy: .public) stable_ms=\(completion.stableDuration * 1_000, privacy: .public)")
         operation = Task { [weak self] in
             guard let self else { return }
-            captureCues.emit(.prepareAction)
-            for seconds in stride(from: 3, through: 1, by: -1) {
-                guard alignmentStillValid(completion) else {
-                    alignmentSession?.resumeAlignment()
-                    state = .aligning(task)
+            let countdownStartedAt = ProcessInfo.processInfo.systemUptime
+            var displayedSeconds = 3
+            state = .countdown(task, completion, method, seconds: displayedSeconds)
+            captureCues.emit(.autoReady)
+            captureCues.emit(.countdown(displayedSeconds))
+
+            while ProcessInfo.processInfo.systemUptime - countdownStartedAt < 3 {
+                if let reason = countdownInvalidation(for: completion) {
+                    cancelCountdown(task: task, reason: reason)
                     return
                 }
-                state = .countdown(task, completion, method, seconds: seconds)
-                captureCues.emit(.countdown(seconds))
-                try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled else { return }
+                let elapsed = ProcessInfo.processInfo.systemUptime - countdownStartedAt
+                let remaining = max(1, 3 - Int(elapsed))
+                if remaining != displayedSeconds {
+                    displayedSeconds = remaining
+                    state = .countdown(task, completion, method, seconds: remaining)
+                    captureCues.emit(.countdown(remaining))
+                }
+                do {
+                    try await Task.sleep(for: .milliseconds(100))
+                } catch {
+                    return
+                }
             }
-            guard alignmentStillValid(completion) else {
-                alignmentSession?.resumeAlignment()
-                state = .aligning(task)
+            if let reason = countdownInvalidation(for: completion) {
+                cancelCountdown(task: task, reason: reason)
                 return
             }
             await performCapture(task: task, completion: completion, method: method)
@@ -399,8 +418,12 @@ final class AppFlowModel: ObservableObject {
             state = .setup(task)
             return
         }
-        let completion = AlignmentCompletion(mode: .compositionOnly, completedAt: Date(), isFixture: session.isFixture)
-        state = .actionBrief(task, completion, .photoFallback)
+        operation?.cancel()
+        captureCues.stop()
+        pendingCaptureMethod = .photoFallback
+        session.resumeAlignment()
+        logger.info("auto_capture_fallback_requested method=photo_fallback")
+        state = .aligning(task)
     }
 
     func returnToSetup(_ task: ImportedTask) {
@@ -408,6 +431,7 @@ final class AppFlowModel: ObservableObject {
         captureCues.stop()
         let session = alignmentSession
         alignmentSession = nil
+        pendingCaptureMethod = nil
         state = .setup(task)
         Task { await session?.stop() }
     }
@@ -435,7 +459,11 @@ final class AppFlowModel: ObservableObject {
 
     private func finishAlignment(task: ImportedTask, completion: AlignmentCompletion) {
         guard case .aligning = state else { return }
-        state = .ready(task, completion)
+        beginCountdown(
+            task: task,
+            completion: completion,
+            method: pendingCaptureMethod ?? .planned(task.captureMode)
+        )
     }
 
     private func resumePendingNetworkWork() {
@@ -478,7 +506,7 @@ final class AppFlowModel: ObservableObject {
     private static func fixtureImportedTask(now: Date = Date()) -> ImportedTask {
         ImportedTask(
             schemaVersion: "2.0",
-            code: "ABC234",
+            code: "294816",
             sessionID: "ss_w4_fixture",
             planID: "sp_w4_fixture",
             mode: "original_replication",
@@ -555,9 +583,27 @@ final class AppFlowModel: ObservableObject {
         )
     }
 
-    private func alignmentStillValid(_ completion: AlignmentCompletion) -> Bool {
-        if completion.mode == .manual || completion.isFixture { return true }
-        return alignmentSession?.decision?.alignment.readyToCapture == true
+    private func countdownInvalidation(for completion: AlignmentCompletion) -> CountdownInvalidation? {
+        guard let session = alignmentSession else { return .cameraFailure }
+        if session.failure != nil { return .cameraFailure }
+        if session.isInterrupted { return .cameraInterrupted }
+        if session.pressure == .critical { return .criticalPressure }
+        if completion.mode != .manual, session.decision?.countdownStillValid != true {
+            return .alignmentLost
+        }
+        return nil
+    }
+
+    private func cancelCountdown(task: ImportedTask, reason: CountdownInvalidation) {
+        countdownCancellationCount += 1
+        let overlap = alignmentSession?.decision?.overlapRatio ?? 0
+        logger.info("auto_capture_cancelled reason=\(reason.rawValue, privacy: .public) overlap=\(overlap, privacy: .public) cancellation_count=\(self.countdownCancellationCount, privacy: .public)")
+        captureCues.stop()
+        if reason == .alignmentLost {
+            captureCues.emit(.alignmentLost)
+        }
+        alignmentSession?.resumeAlignment()
+        state = .aligning(task)
     }
 
     private func performCapture(

@@ -6,7 +6,7 @@ final class ImportedTaskStoreTests: XCTestCase {
     private func task(now: Date = Date()) -> ImportedTask {
         ImportedTask(
             schemaVersion: "1.0",
-            code: "ABC234",
+            code: "294816",
             sessionID: "ss_test",
             planID: "sp_test",
             mode: "original_replication",

@@ -489,6 +489,7 @@ class W1Service:
                     "scene_asset_id": session.scene_asset_id,
                 },
                 session.session_id,
+                version="1.1.0" if session.mode == "scene_adaptation" else "1.0.0",
             )
             plan = ShotPlan.model_validate({**invocation.output, "plan_id": new_id("sp")})
             run = append_skill_runs(run, [invocation.run])

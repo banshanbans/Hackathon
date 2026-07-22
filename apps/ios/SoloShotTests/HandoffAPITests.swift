@@ -44,9 +44,9 @@ final class HandoffAPITests: XCTestCase {
     func testPreviewDecodesOnlySafePublicTask() async throws {
         MockURLProtocol.handler = { request in
             XCTAssertEqual(request.httpMethod, "GET")
-            XCTAssertEqual(request.url?.path, "/api/v1/handoffs/ABC234")
+            XCTAssertEqual(request.url?.path, "/api/v1/handoffs/294816")
             let data = Data("""
-            {"data":{"schema_version":"1.0","handoff_id":"handoff_test","code":"ABC234","status":"created","mode":"original_replication","created_at":"2026-07-18T00:00:00Z","expires_at":"2026-07-18T00:10:00Z","claimed_at":null,"completed_at":null}}
+            {"data":{"schema_version":"1.0","handoff_id":"handoff_test","code":"294816","status":"created","mode":"original_replication","created_at":"2026-07-18T00:00:00Z","expires_at":"2026-07-18T00:10:00Z","claimed_at":null,"completed_at":null}}
             """.utf8)
             return (
                 HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
@@ -54,8 +54,8 @@ final class HandoffAPITests: XCTestCase {
             )
         }
 
-        let preview = try await api().preview(code: "ABC234")
-        XCTAssertEqual(preview.code, "ABC234")
+        let preview = try await api().preview(code: "294816")
+        XCTAssertEqual(preview.code, "294816")
         XCTAssertEqual(preview.status, .created)
     }
 
@@ -75,7 +75,7 @@ final class HandoffAPITests: XCTestCase {
         }
 
         do {
-            _ = try await api().claim(code: "ABC234", clientInstanceID: "ios-test")
+            _ = try await api().claim(code: "294816", clientInstanceID: "ios-test")
             XCTFail("Expected expiry")
         } catch let error as HandoffClientError {
             XCTAssertEqual(error, .expired)

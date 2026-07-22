@@ -103,10 +103,12 @@ enum AlignmentCompletionMode: String, Codable, Equatable, Sendable {
 struct AlignmentDecision: Equatable, Sendable {
     let alignment: CurrentAlignment
     let selectedPerson: PersonObservation?
+    let overlapRatio: Double
+    let countdownStillValid: Bool
+    let stableDuration: TimeInterval
     let completionMode: AlignmentCompletionMode?
     let manualReadyAvailable: Bool
     let poseCheckSupported: Bool
     let instructionConfirmed: Bool
     let latencyMilliseconds: Double
 }
-

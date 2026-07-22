@@ -95,7 +95,8 @@ def test_handoff_is_safe_claimed_once_cached_and_completed() -> None:
         creation = created.json()["data"]
         task = creation["handoff"]
         code = task["code"]
-        assert set(code) <= set("ABCDEFGHJKLMNPQRSTUVWXYZ23456789")
+        assert len(code) == 6
+        assert code.isascii() and code.isdigit()
         assert creation["qr_payload"].endswith(f"/handoff/{code}")
         assert "session_id" not in task
         assert "management_token" not in task

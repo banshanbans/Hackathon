@@ -133,7 +133,7 @@ def test_all_reference_fixtures_and_public_closed_loops_match_expectations() -> 
         assert f"case_id={case['case_id']}" in reference.run.warnings[0]
 
         plan = asyncio.run(
-            registry.get("shooting_plan").invoke(
+            registry.get("shooting_plan", "1.0.0").invoke(
                 {
                     "reference_asset": case["reference_asset"],
                     "reference_analysis": reference.output,

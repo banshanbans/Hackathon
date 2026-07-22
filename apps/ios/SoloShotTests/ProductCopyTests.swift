@@ -17,4 +17,17 @@ final class ProductCopyTests: XCTestCase {
         XCTAssertEqual(ProductCopy.round(1), "第一次")
         XCTAssertEqual(ProductCopy.round(2), "调整后")
     }
+
+    func testComparisonKindsOnlyExposeImagesThatExist() {
+        XCTAssertEqual(captureComparisonKinds(roundCount: 0), [.reference])
+        XCTAssertEqual(captureComparisonKinds(roundCount: 1), [.reference, .first])
+        XCTAssertEqual(
+            captureComparisonKinds(roundCount: 2),
+            [.reference, .first, .adjusted]
+        )
+        XCTAssertEqual(
+            captureComparisonKinds(roundCount: 3),
+            [.reference, .first, .adjusted]
+        )
+    }
 }

@@ -40,7 +40,7 @@ def test_each_versioned_skill_has_prompt_evaluation_assets() -> None:
         manifest = load_json(directory / "manifest.json")
         assert manifest["name"] == skill_name
         assert manifest["version"] == "1.0.0"
-        assert manifest["timeout_seconds"] == 8
+        assert manifest["timeout_seconds"] == (35 if skill_name == "scene_adaptation" else 8)
         assert manifest["max_repairs"] == 1
         assert manifest["fallback"]
 
@@ -61,7 +61,7 @@ def test_mock_outputs_keep_evaluation_and_content_honest() -> None:
         )
     )
     plan = asyncio.run(
-        registry.get("shooting_plan").invoke(
+        registry.get("shooting_plan", "1.0.0").invoke(
             {
                 "reference_asset": fixture["reference_asset"],
                 "reference_analysis": reference.output,

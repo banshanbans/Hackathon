@@ -59,6 +59,98 @@ final class AlignmentEngineTests: XCTestCase {
         XCTAssertFalse(ready.poseCheckSupported)
     }
 
+    func testNormalizedIoUAndEightyPercentEntryBoundary() {
+        let targetRect = makeTarget().rect
+        let eightyPercentRect = centeredRect(width: targetRect.width * 0.80)
+        let belowEntryRect = centeredRect(width: targetRect.width * 0.799)
+        XCTAssertEqual(targetRect.intersectionOverUnion(with: targetRect), 1, accuracy: 0.000_001)
+        XCTAssertEqual(targetRect.intersectionOverUnion(with: eightyPercentRect), 0.80, accuracy: 0.000_001)
+
+        var passingEngine = makeEngine()
+        var passing: AlignmentDecision?
+        for offset in [0.0, 0.1, 0.2, 1.2, 1.3, 1.4] {
+            passing = passingEngine.process(
+                observations: [makePerson(rect: eightyPercentRect)],
+                at: start.addingTimeInterval(offset)
+            )
+        }
+        XCTAssertEqual(passing?.overlapRatio ?? 0, 0.80, accuracy: 0.000_001)
+        XCTAssertTrue(passing?.alignment.readyToCapture == true)
+
+        var failingEngine = makeEngine()
+        var failing: AlignmentDecision?
+        for offset in [0.0, 0.1, 0.2, 1.2, 1.3, 1.4, 2.0] {
+            failing = failingEngine.process(
+                observations: [makePerson(rect: belowEntryRect)],
+                at: start.addingTimeInterval(offset)
+            )
+        }
+        XCTAssertLessThan(failing?.overlapRatio ?? 1, 0.80)
+        XCTAssertFalse(failing?.alignment.readyToCapture == true)
+    }
+
+    func testEntryStabilityResetsBelowEightyPercent() {
+        var engine = makeEngine()
+        let passing = makePerson(rect: centeredRect(width: makeTarget().width * 0.80))
+        let failing = makePerson(rect: centeredRect(width: makeTarget().width * 0.799))
+        for offset in [0.0, 0.1, 0.8] {
+            _ = engine.process(observations: [passing], at: start.addingTimeInterval(offset))
+        }
+        let reset = engine.process(observations: [failing], at: start.addingTimeInterval(1.0))
+        XCTAssertEqual(reset.stableDuration, 0)
+
+        var result = reset
+        for offset in [1.1, 1.2, 2.2] {
+            result = engine.process(observations: [passing], at: start.addingTimeInterval(offset))
+        }
+        XCTAssertFalse(result.alignment.readyToCapture)
+        for offset in [2.3, 2.4, 2.5, 2.6] {
+            result = engine.process(observations: [passing], at: start.addingTimeInterval(offset))
+        }
+        XCTAssertTrue(result.alignment.readyToCapture)
+    }
+
+    func testCountdownUsesSeventyPercentExitThreshold() {
+        let target = makeTarget()
+        var boundaryEngine = makeEngine()
+        let boundary = boundaryEngine.process(
+            observations: [makePerson(rect: centeredRect(width: target.width * 0.70))],
+            at: start
+        )
+        XCTAssertEqual(boundary.overlapRatio, 0.70, accuracy: 0.000_001)
+        XCTAssertTrue(boundary.countdownStillValid)
+
+        var belowEngine = makeEngine()
+        let below = belowEngine.process(
+            observations: [makePerson(rect: centeredRect(width: target.width * 0.699))],
+            at: start
+        )
+        XCTAssertFalse(below.countdownStillValid)
+    }
+
+    func testCountdownRejectsPeopleCompletenessAndCompositionFailures() {
+        var emptyEngine = makeEngine()
+        XCTAssertFalse(emptyEngine.process(observations: [], at: start).countdownStillValid)
+
+        var multipleEngine = makeEngine()
+        XCTAssertFalse(multipleEngine.process(
+            observations: [makePerson(), makePerson(id: UUID())],
+            at: start
+        ).countdownStillValid)
+
+        var incompleteEngine = makeEngine()
+        XCTAssertFalse(incompleteEngine.process(
+            observations: [makePerson(includeFeet: false)],
+            at: start
+        ).countdownStillValid)
+
+        var scaleEngine = makeEngine()
+        XCTAssertFalse(scaleEngine.process(
+            observations: [makePerson(rect: NormalizedRect(x: 0.42, y: 0.4, width: 0.16, height: 0.3))],
+            at: start
+        ).countdownStillValid)
+    }
+
     func testKnownTemplateCanReachVerifiedAndManualFallbackAppearsAfterFiveSeconds() {
         var engine = makeEngine()
         let person = makePerson()
@@ -89,9 +181,10 @@ final class AlignmentEngineTests: XCTestCase {
     func testHysteresisKeepsCenteredInsideExitThreshold() {
         var engine = makeEngine()
         _ = engine.process(observations: [makePerson()], at: start)
-        let shifted = makePerson(rect: NormalizedRect(x: 0.43, y: 0.25, width: 0.30, height: 0.60))
+        let shifted = makePerson(rect: NormalizedRect(x: 0.37, y: 0.25, width: 0.30, height: 0.60))
         let result = engine.process(observations: [shifted], at: start.addingTimeInterval(0.1))
         XCTAssertEqual(result.alignment.positionStatus, .centered)
+        XCTAssertTrue(result.countdownStillValid)
     }
 
     func testDecisionEnginePerformanceIsWellBelowRealtimeBudget() {
@@ -166,6 +259,16 @@ final class AlignmentEngineTests: XCTestCase {
             boundingBox: rect,
             confidence: 0.9,
             observedAt: start
+        )
+    }
+
+    private func centeredRect(width: Double) -> NormalizedRect {
+        let target = makeTarget()
+        return NormalizedRect(
+            x: target.centerX - width / 2,
+            y: target.centerY - target.height / 2,
+            width: width,
+            height: target.height
         )
     }
 }

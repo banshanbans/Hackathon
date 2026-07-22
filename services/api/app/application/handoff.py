@@ -16,7 +16,7 @@ from app.handoff.tokens import HandoffTokenSigner
 from app.media.service import MediaService
 from app.persistence.store import IdempotencyRecord, StateStore
 
-HANDOFF_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+HANDOFF_CODE_ALPHABET = "0123456789"
 
 
 def _fingerprint(payload: JsonObject) -> str:

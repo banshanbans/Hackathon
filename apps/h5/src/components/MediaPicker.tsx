@@ -1,5 +1,5 @@
 import { Camera, FilmStrip, ImageSquare, Repeat, UploadSimple } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import {
   extractVideoFrame,
   inspectVideo,
@@ -23,11 +23,15 @@ export function MediaPicker({
   onChange,
   allowVideo = true,
   title = "加入这张画面",
+  disabled = false,
+  overlay = null,
 }: {
   value: PreparedImage | null;
   onChange: (value: PreparedImage) => void;
   allowVideo?: boolean;
   title?: string;
+  disabled?: boolean;
+  overlay?: ReactNode;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +103,12 @@ export function MediaPicker({
       </div>
 
       {value !== null ? (
-        <div className="local-preview">
+        <div
+          className="local-preview"
+          style={{ aspectRatio: `${value.width} / ${value.height}` }}
+        >
           <img src={value.previewUrl} alt="已选择的本地画面" />
+          {overlay}
           <span>
             {value.mediaType === "video_frame" ? "视频中的这一帧" : "已选择的照片"}
           </span>
@@ -130,22 +138,24 @@ export function MediaPicker({
       ) : null}
 
       <div className="picker-actions">
-        <label>
+        <label aria-disabled={disabled}>
           <Camera size={19} aria-hidden="true" />
           拍下此刻
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             capture="environment"
+            disabled={disabled}
             onChange={(event) => void choose(event.target.files?.[0])}
           />
         </label>
-        <label>
+        <label aria-disabled={disabled}>
           <UploadSimple size={19} aria-hidden="true" />
           从相册选择
           <input
             type="file"
             accept={accept}
+            disabled={disabled}
             onChange={(event) => void choose(event.target.files?.[0])}
           />
         </label>
@@ -168,14 +178,16 @@ export function MediaPicker({
 export function UploadProgress({
   value,
   onCancel,
+  label = "正在保存这张画面",
 }: {
   value: number;
   onCancel: () => void;
+  label?: string;
 }) {
   return (
     <div className="upload-progress" role="status" aria-live="polite">
       <span>
-        <strong>正在保存这张画面</strong>
+        <strong>{label}</strong>
         <small>{value}%</small>
       </span>
       <div aria-label={`上传进度 ${value}%`}>

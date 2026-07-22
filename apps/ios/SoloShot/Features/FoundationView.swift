@@ -1,12 +1,24 @@
 import SwiftUI
 import UIKit
 
+enum CaptureComparisonKind: String, Equatable {
+    case reference = "参考"
+    case first = "第一拍"
+    case adjusted = "调整后"
+}
+
+func captureComparisonKinds(roundCount: Int) -> [CaptureComparisonKind] {
+    let boundedCount = min(max(roundCount, 0), 2)
+    return [.reference] + Array([.first, .adjusted].prefix(boundedCount))
+}
+
 struct FoundationView: View {
     @ObservedObject var flow: AppFlowModel
     @AppStorage("soloshot.w4.voice-enabled") private var voiceEnabled = true
     @AppStorage("soloshot.w4.haptics-enabled") private var hapticsEnabled = true
     @State private var phoneSecured = false
     @State private var externalAIConsent = false
+    @State private var comparisonSelection = 0
 
     var body: some View {
         Group {
@@ -76,10 +88,6 @@ struct FoundationView: View {
                 .buttonStyle(SecondaryButtonStyle())
         case .aligning:
             statusView(title: "正在打开你的 AI 摄影机位", detail: "准备完成后，跟随屏幕走进轮廓")
-        case let .ready(task, completion):
-            readyView(task, completion: completion)
-        case let .actionBrief(task, completion, method):
-            actionBriefView(task, completion: completion, method: method)
         case .countdown, .recording:
             statusView(title: "准备记录这一拍", detail: "保持当前构图")
         case let .processingFrames(_, roundIndex):
@@ -261,73 +269,6 @@ struct FoundationView: View {
         }
     }
 
-    private func readyView(_ task: ImportedTask, completion: AlignmentCompletion) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if completion.isFixture {
-                Label("演示模式", systemImage: "testtube.2")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.orange)
-            }
-            Label("构图已经对上了", systemImage: "checkmark.circle.fill")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(.green)
-            Text(completionLabel(completion.mode))
-                .font(.headline)
-            Text("准备好动作，就可以记录这一刻。")
-                .foregroundStyle(.secondary)
-            Button("再调整一下") {
-                phoneSecured = true
-                flow.openSetup(task)
-            }
-            .buttonStyle(SecondaryButtonStyle())
-            Button("准备动作") {
-                flow.openActionBrief(task, completion: completion)
-            }
-                .buttonStyle(PrimaryButtonStyle())
-            Button("返回 ShotPlan") { flow.exitAlignment(toSummary: task) }
-                .buttonStyle(SecondaryButtonStyle())
-        }
-    }
-
-    private func actionBriefView(
-        _ task: ImportedTask,
-        completion: AlignmentCompletion,
-        method: LocalCaptureMethod
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
-            if completion.isFixture {
-                Label("演示模式 · 优化建议来自精选样例", systemImage: "testtube.2")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(.orange)
-            }
-            Label("现在，完成这个动作", systemImage: "figure.stand")
-                .font(.title2.weight(.bold))
-            Text(task.actions.first?.instruction ?? "保持自然动作并看向镜头。")
-                .font(.headline)
-            Text("就位后会自动倒数 3 秒，声音只提示关键节奏。")
-                .foregroundStyle(.secondary)
-            HStack {
-                Text("记录方式")
-                Spacer()
-                Text(captureMethodLabel(method))
-                    .foregroundStyle(.secondary)
-                    .accessibilityIdentifier("capture-method")
-            }
-                .padding(15)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 15))
-            if completion.mode == .manual {
-                Label("手动就位 · 构图与动作尚未验证", systemImage: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
-            }
-            Button("我已就位") {
-                flow.beginCountdown(task: task, completion: completion, method: method)
-            }
-            .buttonStyle(PrimaryButtonStyle())
-            Button("返回调整") { flow.returnToSetup(task) }
-                .buttonStyle(SecondaryButtonStyle())
-        }
-    }
-
     private func selectionView(_ task: ImportedTask, work: CaptureWork) -> some View {
         let round = work.currentRound
         return VStack(alignment: .leading, spacing: 16) {
@@ -423,6 +364,19 @@ struct FoundationView: View {
         let evaluation = work.currentRound?.evaluation
         return VStack(alignment: .leading, spacing: 18) {
             executionBadge(evaluation?.executionMode)
+            roundOneComparison(task, work: work)
+            VStack(alignment: .leading, spacing: 8) {
+                LabeledContent(
+                    "作品就绪度",
+                    value: (evaluation?.publishReadiness ?? 0)
+                        .formatted(.percent.precision(.fractionLength(0)))
+                )
+                ProgressView(value: evaluation?.publishReadiness ?? 0, total: 1)
+                    .tint(.green)
+                    .accessibilityIdentifier("round-one-readiness")
+            }
+            .padding(14)
+            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
             Label("下一拍，只改这一点", systemImage: "scope")
                 .font(.title2.weight(.bold))
             Text(evaluation?.topIssue ?? "这一拍还可以更好")
@@ -441,35 +395,30 @@ struct FoundationView: View {
     }
 
     private func finalResultView(_ task: ImportedTask, work: CaptureWork) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        let kinds = captureComparisonKinds(roundCount: work.rounds.count)
+        return VStack(alignment: .leading, spacing: 18) {
             Label("你拍到了想要的画面", systemImage: "checkmark.seal.fill")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.green)
             Text("第一拍是开始，第二拍是你和 SoloShot 一起完成的作品。")
                 .foregroundStyle(.secondary)
-            ForEach(work.rounds) { round in
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Text(ProductCopy.round(round.roundIndex)).font(.headline)
-                        Spacer()
-                        executionBadge(round.evaluation?.executionMode)
-                    }
-                    if let candidate = round.selectedCandidate {
-                        CaptureCandidateImage(filename: candidate.localFilename)
-                    }
-                    LabeledContent(
-                        "作品就绪度",
-                        value: (round.evaluation?.publishReadiness ?? 0).formatted(.percent.precision(.fractionLength(0)))
-                    )
-                    if let issue = round.evaluation?.topIssue { Text(issue).foregroundStyle(.secondary) }
-                    if round.alignmentMode == .manual {
-                        Label("本次使用手动确认", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption).foregroundStyle(.orange)
-                    }
+            Picker("选择对比画面", selection: $comparisonSelection) {
+                ForEach(Array(kinds.enumerated()), id: \.offset) { index, kind in
+                    Text(kind.rawValue).tag(index)
                 }
-                .padding(14)
-                .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
             }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("final-comparison-picker")
+
+            TabView(selection: $comparisonSelection) {
+                finalReferencePage(task).tag(0)
+                ForEach(Array(work.rounds.enumerated()), id: \.element.id) { index, round in
+                    finalRoundPage(round).tag(index + 1)
+                }
+            }
+            .frame(height: 430)
+            .tabViewStyle(.page(indexDisplayMode: .always))
+            .accessibilityIdentifier("final-comparison-gallery")
             if task.usesFixtureEvaluation {
                 Label("照片来自本次拍摄；作品就绪度为演示参考，不代表 AI 对照片的判断。", systemImage: "testtube.2")
                     .foregroundStyle(.orange)
@@ -482,6 +431,99 @@ struct FoundationView: View {
             Button("完成这次旅拍") { flow.exitAlignment(toSummary: task) }
                 .buttonStyle(PrimaryButtonStyle())
         }
+        .onAppear {
+            if comparisonSelection >= kinds.count {
+                comparisonSelection = 0
+            }
+        }
+    }
+
+    private func roundOneComparison(_ task: ImportedTask, work: CaptureWork) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            comparisonCard(title: CaptureComparisonKind.reference.rawValue) {
+                referenceView(task)
+            }
+            comparisonCard(title: CaptureComparisonKind.first.rawValue) {
+                if let candidate = work.rounds.first?.selectedCandidate {
+                    CaptureCandidateImage(
+                        filename: candidate.localFilename,
+                        accessibilityLabel: "第一拍照片"
+                    )
+                } else {
+                    comparisonPlaceholder("第一拍暂不可读取")
+                }
+            }
+        }
+        .accessibilityIdentifier("round-one-comparison")
+    }
+
+    private func comparisonCard<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.caption.weight(.bold))
+            content()
+                .frame(maxWidth: .infinity, minHeight: 150, maxHeight: 180)
+                .clipped()
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 14))
+    }
+
+    private func finalReferencePage(_ task: ImportedTask) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(CaptureComparisonKind.reference.rawValue).font(.headline)
+            referenceView(task)
+            Text("构图目标")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func finalRoundPage(_ round: CaptureRoundWork) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(round.roundIndex == 1 ? "第一拍" : "调整后").font(.headline)
+                Spacer()
+                executionBadge(round.evaluation?.executionMode)
+            }
+            if let candidate = round.selectedCandidate {
+                CaptureCandidateImage(
+                    filename: candidate.localFilename,
+                    accessibilityLabel: round.roundIndex == 1 ? "第一拍照片" : "调整后照片"
+                )
+            } else {
+                comparisonPlaceholder("这一拍暂不可读取")
+            }
+            LabeledContent(
+                "作品就绪度",
+                value: (round.evaluation?.publishReadiness ?? 0)
+                    .formatted(.percent.precision(.fractionLength(0)))
+            )
+            if let issue = round.evaluation?.topIssue {
+                Text(issue).foregroundStyle(.secondary)
+            }
+            if round.alignmentMode == .manual {
+                Label("本次使用手动确认", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+        .padding(14)
+        .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func comparisonPlaceholder(_ text: String) -> some View {
+        Label(text, systemImage: "photo.badge.exclamationmark")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, minHeight: 130)
+            .background(.white.opacity(0.05), in: RoundedRectangle(cornerRadius: 13))
     }
 
     private func offlinePendingView(_ task: ImportedTask, work: CaptureWork, message: String) -> some View {
@@ -544,14 +586,6 @@ struct FoundationView: View {
         }
     }
 
-    private func captureMethodLabel(_ method: LocalCaptureMethod) -> String {
-        switch method {
-        case .photo: "三张照片连拍"
-        case .shortVideo: "5–8 秒无声短视频"
-        case .photoFallback: "三张照片连拍"
-        }
-    }
-
     private func cameraErrorView(_ task: ImportedTask, failure: CameraFailure) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("相机还没准备好", systemImage: "camera.fill.badge.exclamationmark")
@@ -566,14 +600,6 @@ struct FoundationView: View {
             }
             Button("返回准备") { flow.returnToSetup(task) }
                 .buttonStyle(SecondaryButtonStyle())
-        }
-    }
-
-    private func completionLabel(_ mode: AlignmentCompletionMode) -> String {
-        switch mode {
-        case .verified: "人物位置、画面比例与动作方向都已就位。"
-        case .compositionOnly: "构图已就位，照着 ShotPlan 完成动作即可。"
-        case .manual: "这是手动确认，SoloShot 尚未验证构图与动作。"
         }
     }
 
@@ -641,6 +667,7 @@ private struct LocalReferenceImage: View {
 
 private struct CaptureCandidateImage: View {
     let filename: String
+    var accessibilityLabel = "本地候选照片"
 
     var body: some View {
         let root = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
@@ -653,7 +680,7 @@ private struct CaptureCandidateImage: View {
                 .frame(maxWidth: .infinity)
                 .background(.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 13))
                 .clipShape(RoundedRectangle(cornerRadius: 13))
-                .accessibilityLabel("本地候选照片")
+                .accessibilityLabel(accessibilityLabel)
         } else {
             Label("候选照片暂不可读取", systemImage: "photo.badge.exclamationmark")
                 .frame(maxWidth: .infinity, minHeight: 130)

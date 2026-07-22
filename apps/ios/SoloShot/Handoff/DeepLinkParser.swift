@@ -1,8 +1,6 @@
 import Foundation
 
 enum DeepLinkParser {
-    private static let codeAlphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-
     static func parse(_ url: URL) throws -> String {
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),
               components.scheme?.lowercased() == "soloshot",
@@ -23,8 +21,10 @@ enum DeepLinkParser {
     }
 
     static func normalizeCode(_ value: String) throws -> String {
-        let code = value.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
-        guard code.count == 6, code.allSatisfy(codeAlphabet.contains) else {
+        let code = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard code.count == 6,
+              code.unicodeScalars.allSatisfy({ (48...57).contains($0.value) })
+        else {
             throw HandoffClientError.invalidCode
         }
         return code

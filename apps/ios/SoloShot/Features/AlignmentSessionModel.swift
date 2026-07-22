@@ -8,6 +8,8 @@ struct AlignmentCompletion: Equatable, Sendable {
     let mode: AlignmentCompletionMode
     let completedAt: Date
     let isFixture: Bool
+    let overlapRatio: Double
+    let stableDuration: TimeInterval
 }
 
 @MainActor
@@ -125,6 +127,10 @@ final class AlignmentSessionModel: ObservableObject {
         self.hapticsEnabled = hapticsEnabled
     }
 
+    func stopAlignmentFeedback() {
+        feedback.stop()
+    }
+
     func confirmManualReady() {
         guard manualOverrideAvailable || decision?.manualReadyAvailable == true else { return }
         deliver(engine.manualCompletion())
@@ -224,10 +230,16 @@ final class AlignmentSessionModel: ObservableObject {
             voiceEnabled: voiceEnabled,
             hapticsEnabled: hapticsEnabled
         )
-        logger.debug("instruction=\(result.alignment.instructionCode.rawValue, privacy: .public) latency_ms=\(result.latencyMilliseconds, privacy: .public)")
+        logger.debug("instruction=\(result.alignment.instructionCode.rawValue, privacy: .public) overlap=\(result.overlapRatio, privacy: .public) latency_ms=\(result.latencyMilliseconds, privacy: .public)")
         if let mode = result.completionMode, !completionDelivered {
             completionDelivered = true
-            onReady(AlignmentCompletion(mode: mode, completedAt: Date(), isFixture: isFixture))
+            onReady(AlignmentCompletion(
+                mode: mode,
+                completedAt: Date(),
+                isFixture: isFixture,
+                overlapRatio: result.overlapRatio,
+                stableDuration: result.stableDuration
+            ))
         }
     }
 
@@ -275,6 +287,9 @@ final class AlignmentSessionModel: ObservableObject {
             return [fixturePerson(rect: target.rect), fixturePerson(rect: shiftedTargetRect(by: 0.22))]
         }
         if index < 9 { return [fixturePerson(rect: shiftedTargetRect(by: -0.18))] }
+        if scenario == "auto_cancel", (28 ..< 43).contains(index) {
+            return [fixturePerson(rect: shiftedTargetRect(by: 0.12))]
+        }
         return [fixturePerson(rect: target.rect)]
     }
 

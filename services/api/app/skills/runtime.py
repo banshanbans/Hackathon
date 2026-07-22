@@ -23,6 +23,7 @@ from app.domain.models import (
     UserConstraints,
 )
 from app.providers.base import StructuredModelProvider
+from app.providers.rules import SceneShotPlanRuleProvider
 
 logger = logging.getLogger("soloshot.skills")
 
@@ -86,6 +87,8 @@ class Skill:
                 UserConstraints.model_validate(input_data.get("user_constraints"))
                 if input_data.get("mode") not in {"original_replication", "scene_adaptation"}:
                     raise ValueError("mode is invalid")
+                if self.version == "1.1.0" and input_data.get("mode") != "scene_adaptation":
+                    raise ValueError("shooting_plan@1.1.0 only supports scene_adaptation")
             elif self.name == "scene_adaptation":
                 ReferenceAsset.model_validate(input_data.get("reference_asset"))
                 ReferenceAnalysis.model_validate(input_data.get("reference_analysis"))
@@ -247,7 +250,9 @@ OUTPUT_MODELS: dict[str, type[BaseModel]] = {
 
 
 def build_skills(
-    provider: StructuredModelProvider, timeout_seconds: float
+    provider: StructuredModelProvider,
+    timeout_seconds: float,
+    scene_adaptation_timeout_seconds: float | None = None,
 ) -> dict[tuple[str, str], Skill]:
     skills = {
         (name, Skill.version): Skill(
@@ -263,6 +268,16 @@ def build_skills(
         output_model=ResultEvaluation,
         provider=provider,
         timeout_seconds=timeout_seconds,
+        version="1.1.0",
+    )
+    skills[("scene_adaptation", "1.0.0")].timeout_seconds = (
+        scene_adaptation_timeout_seconds or timeout_seconds
+    )
+    skills[("shooting_plan", "1.1.0")] = Skill(
+        name="shooting_plan",
+        output_model=ShotPlan,
+        provider=SceneShotPlanRuleProvider(),
+        timeout_seconds=1.0,
         version="1.1.0",
     )
     return skills
