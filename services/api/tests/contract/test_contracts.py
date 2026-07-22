@@ -206,6 +206,12 @@ def test_handoff_public_contract_contains_no_session_or_capability() -> None:
     assert {item["$ref"] for item in revoke_parameters} >= {
         "#/components/parameters/HandoffManagementToken"
     }
+    discovery = document["paths"]["/api/v1/handoffs"]["get"]
+    assert discovery["operationId"] == "listAvailableHandoffs"
+    result = document["components"]["schemas"]["HandoffListResult"]
+    assert result["properties"]["items"]["items"] == {
+        "$ref": "#/components/schemas/HandoffTask"
+    }
 
 
 def test_w1_session_contract_allows_created_state_without_reference() -> None:

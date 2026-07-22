@@ -92,6 +92,7 @@ def create_app(
         claim_token_ttl_seconds=resolved_settings.handoff_claim_token_ttl_seconds,
         lookup_limit_per_minute=resolved_settings.handoff_lookup_limit_per_minute,
         claim_limit_per_minute=resolved_settings.handoff_claim_limit_per_minute,
+        discovery_enabled=resolved_settings.handoff_discovery_enabled,
     )
     provider: StructuredModelProvider
     if resolved_settings.mock_ai_enabled and resolved_settings.model_provider == "mock":

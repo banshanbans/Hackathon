@@ -69,6 +69,8 @@ Class | Method | HTTP request | Description
  - [HandoffClaimResult](docs/HandoffClaimResult.md)
  - [HandoffCreateResponse](docs/HandoffCreateResponse.md)
  - [HandoffCreateResult](docs/HandoffCreateResult.md)
+ - [HandoffListResponse](docs/HandoffListResponse.md)
+ - [HandoffListResult](docs/HandoffListResult.md)
  - [HandoffResponse](docs/HandoffResponse.md)
  - [HandoffTask](docs/HandoffTask.md)
  - [HealthResponse](docs/HealthResponse.md)

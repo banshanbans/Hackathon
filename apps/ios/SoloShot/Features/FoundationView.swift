@@ -55,16 +55,32 @@ struct FoundationView: View {
 
     private var brand: some View {
         HStack {
-            Image(systemName: "camera.aperture")
-                .foregroundStyle(.orange)
-            Text("SoloShot AI")
-                .font(.headline.weight(.bold))
+            if isHome {
+                Image(systemName: "camera.aperture")
+                    .foregroundStyle(.orange)
+                Text("SoloShot AI")
+                    .font(.headline.weight(.bold))
+            } else {
+                Button {
+                    flow.showHome()
+                } label: {
+                    Label("首页", systemImage: "house.fill")
+                        .font(.subheadline.weight(.bold))
+                        .frame(minHeight: 44)
+                }
+                .accessibilityLabel("返回首页")
+            }
             Spacer()
             Text("现场陪拍")
                 .font(.caption.weight(.bold))
                 .foregroundStyle(.green)
         }
         .frame(minHeight: 44)
+    }
+
+    private var isHome: Bool {
+        if case .taskImport = flow.state { return true }
+        return false
     }
 
     @ViewBuilder
@@ -126,10 +142,67 @@ struct FoundationView: View {
 
     private var importView: some View {
         VStack(alignment: .leading, spacing: 18) {
-            Label("把网页里的灵感带到现场", systemImage: "qrcode.viewfinder")
+            Label("选择一个现场任务", systemImage: "person.2.wave.2.fill")
                 .font(.title2.weight(.bold))
-            Text("扫描二维码或输入六位任务码，继续你的 ShotPlan。")
+            Text("点击等待认领的任务即可直接接力，适合现场快速体验。")
                 .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Label("等待认领", systemImage: "bolt.horizontal.circle.fill")
+                        .font(.headline.weight(.bold))
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Button {
+                        flow.refreshAvailableHandoffs()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                            .frame(width: 44, height: 44)
+                    }
+                    .accessibilityLabel("刷新现场任务")
+                }
+                if flow.isRefreshingHandoffs {
+                    ProgressView("正在刷新现场任务…")
+                        .frame(minHeight: 44)
+                }
+                ForEach(flow.serverAvailableHandoffs, id: \.handoffId) { handoff in
+                    Button {
+                        flow.claimAvailableHandoff(handoff)
+                    } label: {
+                        HStack(spacing: 13) {
+                            Image(systemName: "iphone.gen3.radiowaves.left.and.right")
+                                .font(.title3)
+                                .foregroundStyle(.green)
+                                .frame(width: 42, height: 42)
+                                .background(.green.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("任务码 \(handoff.code)")
+                                    .font(.headline.monospacedDigit())
+                                Text("\(ProductCopy.creationMode(handoff.mode.rawValue)) · 点击直接认领")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "bolt.fill")
+                                .foregroundStyle(.green)
+                        }
+                        .padding(13)
+                        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 15))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("一键认领任务 \(handoff.code)")
+                }
+                if let message = flow.handoffDiscoveryMessage {
+                    Text(message)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Divider().overlay(.white.opacity(0.16))
+            Label("也可以输入任务码", systemImage: "number.square.fill")
+                .font(.headline.weight(.bold))
             TextField("输入六位任务码", text: $flow.codeInput)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
@@ -157,6 +230,45 @@ struct FoundationView: View {
                 Button("把它带到 iPhone") { flow.confirmClaim() }
                     .buttonStyle(PrimaryButtonStyle())
                     .disabled(preview.status != .created)
+            }
+
+            if !flow.availableTasks.isEmpty {
+                Divider().overlay(.white.opacity(0.16))
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("本机已接力任务", systemImage: "clock.arrow.circlepath")
+                        .font(.headline.weight(.bold))
+                    Text("这些任务已安全保存在本机，可直接回到 ShotPlan。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    ForEach(flow.availableTasks, id: \.sessionID) { task in
+                        Button {
+                            flow.openSavedTask(task)
+                        } label: {
+                            HStack(spacing: 13) {
+                                Image(systemName: "photo.on.rectangle.angled")
+                                    .font(.title3)
+                                    .foregroundStyle(.orange)
+                                    .frame(width: 42, height: 42)
+                                    .background(.orange.opacity(0.12), in: RoundedRectangle(cornerRadius: 11))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text("任务码 \(task.code)")
+                                        .font(.headline.monospacedDigit())
+                                    Text("\(ProductCopy.creationMode(task.mode)) · 有效至 \(task.expiresAt.formatted(date: .abbreviated, time: .shortened))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(13)
+                            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+                            .background(.white.opacity(0.07), in: RoundedRectangle(cornerRadius: 15))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("继续任务 \(task.code)")
+                    }
+                }
             }
         }
     }
@@ -550,6 +662,8 @@ struct FoundationView: View {
             Label("这一拍没有保存下来", systemImage: "exclamationmark.triangle.fill")
                 .font(.title2.weight(.bold))
                 .foregroundStyle(.orange)
+            Text(message)
+                .foregroundStyle(.secondary)
             Text("准备好后，可以重新记录这一刻。")
             if canUsePhotoFallback {
                 Button("改用三张连拍") { flow.usePhotoFallback(task: task) }
@@ -617,6 +731,8 @@ struct FoundationView: View {
                 .frame(maxHeight: 250)
                 .frame(maxWidth: .infinity)
                 .background(.black.opacity(0.35), in: RoundedRectangle(cornerRadius: 15))
+                .accessibilityLabel("预置参考图")
+                .accessibilityIdentifier("preset-reference-image")
         } else {
             Label("参考图暂不可用，ShotPlan 不受影响", systemImage: "photo.badge.exclamationmark")
                 .frame(maxWidth: .infinity, minHeight: 130)

@@ -57,6 +57,8 @@ Sources/SoloShotContracts/Models/HandoffClaimResponse.swift
 Sources/SoloShotContracts/Models/HandoffClaimResult.swift
 Sources/SoloShotContracts/Models/HandoffCreateResponse.swift
 Sources/SoloShotContracts/Models/HandoffCreateResult.swift
+Sources/SoloShotContracts/Models/HandoffListResponse.swift
+Sources/SoloShotContracts/Models/HandoffListResult.swift
 Sources/SoloShotContracts/Models/HandoffResponse.swift
 Sources/SoloShotContracts/Models/HandoffTask.swift
 Sources/SoloShotContracts/Models/HealthResponse.swift

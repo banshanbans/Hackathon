@@ -17,12 +17,12 @@ targets:
     platform: iOS
     sources:
       - path: SoloShot
-    dependencies:
-      - package: SoloShotContracts
-    resources:
       - path: ../h5/public/presets/test-image-v1
         includes:
           - "*-thumb.webp"
+        buildPhase: resources
+    dependencies:
+      - package: SoloShotContracts
     info:
       path: SoloShot/Info.plist
       properties:
@@ -42,6 +42,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.soloshot.app
         PRODUCT_NAME: SoloShot
+        DEVELOPMENT_TEAM: SVRNMKJ8X4
         GENERATE_INFOPLIST_FILE: NO
         SOLOSHOT_API_BASE_URL: https://shotapi.socialdog.cn
         TARGETED_DEVICE_FAMILY: "1"

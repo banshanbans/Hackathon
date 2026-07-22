@@ -99,6 +99,15 @@ actor HandoffAPI {
         return try await send(request, as: HandoffTask.self)
     }
 
+    func listAvailable(limit: Int = 20) async throws -> HandoffListResult {
+        var request = request(path: "/api/v1/handoffs", method: "GET")
+        request.url = request.url?.appending(
+            queryItems: [URLQueryItem(name: "limit", value: String(limit))]
+        )
+        request.timeoutInterval = 5
+        return try await send(request, as: HandoffListResult.self)
+    }
+
     func claim(code: String, clientInstanceID: String) async throws -> HandoffClaimResult {
         var request = request(path: "/api/v1/handoffs/\(code)/claim", method: "POST")
         request.timeoutInterval = 5

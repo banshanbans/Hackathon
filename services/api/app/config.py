@@ -31,6 +31,7 @@ class Settings(BaseSettings):
     handoff_claim_token_ttl_seconds: int = Field(default=86_400, ge=600, le=604_800)
     handoff_lookup_limit_per_minute: int = Field(default=120, ge=10, le=1000)
     handoff_claim_limit_per_minute: int = Field(default=10, ge=1, le=100)
+    handoff_discovery_enabled: bool = False
     ark_api_key: str = ""
     ark_model_id: str = ""
     ark_base_url: str = "https://ark.cn-beijing.volces.com/api/v3"

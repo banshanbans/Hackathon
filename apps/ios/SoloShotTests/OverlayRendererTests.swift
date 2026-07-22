@@ -15,10 +15,14 @@ final class OverlayRendererTests: XCTestCase {
         let result = OverlayRenderer.primitives(
             target: target,
             person: person,
+            referenceContour: .fixturePerson.transformed(into: target.rect),
+            liveContour: .fixturePerson.transformed(into: person.boundingBox),
             imageSize: CGSize(width: 720, height: 1_280),
             viewSize: CGSize(width: 390, height: 844),
             includeDebugJoints: false
         )
+        XCTAssertFalse(result.referenceLoops.isEmpty)
+        XCTAssertEqual(result.referenceLoops, result.liveLoops)
         XCTAssertEqual(result.targetRect, result.personRect)
         XCTAssertEqual(
             result.imageRect,

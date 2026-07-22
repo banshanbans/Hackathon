@@ -3,7 +3,7 @@ import Foundation
 
 func makeW4ImportedTask(now: Date = Date(timeIntervalSince1970: 1_750_000_000)) -> ImportedTask {
     ImportedTask(
-        schemaVersion: "2.0",
+        schemaVersion: "3.0",
         code: "294816",
         sessionID: "ss_w4_test",
         planID: "sp_w4_test",
@@ -17,6 +17,7 @@ func makeW4ImportedTask(now: Date = Date(timeIntervalSince1970: 1_750_000_000)) 
         safetyNotes: ["检查脚下。"],
         referenceID: nil,
         presetThumbnailName: nil,
+        referenceSelectedBox: NormalizedRect(x: 0.35, y: 0.20, width: 0.30, height: 0.60),
         targetLayout: ImportedTargetLayout(
             centerX: 0.5,
             centerY: 0.55,
@@ -29,9 +30,10 @@ func makeW4ImportedTask(now: Date = Date(timeIntervalSince1970: 1_750_000_000)) 
         ),
         iosAlignmentSupported: true,
         localReferenceFilename: nil,
+        referenceSilhouetteFilename: nil,
+        referenceSilhouetteStatus: .ready,
         importedAt: now,
         expiresAt: now.addingTimeInterval(86_400),
         completionConfirmed: true
     )
 }
-

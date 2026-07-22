@@ -8,12 +8,16 @@ struct OverlayPrimitives: Equatable {
     let targetFootY: CGFloat
     let personRect: CGRect?
     let joints: [BodyJoint: CGPoint]
+    let referenceLoops: [[CGPoint]]
+    let liveLoops: [[CGPoint]]
 }
 
 enum OverlayRenderer {
     static func primitives(
         target: ImportedTargetLayout,
         person: PersonObservation?,
+        referenceContour: SilhouetteContour?,
+        liveContour: SilhouetteContour?,
         imageSize: CGSize,
         viewSize: CGSize,
         includeDebugJoints: Bool
@@ -63,7 +67,21 @@ enum OverlayRenderer {
             targetHead: head,
             targetFootY: foot.y,
             personRect: personRect,
-            joints: joints
+            joints: joints,
+            referenceLoops: map(referenceContour, imageSize: imageSize, viewSize: viewSize),
+            liveLoops: map(liveContour, imageSize: imageSize, viewSize: viewSize)
         )
+    }
+
+    private static func map(
+        _ contour: SilhouetteContour?,
+        imageSize: CGSize,
+        viewSize: CGSize
+    ) -> [[CGPoint]] {
+        contour?.loops.map { loop in
+            loop.map {
+                CoordinateMapper.aspectFillPoint($0, imageSize: imageSize, viewSize: viewSize)
+            }
+        } ?? []
     }
 }

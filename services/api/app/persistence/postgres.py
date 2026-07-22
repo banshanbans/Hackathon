@@ -381,6 +381,19 @@ class PostgresStateStore:
         async with self._connection(write=True) as connection:
             await connection.execute(statement)
 
+    async def list_unclaimed_handoffs(
+        self, after: datetime, limit: int
+    ) -> list[JsonObject]:
+        statement = (
+            select(handoffs.c.payload)
+            .where(handoffs.c.status == "created", handoffs.c.expires_at > after)
+            .order_by(handoffs.c.created_at.desc())
+            .limit(limit)
+        )
+        async with self._connection() as connection:
+            values = (await connection.execute(statement)).scalars()
+            return [_json(value) for value in values]
+
     async def list_expired_handoffs(self, before: datetime) -> list[JsonObject]:
         async with self._connection() as connection:
             values = (

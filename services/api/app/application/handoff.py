@@ -37,6 +37,7 @@ class HandoffService:
         claim_token_ttl_seconds: int = 86_400,
         lookup_limit_per_minute: int = 120,
         claim_limit_per_minute: int = 10,
+        discovery_enabled: bool = False,
         clock: Callable[[], datetime] | None = None,
         code_generator: Callable[[], str] | None = None,
     ) -> None:
@@ -49,6 +50,7 @@ class HandoffService:
         self.claim_token_ttl_seconds = claim_token_ttl_seconds
         self.lookup_limit_per_minute = lookup_limit_per_minute
         self.claim_limit_per_minute = claim_limit_per_minute
+        self.discovery_enabled = discovery_enabled
         self.clock = clock or (lambda: datetime.now(UTC))
         self.code_generator = code_generator or self._new_code
 
@@ -153,6 +155,27 @@ class HandoffService:
             self._raise_expired()
         self._raise_if_gone(record)
         return ServiceResult(data=record.public_task().model_dump(mode="json"), status_code=200)
+
+    async def list_available(self, limit: int, rate_identity: str) -> ServiceResult:
+        if not self.discovery_enabled:
+            raise DomainError(
+                "HANDOFF_DISCOVERY_DISABLED",
+                "Onsite Handoff discovery is not enabled",
+                status_code=503,
+                recoverable=True,
+            )
+        await self.rate_limiter.consume(
+            "discovery", rate_identity, self.lookup_limit_per_minute
+        )
+        payloads = await self.store.list_unclaimed_handoffs(self.clock(), limit)
+        items = [
+            HandoffRecord.model_validate(payload).public_task().model_dump(mode="json")
+            for payload in payloads
+        ]
+        return ServiceResult(
+            data={"schema_version": "1.0", "items": items},
+            status_code=200,
+        )
 
     async def claim(
         self, code: str, payload: JsonObject, key: str, rate_identity: str

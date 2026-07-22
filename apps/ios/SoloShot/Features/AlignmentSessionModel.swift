@@ -23,9 +23,12 @@ final class AlignmentSessionModel: ObservableObject {
     @Published private(set) var visionLatencyMilliseconds = 0.0
     @Published private(set) var observedFramesPerSecond = 0.0
     @Published private(set) var manualOverrideAvailable = false
+    @Published private(set) var liveSilhouette: SilhouetteObservation?
 
     let task: ImportedTask
     let target: ImportedTargetLayout
+    let referenceContour: SilhouetteContour?
+    let referenceSilhouetteStatus: ReferenceSilhouetteStatus
     let isFixture: Bool
     let cameraSession: AVCaptureSession?
 
@@ -39,6 +42,7 @@ final class AlignmentSessionModel: ObservableObject {
     private var completionDelivered = false
     private var observationCount = 0
     private var observationWindowStarted = Date()
+    private var smoothedSilhouetteScore: Double?
     private var voiceEnabled: Bool
     private var hapticsEnabled: Bool
     private let onReady: @MainActor (AlignmentCompletion) -> Void
@@ -47,6 +51,7 @@ final class AlignmentSessionModel: ObservableObject {
     init(
         task: ImportedTask,
         target: ImportedTargetLayout,
+        referenceSilhouette: ReferenceSilhouetteAsset?,
         isFixture: Bool,
         voiceEnabled: Bool,
         hapticsEnabled: Bool,
@@ -55,6 +60,17 @@ final class AlignmentSessionModel: ObservableObject {
     ) {
         self.task = task
         self.target = target
+        if referenceSilhouette?.status == .ready,
+           let contour = referenceSilhouette?.contour
+        {
+            referenceContour = contour.transformed(into: target.rect)
+            referenceSilhouetteStatus = .ready
+        } else {
+            referenceContour = nil
+            referenceSilhouetteStatus = referenceSilhouette?.status
+                ?? task.referenceSilhouetteStatus
+                ?? .extractionFailed
+        }
         self.isFixture = isFixture
         self.voiceEnabled = voiceEnabled
         self.hapticsEnabled = hapticsEnabled
@@ -198,11 +214,11 @@ final class AlignmentSessionModel: ObservableObject {
 
     private func handle(_ event: CameraEvent) async {
         switch event {
-        case let .observations(observations, size, latency):
+        case let .observations(observations, silhouette, size, latency):
             imageSize = size
             visionLatencyMilliseconds = latency
             updateFPS()
-            deliver(engine.process(observations: observations))
+            process(observations: observations, silhouette: silhouette)
         case .interrupted:
             isInterrupted = true
             interruptionEnded = false
@@ -213,6 +229,8 @@ final class AlignmentSessionModel: ObservableObject {
         case let .pressure(level):
             pressure = level
             if level == .critical {
+                liveSilhouette = nil
+                smoothedSilhouetteScore = nil
                 manualOverrideAvailable = true
                 logger.warning("vision paused for critical system pressure")
             }
@@ -255,16 +273,76 @@ final class AlignmentSessionModel: ObservableObject {
 
     private func startFixture() {
         let scenario = Self.argumentValue(after: "-W4FixtureScenario") ?? "ready"
+        if scenario == "critical" {
+            pressure = .critical
+            manualOverrideAvailable = true
+        }
         fixtureTask = Task { [weak self] in
             guard let self else { return }
             var index = 0
             while !Task.isCancelled {
                 let observations = fixtureObservations(index: index, scenario: scenario)
-                deliver(engine.process(observations: observations))
+                let silhouette: SilhouetteObservation? = if observations.count == 1,
+                                                            scenario != "silhouette_lost",
+                                                            scenario != "critical"
+                {
+                    SilhouetteObservation(
+                        contour: SilhouetteContour.fixturePerson.transformed(
+                            into: observations[0].boundingBox
+                        ),
+                        confidence: observations[0].confidence,
+                        observedAt: Date()
+                    )
+                } else {
+                    nil
+                }
+                process(observations: observations, silhouette: silhouette)
                 index += 1
                 try? await Task.sleep(for: .milliseconds(150))
             }
         }
+    }
+
+    private func process(
+        observations: [PersonObservation],
+        silhouette: SilhouetteObservation?
+    ) {
+        let credibleCount = observations.filter {
+            $0.confidence >= AlignmentConfiguration.production.crediblePersonConfidence
+        }.count
+        if credibleCount != 1 {
+            liveSilhouette = nil
+            smoothedSilhouetteScore = nil
+        } else if let silhouette {
+            liveSilhouette = SilhouetteObservation(
+                contour: silhouette.contour.smoothed(with: liveSilhouette?.contour),
+                confidence: silhouette.confidence,
+                observedAt: silhouette.observedAt
+            )
+        } else if let current = liveSilhouette,
+                  Date().timeIntervalSince(current.observedAt) > 0.30
+        {
+            liveSilhouette = nil
+            smoothedSilhouetteScore = nil
+        }
+
+        var result = engine.process(observations: observations)
+        let match: SilhouetteMatch?
+        if let referenceContour, let liveSilhouette,
+           let rawScore = SilhouetteMatcher.dice(
+               reference: referenceContour,
+               live: liveSilhouette.contour
+           )
+        {
+            let smoothed = smoothedSilhouetteScore.map { $0 * 0.65 + rawScore * 0.35 }
+                ?? rawScore
+            smoothedSilhouetteScore = smoothed
+            match = SilhouetteMatch(score: smoothed, observedAt: liveSilhouette.observedAt)
+        } else {
+            match = nil
+        }
+        result = result.withSilhouetteMatch(match)
+        deliver(result)
     }
 
     private func scheduleExpiry() {
@@ -282,6 +360,12 @@ final class AlignmentSessionModel: ObservableObject {
 
     private func fixtureObservations(index: Int, scenario: String) -> [PersonObservation] {
         guard scenario != "manual" else { return [] }
+        if scenario == "multiple" {
+            return [fixturePerson(rect: target.rect), fixturePerson(rect: shiftedTargetRect(by: 0.22))]
+        }
+        if scenario == "silhouette_lost" || scenario == "critical" {
+            return [fixturePerson(rect: target.rect)]
+        }
         if index < 3 { return [] }
         if index < 6 {
             return [fixturePerson(rect: target.rect), fixturePerson(rect: shiftedTargetRect(by: 0.22))]

@@ -71,6 +71,9 @@ class StateStore(Protocol):
     async def put_events(self, events: list[JsonObject]) -> tuple[int, int]: ...
     async def get_handoff(self, code: str) -> JsonObject | None: ...
     async def get_latest_handoff_for_session(self, session_id: str) -> JsonObject | None: ...
+    async def list_unclaimed_handoffs(
+        self, after: datetime, limit: int
+    ) -> list[JsonObject]: ...
     async def put_handoff(self, payload: JsonObject) -> None: ...
     async def list_expired_handoffs(self, before: datetime) -> list[JsonObject]: ...
     async def put_post(self, post_id: str, session_id: str, payload: JsonObject) -> None: ...
@@ -301,6 +304,19 @@ class MemoryStateStore:
 
     async def put_handoff(self, payload: JsonObject) -> None:
         self.handoffs[str(payload["code"])] = payload
+
+    async def list_unclaimed_handoffs(
+        self, after: datetime, limit: int
+    ) -> list[JsonObject]:
+        result = [
+            value
+            for value in self.handoffs.values()
+            if value.get("status") == "created"
+            and isinstance(value.get("expires_at"), str)
+            and datetime.fromisoformat(str(value["expires_at"])) > after
+        ]
+        result.sort(key=lambda item: str(item.get("created_at", "")), reverse=True)
+        return result[:limit]
 
     async def list_expired_handoffs(self, before: datetime) -> list[JsonObject]:
         result: list[JsonObject] = []

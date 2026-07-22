@@ -44,9 +44,12 @@ struct ImportedTask: Codable, Equatable, Sendable {
     let safetyNotes: [String]
     let referenceID: String?
     let presetThumbnailName: String?
+    var referenceSelectedBox: NormalizedRect? = nil
     let targetLayout: ImportedTargetLayout?
     let iosAlignmentSupported: Bool?
     var localReferenceFilename: String?
+    var referenceSilhouetteFilename: String? = nil
+    var referenceSilhouetteStatus: ReferenceSilhouetteStatus? = nil
     let importedAt: Date
     let expiresAt: Date
     var completionConfirmed: Bool
@@ -69,7 +72,7 @@ struct ImportedTask: Codable, Equatable, Sendable {
         }
         let layout = plan.targetLayout
         return ImportedTask(
-            schemaVersion: "2.0",
+            schemaVersion: "3.0",
             code: claim.handoff.code,
             sessionID: claim.session.sessionId,
             planID: plan.planId,
@@ -89,6 +92,14 @@ struct ImportedTask: Codable, Equatable, Sendable {
             safetyNotes: plan.safetyNotes,
             referenceID: referenceID,
             presetThumbnailName: presetName,
+            referenceSelectedBox: claim.session.referenceAsset.map {
+                NormalizedRect(
+                    x: $0.selectedBox.x,
+                    y: $0.selectedBox.y,
+                    width: $0.selectedBox.width,
+                    height: $0.selectedBox.height
+                )
+            },
             targetLayout: ImportedTargetLayout(
                 centerX: layout.centerX,
                 centerY: layout.centerY,

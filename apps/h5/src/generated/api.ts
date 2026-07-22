@@ -354,7 +354,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List short-lived unclaimed handoffs for an enabled onsite demo */
+        get: operations["listAvailableHandoffs"];
         put?: never;
         /** Create a short-lived handoff code */
         post: operations["createHandoff"];
@@ -953,6 +954,14 @@ export interface components {
         HandoffResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["HandoffTask"];
         };
+        HandoffListResult: {
+            /** @constant */
+            schema_version: "1.0";
+            items: components["schemas"]["HandoffTask"][];
+        };
+        HandoffListResponse: components["schemas"]["ResponseMetadata"] & {
+            data: components["schemas"]["HandoffListResult"];
+        };
         HandoffCreateResponse: components["schemas"]["ResponseMetadata"] & {
             data: components["schemas"]["HandoffCreateResult"];
         };
@@ -1427,6 +1436,16 @@ export interface components {
             };
             content: {
                 "application/json": components["schemas"]["HandoffResponse"];
+            };
+        };
+        /** @description Safe unclaimed handoffs available for onsite discovery */
+        HandoffListOk: {
+            headers: {
+                "X-Request-ID": components["headers"]["RequestId"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["HandoffListResponse"];
             };
         };
         /** @description Render job accepted */
@@ -2070,6 +2089,22 @@ export interface operations {
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationError"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    listAvailableHandoffs: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["HandoffListOk"];
+            429: components["responses"]["TooManyRequests"];
             503: components["responses"]["ServiceUnavailable"];
         };
     };

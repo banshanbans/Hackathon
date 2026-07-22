@@ -13,6 +13,8 @@ struct CaptureCameraScreen: View {
                 AlignmentOverlayView(
                     target: session.target,
                     person: session.decision?.selectedPerson,
+                    referenceContour: session.referenceContour,
+                    liveContour: session.liveSilhouette?.contour,
                     imageSize: session.imageSize,
                     ready: true,
                     debugEnabled: false
@@ -22,13 +24,13 @@ struct CaptureCameraScreen: View {
             VStack(spacing: 18) {
                 HStack {
                     Button {
-                        flow.returnToSetup(session.task)
+                        flow.showHome()
                     } label: {
-                        Image(systemName: "xmark")
+                        Image(systemName: "house.fill")
                             .frame(width: 44, height: 44)
                             .background(.black.opacity(0.62), in: Circle())
                     }
-                    .accessibilityLabel("取消这次拍摄")
+                    .accessibilityLabel("返回首页")
                     Spacer()
                     Label(session.isFixture ? "演示拍摄" : "本地拍摄", systemImage: "circle.fill")
                         .font(.caption.weight(.bold))
@@ -71,7 +73,9 @@ struct CaptureCameraScreen: View {
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.orange)
                 } else {
-                    Text("轮廓匹配度 \(Int(((session.decision?.overlapRatio ?? 0) * 100).rounded()))%")
+                    Text(session.decision?.silhouetteMatch.map {
+                        "轮廓接近度 \(Int(($0.score * 100).rounded()))% · 软评分"
+                    } ?? "构图与动作已就位")
                         .font(.caption.monospacedDigit())
                 }
             }

@@ -16,6 +16,8 @@ struct AlignmentCameraScreen: View {
             AlignmentOverlayView(
                 target: session.target,
                 person: session.decision?.selectedPerson,
+                referenceContour: session.referenceContour,
+                liveContour: session.liveSilhouette?.contour,
                 imageSize: session.imageSize,
                 ready: session.decision?.alignment.readyToCapture == true,
                 debugEnabled: debugEnabled
@@ -74,13 +76,13 @@ struct AlignmentCameraScreen: View {
     private var topBar: some View {
         HStack(spacing: 12) {
             Button {
-                flow.exitAlignment(toSummary: session.task)
+                flow.showHome()
             } label: {
-                Image(systemName: "xmark")
+                Image(systemName: "house.fill")
                     .frame(width: 44, height: 44)
                     .background(.black.opacity(0.55), in: Circle())
             }
-            .accessibilityLabel("退出现场陪拍")
+            .accessibilityLabel("返回首页")
 
             Label(session.isFixture ? "演示陪拍" : "本地实时陪拍", systemImage: "circle.fill")
                 .font(.caption.weight(.bold))
@@ -111,8 +113,7 @@ struct AlignmentCameraScreen: View {
             && overlap >= AlignmentConfiguration.production.overlapEnterThreshold
             ? CoachPresentation(text: "已进入轮廓，请保持", symbol: "checkmark.circle")
             : basePresentation
-        let overlapPercent = Int((overlap * 100).rounded())
-        let targetPercent = Int((AlignmentConfiguration.production.overlapEnterThreshold * 100).rounded())
+        let silhouetteScore = session.decision?.silhouetteMatch?.score
         return VStack(spacing: 10) {
             Label(presentation.text, systemImage: presentation.symbol)
                 .font(.title3.weight(.bold))
@@ -120,19 +121,47 @@ struct AlignmentCameraScreen: View {
                 .frame(minHeight: 52)
                 .background(.black.opacity(0.72), in: Capsule())
                 .accessibilityLabel("当前指令：\(presentation.text)")
-            HStack {
-                Text("轮廓匹配度 \(overlapPercent)%")
-                Spacer()
-                Text("目标 \(targetPercent)%")
+            if let silhouetteScore {
+                let percent = Int((silhouetteScore * 100).rounded())
+                HStack {
+                    Text("轮廓接近度 \(percent)%")
+                    Spacer()
+                    Text("软评分")
+                }
+                .font(.caption.weight(.semibold))
+                ProgressView(value: silhouetteScore)
+                    .tint(.cyan)
+                    .accessibilityLabel("轮廓接近度")
+                    .accessibilityValue("\(percent)%")
+            } else {
+                Text(silhouetteStatusText)
+                    .font(.caption.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityLabel(silhouetteStatusText)
             }
-            .font(.caption.weight(.semibold))
-            ProgressView(value: overlap)
-                .tint(.green)
-                .accessibilityLabel("轮廓匹配度")
-                .accessibilityValue("\(overlapPercent)%，目标 \(targetPercent)%")
+            HStack(spacing: 14) {
+                Label("参考虚线", systemImage: "person.crop.rectangle")
+                    .foregroundStyle(.orange)
+                Label("实时实线", systemImage: "figure.stand")
+                    .foregroundStyle(.cyan)
+            }
+            .font(.caption2.weight(.semibold))
         }
         .padding(12)
         .background(.black.opacity(0.62), in: RoundedRectangle(cornerRadius: 15))
+    }
+
+    private var silhouetteStatusText: String {
+        if session.referenceSilhouetteStatus != .ready {
+            return session.referenceSilhouetteStatus.userMessage
+        }
+        if session.decision?.alignment.multiplePeople == true {
+            return "检测到多人，轮廓比对已暂停"
+        }
+        if session.pressure == .critical {
+            return "设备压力过高，实时轮廓已暂停"
+        }
+        return "正在提取实时人物轮廓"
     }
 
     private var actionPanel: some View {
@@ -233,6 +262,7 @@ struct AlignmentCameraScreen: View {
             Text("Instruction \(session.decision?.alignment.instructionCode.rawValue ?? "waiting")")
             Text("Confidence \((session.decision?.selectedPerson?.confidence ?? 0).formatted(.percent.precision(.fractionLength(0))))")
             Text("IoU \((session.decision?.overlapRatio ?? 0).formatted(.percent.precision(.fractionLength(1))))")
+            Text("Silhouette \((session.decision?.silhouetteMatch?.score ?? 0).formatted(.percent.precision(.fractionLength(1))))")
         }
         .font(.caption.monospaced())
         .padding(10)

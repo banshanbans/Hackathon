@@ -73,7 +73,11 @@ def prepare_plan(api: TestClient) -> dict[str, Any]:
     reason="set RUN_POSTGRES_TESTS=1 after running make migrate",
 )
 def test_postgres_handoff_claim_is_atomic_and_cascades() -> None:
-    settings = Settings(model_provider="hybrid", app_env="test")
+    settings = Settings(
+        model_provider="hybrid",
+        app_env="test",
+        handoff_discovery_enabled=True,
+    )
     with TestClient(create_app(PostgresStateStore(settings.database_url), settings)) as api:
         session = prepare_plan(api)
         created = api.post(
@@ -86,6 +90,10 @@ def test_postgres_handoff_claim_is_atomic_and_cascades() -> None:
         )
         assert created.status_code == 201
         code = created.json()["data"]["handoff"]["code"]
+
+        available = api.get("/api/v1/handoffs")
+        assert available.status_code == 200
+        assert [item["code"] for item in available.json()["data"]["items"]] == [code]
 
         public = api.get(f"/api/v1/handoffs/{code}")
         public_text = json.dumps(public.json())
@@ -108,6 +116,7 @@ def test_postgres_handoff_claim_is_atomic_and_cascades() -> None:
         assert sorted(item.status_code for item in outcomes) == [200, 409, 409, 409]
         winner = next(item for item in outcomes if item.status_code == 200).json()["data"]
         assert winner["session"]["shot_plan"]["plan_id"] == session["shot_plan"]["plan_id"]
+        assert api.get("/api/v1/handoffs").json()["data"]["items"] == []
 
         deleted = api.delete(
             f"/api/v1/sessions/{session['session_id']}",

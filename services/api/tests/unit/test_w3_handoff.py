@@ -187,6 +187,55 @@ def test_handoff_is_safe_claimed_once_cached_and_completed() -> None:
         assert claim["claim_token"] not in persisted
 
 
+def test_onsite_discovery_lists_only_unclaimed_unexpired_safe_tasks() -> None:
+    store = MemoryStateStore()
+    app = create_app(
+        store,
+        Settings(model_provider="hybrid", handoff_discovery_enabled=True),
+    )
+    now = [datetime(2026, 7, 22, 8, 0, tzinfo=UTC)]
+    app.state.handoff_service.clock = lambda: now[0]
+    with TestClient(app) as api:
+        first_session = prepare_plan(api, "discovery-first")
+        second_session = prepare_plan(api, "discovery-second")
+        first = create_handoff(api, first_session["session_id"]).json()["data"]["handoff"]
+        now[0] += timedelta(seconds=1)
+        second = create_handoff(api, second_session["session_id"]).json()["data"]["handoff"]
+
+        listed = api.get("/api/v1/handoffs?limit=1")
+        assert listed.status_code == 200
+        assert listed.json()["data"] == {"schema_version": "1.0", "items": [second]}
+        serialized = json.dumps(listed.json())
+        assert first_session["session_id"] not in serialized
+        assert second_session["session_id"] not in serialized
+        assert "claim_token" not in serialized
+        assert "management_token" not in serialized
+
+        claimed = api.post(
+            f"/api/v1/handoffs/{second['code']}/claim",
+            headers=headers("discovery-claim"),
+            json={
+                "schema_version": "1.0",
+                "client_instance_id": "onsite-ios-client-12345678",
+            },
+        )
+        assert claimed.status_code == 200
+        listed = api.get("/api/v1/handoffs")
+        assert [item["code"] for item in listed.json()["data"]["items"]] == [first["code"]]
+
+        now[0] += timedelta(seconds=601)
+        listed = api.get("/api/v1/handoffs")
+        assert listed.json()["data"]["items"] == []
+
+
+def test_onsite_discovery_is_disabled_by_default() -> None:
+    app = create_app(MemoryStateStore(), Settings(model_provider="hybrid"))
+    with TestClient(app) as api:
+        response = api.get("/api/v1/handoffs")
+        assert response.status_code == 503
+        assert response.json()["error"]["code"] == "HANDOFF_DISCOVERY_DISABLED"
+
+
 def test_handoff_revoke_expiry_regeneration_and_session_delete() -> None:
     store = MemoryStateStore()
     app = create_app(store, Settings(model_provider="hybrid"))

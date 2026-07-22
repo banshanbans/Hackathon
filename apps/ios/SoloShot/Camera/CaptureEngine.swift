@@ -94,6 +94,7 @@ final class SampleBufferMovieRecorder: @unchecked Sendable {
     private var input: AVAssetWriterInput?
     private var startTime: CMTime?
     private var lastTime: CMTime?
+    private var failure: Error?
 
     init(url: URL) throws {
         self.url = url
@@ -104,10 +105,13 @@ final class SampleBufferMovieRecorder: @unchecked Sendable {
     }
 
     func append(_ sampleBuffer: CMSampleBuffer) {
-        guard CMSampleBufferDataIsReady(sampleBuffer) else { return }
+        guard failure == nil, CMSampleBufferDataIsReady(sampleBuffer) else { return }
         let timestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
         if input == nil {
-            guard let description = CMSampleBufferGetFormatDescription(sampleBuffer) else { return }
+            guard let description = CMSampleBufferGetFormatDescription(sampleBuffer) else {
+                failure = CameraFailure.recordingFailed
+                return
+            }
             let dimensions = CMVideoFormatDescriptionGetDimensions(description)
             let settings: [String: Any] = [
                 AVVideoCodecKey: AVVideoCodecType.h264,
@@ -120,19 +124,34 @@ final class SampleBufferMovieRecorder: @unchecked Sendable {
                 sourceFormatHint: description
             )
             created.expectsMediaDataInRealTime = true
-            guard writer.canAdd(created) else { return }
+            guard writer.canAdd(created) else {
+                failure = CameraFailure.recordingFailed
+                return
+            }
             writer.add(created)
             input = created
-            guard writer.startWriting() else { return }
+            guard writer.startWriting() else {
+                failure = writer.error ?? CameraFailure.recordingFailed
+                return
+            }
             writer.startSession(atSourceTime: timestamp)
             startTime = timestamp
         }
-        if input?.isReadyForMoreMediaData == true, input?.append(sampleBuffer) == true {
-            lastTime = timestamp
+        if input?.isReadyForMoreMediaData == true {
+            if input?.append(sampleBuffer) == true {
+                lastTime = timestamp
+            } else {
+                failure = writer.error ?? CameraFailure.recordingFailed
+            }
         }
     }
 
     func finish(completion: @escaping @Sendable (Result<CaptureRecordingResult, Error>) -> Void) {
+        if let failure {
+            cancel()
+            completion(.failure(failure))
+            return
+        }
         guard writer.status == .writing, let startTime, let lastTime else {
             cancel()
             completion(.failure(CameraFailure.recordingFailed))
@@ -141,7 +160,7 @@ final class SampleBufferMovieRecorder: @unchecked Sendable {
         input?.markAsFinished()
         writer.finishWriting { [weak self] in
             guard let self, self.writer.status == .completed else {
-                completion(.failure(CameraFailure.recordingFailed))
+                completion(.failure(self?.writer.error ?? CameraFailure.recordingFailed))
                 return
             }
             completion(.success(CaptureRecordingResult(
@@ -158,6 +177,16 @@ final class SampleBufferMovieRecorder: @unchecked Sendable {
     }
 }
 
+enum VideoFrameSampling {
+    static func times(durationSeconds: Double, maximumCount: Int) -> [Double] {
+        guard durationSeconds.isFinite, durationSeconds > 0 else { return [] }
+        let count = max(3, min(maximumCount, 6))
+        return (0 ..< count).map { index in
+            durationSeconds * (Double(index) + 0.5) / Double(count)
+        }
+    }
+}
+
 private enum VideoFrameExtractor {
     static func extract(
         from url: URL,
@@ -169,11 +198,13 @@ private enum VideoFrameExtractor {
             let generator = AVAssetImageGenerator(asset: asset)
             generator.appliesPreferredTrackTransform = true
             generator.maximumSize = CGSize(width: 2_048, height: 2_048)
-            generator.requestedTimeToleranceBefore = .zero
-            generator.requestedTimeToleranceAfter = .zero
-            let count = max(3, min(maximumCount, 6))
-            return try (0 ..< count).map { index in
-                let seconds = durationSeconds * Double(index) / Double(count - 1)
+            let tolerance = CMTime(seconds: 0.2, preferredTimescale: 600)
+            generator.requestedTimeToleranceBefore = tolerance
+            generator.requestedTimeToleranceAfter = tolerance
+            return try VideoFrameSampling.times(
+                durationSeconds: durationSeconds,
+                maximumCount: maximumCount
+            ).map { seconds in
                 let time = CMTime(seconds: seconds, preferredTimescale: 600)
                 let image = try generator.copyCGImage(at: time, actualTime: nil)
                 guard let data = UIImage(cgImage: image).jpegData(compressionQuality: 0.88) else {

@@ -81,4 +81,27 @@ final class HandoffAPITests: XCTestCase {
             XCTAssertEqual(error, .expired)
         }
     }
+
+    func testListsOnlySafeAvailableHandoffContract() async throws {
+        MockURLProtocol.handler = { request in
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.path, "/api/v1/handoffs")
+            XCTAssertEqual(
+                URLComponents(url: request.url!, resolvingAgainstBaseURL: false)?
+                    .queryItems?.first(where: { $0.name == "limit" })?.value,
+                "20"
+            )
+            let data = Data("""
+            {"data":{"schema_version":"1.0","items":[{"schema_version":"1.0","handoff_id":"handoff_available","code":"731204","status":"created","mode":"scene_adaptation","created_at":"2026-07-22T08:00:00Z","expires_at":"2026-07-22T08:10:00Z","claimed_at":null,"completed_at":null}]}}
+            """.utf8)
+            return (
+                HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!,
+                data
+            )
+        }
+
+        let result = try await api().listAvailable()
+        XCTAssertEqual(result.items.map(\.code), ["731204"])
+        XCTAssertEqual(result.items.first?.status, .created)
+    }
 }

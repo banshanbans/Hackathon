@@ -27,6 +27,7 @@ make dev-h5
 ## W3 接力配置与本地验证
 
 - `HANDOFF_TTL_SECONDS=600` 控制任务码有效期；认领凭据和 iOS 本地缓存默认保留 24 小时。
+- `HANDOFF_DISCOVERY_ENABLED=true` 开启线下活动的 iOS 首页任务发现；只返回未认领且未过期的安全 Handoff 预览，普通共享环境应保持关闭。
 - `HANDOFF_SIGNING_SECRET` 用于 HMAC 签名。开发环境可使用示例值；任何非开发环境都必须替换为至少 32 字符的随机密钥，否则 API 拒绝启动。
 - `PUBLIC_HANDOFF_BASE_URL` 决定 QR 内容。本地可使用 `http://127.0.0.1:5173/handoff`；共享测试环境必须使用 iPhone 可访问的 HTTPS 地址。
 - PostgreSQL 保存状态和哈希，不保存原始 `management_token`、`claim_token`；Redis 负责查询与认领限流。测试/生产的 Redis 故障时认领失败关闭，不绕过保护。
@@ -42,7 +43,7 @@ iOS Debug 和 Release 构建默认访问 `https://shotapi.socialdog.cn`。需要
 
 ## W4 本地对齐与 Simulator Fixture
 
-W4 从已缓存的 `ImportedTask` v2 进入“拍摄前准备”，使用后置广角主摄、固定 1×、竖屏 720p 预览和设备内 Vision。相机帧不会保存、上传或发送给模型；W4 也不会申请麦克风或照片权限。
+W4 从已缓存的 `ImportedTask` v3 进入“拍摄前准备”，使用后置广角主摄、固定 1×、竖屏 720p 预览和设备内 Vision。v3 在本地保存参考 `selected_box` 和版本化轮廓派生文件；旧 v1/v2 可读取但会回退构图辅助。生产 Overlay 显示参考人物虚线、实时人物实线与软性 Dice 轮廓接近度；该分数不控制自动拍摄。相机帧、实时蒙版和轮廓坐标不会保存、上传或发送给模型；W4 也不会申请麦克风或照片权限。
 
 Simulator 没有真实后置相机。Debug 构建可通过以下启动参数进入明确标记的 Fixture 流程；Release 构建不能启用这些参数：
 

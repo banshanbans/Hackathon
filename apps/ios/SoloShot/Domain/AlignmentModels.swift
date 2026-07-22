@@ -111,4 +111,21 @@ struct AlignmentDecision: Equatable, Sendable {
     let poseCheckSupported: Bool
     let instructionConfirmed: Bool
     let latencyMilliseconds: Double
+    var silhouetteMatch: SilhouetteMatch? = nil
+
+    func withSilhouetteMatch(_ match: SilhouetteMatch?) -> AlignmentDecision {
+        AlignmentDecision(
+            alignment: alignment,
+            selectedPerson: selectedPerson,
+            overlapRatio: overlapRatio,
+            countdownStillValid: countdownStillValid,
+            stableDuration: stableDuration,
+            completionMode: completionMode,
+            manualReadyAvailable: manualReadyAvailable,
+            poseCheckSupported: poseCheckSupported,
+            instructionConfirmed: instructionConfirmed,
+            latencyMilliseconds: latencyMilliseconds,
+            silhouetteMatch: match
+        )
+    }
 }

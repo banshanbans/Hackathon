@@ -312,6 +312,18 @@ async def create_evaluation(
     )
 
 
+@router.get("/handoffs", tags=["handoffs"])
+async def list_available_handoffs(
+    request: Request,
+    handoffs: HandoffServiceDep,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> JSONResponse:
+    return response(
+        request,
+        await handoffs.list_available(limit, rate_identity(request)),
+    )
+
+
 @router.post("/handoffs", tags=["handoffs"])
 async def create_handoff(
     request: Request,

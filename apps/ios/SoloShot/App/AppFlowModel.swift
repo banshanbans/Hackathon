@@ -40,6 +40,10 @@ final class AppFlowModel: ObservableObject {
     @Published var codeInput = ""
     @Published private(set) var preview: HandoffTask?
     @Published private(set) var alignmentSession: AlignmentSessionModel?
+    @Published private(set) var availableTasks: [ImportedTask] = []
+    @Published private(set) var serverAvailableHandoffs: [HandoffTask] = []
+    @Published private(set) var isRefreshingHandoffs = false
+    @Published private(set) var handoffDiscoveryMessage: String?
 
     private let api: HandoffAPI
     private let secrets: KeychainStore
@@ -51,6 +55,8 @@ final class AppFlowModel: ObservableObject {
     private let captureCues = CaptureCueFeedbackController()
     private let logger = Logger(subsystem: "ai.soloshot.app", category: "auto-capture")
     private var operation: Task<Void, Never>?
+    private var referenceCacheTask: Task<Void, Never>?
+    private var discoveryTask: Task<Void, Never>?
     private var pendingCaptureMethod: LocalCaptureMethod?
     private var countdownCancellationCount = 0
 
@@ -82,6 +88,8 @@ final class AppFlowModel: ObservableObject {
 
     deinit {
         operation?.cancel()
+        referenceCacheTask?.cancel()
+        discoveryTask?.cancel()
         networkMonitor.cancel()
     }
 
@@ -91,35 +99,14 @@ final class AppFlowModel: ObservableObject {
             try? await captureStore.clear()
             let task = Self.fixtureImportedTask()
             try? await tasks.save(task)
+            await refreshAvailableTasks()
             state = .referenceSummary(task)
             return
         }
 #endif
-        if let cached = try? await tasks.loadUnchecked(), cached.expiresAt <= Date() {
-            try? await tasks.clear()
-            try? await secrets.removeClaimToken(code: cached.code)
-            state = .taskImport
-        } else if let cached = try? await tasks.load() {
-            if let work = try? await captureStore.load(sessionID: cached.sessionID),
-               let round = work.currentRound
-            {
-                if round.networkStep == .finished {
-                    routeCompletedWork(task: cached, work: work)
-                } else if round.selectedFrameID == nil {
-                    state = .selectingFrame(cached, work)
-                } else {
-                    state = .offlinePending(cached, work, message: "旅拍进度已找回，联网后可以继续复盘。")
-                    submit(task: cached, work: work)
-                }
-            } else {
-                state = .referenceSummary(cached)
-            }
-            if !cached.completionConfirmed {
-                retryCompletion(for: cached)
-            }
-        } else {
-            state = .taskImport
-        }
+        await refreshAvailableTasks()
+        state = .taskImport
+        refreshAvailableHandoffs()
     }
 
     func receive(_ url: URL) {
@@ -169,6 +156,8 @@ final class AppFlowModel: ObservableObject {
                 var imported = try ImportedTask.from(claim)
                 try await secrets.saveClaimToken(claim.claimToken, code: code)
                 try await tasks.save(imported)
+                await refreshAvailableTasks()
+                serverAvailableHandoffs.removeAll { $0.code == code }
 
                 // The summary becomes visible immediately after the app-owned JSON is durable.
                 state = .referenceSummary(imported)
@@ -180,6 +169,7 @@ final class AppFlowModel: ObservableObject {
                     )
                     imported.completionConfirmed = true
                     try await tasks.save(imported)
+                    await refreshAvailableTasks()
                     state = .referenceSummary(imported)
                 } catch {
                     // The durable task remains usable offline. Launch recovery retries complete.
@@ -188,12 +178,28 @@ final class AppFlowModel: ObservableObject {
                 if let access = claim.referenceAccess,
                    let url = URL(string: access.downloadUrl)
                 {
-                    await cacheReference(url: url, task: imported)
+                    referenceCacheTask?.cancel()
+                    referenceCacheTask = Task { [weak self] in
+                        await self?.cacheReference(url: url, task: imported)
+                    }
                 }
             } catch is CancellationError {
-                state = .taskImport
+                if !isAtHome { state = .taskImport }
             } catch {
-                show(error)
+                if let clientError = error as? HandoffClientError {
+                    switch clientError {
+                    case .alreadyClaimed, .expired, .revoked:
+                        serverAvailableHandoffs.removeAll { $0.code == codeInput }
+                        preview = nil
+                        codeInput = ""
+                        state = .taskImport
+                        refreshAvailableHandoffs()
+                        return
+                    default:
+                        break
+                    }
+                }
+                if !isAtHome { show(error) }
             }
         }
     }
@@ -202,6 +208,102 @@ final class AppFlowModel: ObservableObject {
         operation?.cancel()
         operation = nil
         state = .taskImport
+        refreshAvailableHandoffs()
+    }
+
+    func showHome() {
+        operation?.cancel()
+        operation = nil
+        captureCues.stop()
+        let session = alignmentSession
+        alignmentSession = nil
+        pendingCaptureMethod = nil
+        preview = nil
+        codeInput = ""
+        state = .taskImport
+        refreshAvailableHandoffs()
+        Task { [weak self] in
+            await session?.stop()
+            await self?.refreshAvailableTasks()
+        }
+    }
+
+    func claimAvailableHandoff(_ handoff: HandoffTask) {
+        guard handoff.status == .created, handoff.expiresAt > Date() else {
+            serverAvailableHandoffs.removeAll { $0.code == handoff.code }
+            refreshAvailableHandoffs()
+            return
+        }
+        codeInput = handoff.code
+        preview = handoff
+        confirmClaim()
+    }
+
+    func refreshAvailableHandoffs() {
+        discoveryTask?.cancel()
+#if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("-W4FixtureHandoffDiscovery") {
+            serverAvailableHandoffs = [Self.fixtureAvailableHandoff()]
+            handoffDiscoveryMessage = nil
+            isRefreshingHandoffs = false
+            return
+        }
+#endif
+        isRefreshingHandoffs = true
+        handoffDiscoveryMessage = nil
+        discoveryTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                let result = try await api.listAvailable(limit: 20)
+                try Task.checkCancellation()
+                serverAvailableHandoffs = result.items.filter {
+                    $0.status == .created && $0.expiresAt > Date()
+                }
+                handoffDiscoveryMessage = serverAvailableHandoffs.isEmpty
+                    ? "暂时没有等待认领的现场任务。"
+                    : nil
+            } catch is CancellationError {
+                return
+            } catch {
+                serverAvailableHandoffs = []
+                handoffDiscoveryMessage = "现场任务列表暂不可用，仍可输入六位任务码。"
+            }
+            isRefreshingHandoffs = false
+        }
+    }
+
+    func openSavedTask(_ task: ImportedTask) {
+        operation?.cancel()
+        operation = Task { [weak self] in
+            guard let self else { return }
+            guard task.expiresAt > Date() else {
+                await expireCurrentTask(task)
+                return
+            }
+            do {
+                try await tasks.save(task)
+                codeInput = task.code
+                preview = nil
+                if let work = try await captureStore.load(sessionID: task.sessionID),
+                   let round = work.currentRound
+                {
+                    if round.networkStep == .finished {
+                        routeCompletedWork(task: task, work: work)
+                    } else if round.selectedFrameID == nil {
+                        state = .selectingFrame(task, work)
+                    } else {
+                        state = .offlinePending(task, work, message: "旅拍进度已找回，联网后可以继续复盘。")
+                    }
+                } else {
+                    state = .referenceSummary(task)
+                }
+                if !task.completionConfirmed {
+                    retryCompletion(for: task)
+                }
+            } catch {
+                show(error)
+            }
+        }
     }
 
     func openSetup(_ task: ImportedTask) {
@@ -243,6 +345,7 @@ final class AppFlowModel: ObservableObject {
                     state = .cameraError(task, .permissionRestricted)
                     return
                 }
+                guard !Task.isCancelled, !isAtHome else { return }
                 guard allowed else {
                     state = .cameraError(task, .permissionDenied)
                     return
@@ -254,40 +357,65 @@ final class AppFlowModel: ObservableObject {
                 return
             }
 #endif
-            guard let target = task.targetLayout else {
+            let preparedTask = await waitForReferencePreparation(task, timeout: 3)
+            guard !Task.isCancelled, !isAtHome else { return }
+            guard let target = preparedTask.targetLayout else {
                 state = .cameraError(task, .configurationFailed)
                 return
             }
+            let referenceSilhouette: ReferenceSilhouetteAsset?
+            if let filename = preparedTask.referenceSilhouetteFilename {
+                referenceSilhouette = try? await tasks.loadSilhouette(filename: filename)
+            } else if fixture {
+                if ProcessInfo.processInfo.arguments.contains("-W4FixtureReferenceFailure") {
+                    referenceSilhouette = .unavailable(
+                        .extractionFailed,
+                        sourceSHA256: "fixture-failure"
+                    )
+                } else {
+                    referenceSilhouette = ReferenceSilhouetteAsset(
+                        schemaVersion: "1.0",
+                        algorithmVersion: ReferenceSilhouetteAsset.algorithmVersion,
+                        sourceSHA256: "fixture",
+                        status: .ready,
+                        contour: .fixturePerson,
+                        extractedAt: Date()
+                    )
+                }
+            } else {
+                referenceSilhouette = nil
+            }
             let session = AlignmentSessionModel(
-                task: task,
+                task: preparedTask,
                 target: target,
+                referenceSilhouette: referenceSilhouette,
                 isFixture: fixture,
                 voiceEnabled: voiceEnabled,
                 hapticsEnabled: hapticsEnabled,
                 onReady: { [weak self] completion in
-                    self?.finishAlignment(task: task, completion: completion)
+                    self?.finishAlignment(task: preparedTask, completion: completion)
                 },
                 onExpired: { [weak self] in
                     guard let self else { return }
-                    Task { await self.expireCurrentTask(task) }
+                    Task { await self.expireCurrentTask(preparedTask) }
                 }
             )
             alignmentSession = session
             do {
                 try await session.start()
                 try Task.checkCancellation()
-                state = .aligning(task)
+                state = .aligning(preparedTask)
             } catch is CancellationError {
                 await session.stop()
                 alignmentSession = nil
             } catch let failure as CameraFailure {
                 await session.stop()
                 alignmentSession = nil
-                state = .cameraError(task, failure)
+                if !isAtHome { state = .cameraError(task, failure) }
             } catch {
                 await session.stop()
                 alignmentSession = nil
-                state = .cameraError(task, .configurationFailed)
+                if !isAtHome { state = .cameraError(task, .configurationFailed) }
             }
         }
     }
@@ -361,7 +489,9 @@ final class AppFlowModel: ObservableObject {
                 try await captureStore.save(work)
                 state = work.captureConsentRecorded ? .uploadPending(task, work) : .consent(task, work)
             } catch {
-                state = .captureError(task, message: error.localizedDescription, canUsePhotoFallback: false)
+                if !isAtHome {
+                    state = .captureError(task, message: error.localizedDescription, canUsePhotoFallback: false)
+                }
             }
         }
     }
@@ -379,7 +509,12 @@ final class AppFlowModel: ObservableObject {
 #if DEBUG
             if fixtureW5Requested {
                 state = .comparing(task, work)
-                try? await Task.sleep(for: .milliseconds(450))
+                do {
+                    try await Task.sleep(for: .milliseconds(450))
+                } catch {
+                    return
+                }
+                guard !isAtHome else { return }
                 let completed = fixtureEvaluation(work: work)
                 try? await captureStore.save(completed)
                 routeCompletedWork(task: task, work: completed)
@@ -398,9 +533,11 @@ final class AppFlowModel: ObservableObject {
                 )
                 routeCompletedWork(task: task, work: completed)
             } catch is CancellationError {
-                state = .uploadPending(task, work)
+                if !isAtHome { state = .uploadPending(task, work) }
             } catch {
-                state = .offlinePending(task, work, message: error.localizedDescription)
+                if !isAtHome {
+                    state = .offlinePending(task, work, message: error.localizedDescription)
+                }
             }
         }
     }
@@ -481,8 +618,9 @@ final class AppFlowModel: ObservableObject {
         alignmentSession = nil
         await session?.stop()
         try? await captureStore.clear()
-        try? await tasks.clear()
+        try? await tasks.clear(code: task.code)
         try? await secrets.removeClaimToken(code: task.code)
+        await refreshAvailableTasks()
         state = .taskImport
     }
 
@@ -503,6 +641,20 @@ final class AppFlowModel: ObservableObject {
     }
 
 #if DEBUG
+    private static func fixtureAvailableHandoff(now: Date = Date()) -> HandoffTask {
+        HandoffTask(
+            schemaVersion: ._10,
+            handoffId: "handoff_onsite_fixture",
+            code: "731204",
+            status: .created,
+            mode: .originalReplication,
+            createdAt: now,
+            expiresAt: now.addingTimeInterval(600),
+            claimedAt: nil,
+            completedAt: nil
+        )
+    }
+
     private static func fixtureImportedTask(now: Date = Date()) -> ImportedTask {
         ImportedTask(
             schemaVersion: "2.0",
@@ -555,7 +707,8 @@ final class AppFlowModel: ObservableObject {
                 var updated = task
                 updated.completionConfirmed = true
                 try await tasks.save(updated)
-                state = .referenceSummary(updated)
+                await refreshAvailableTasks()
+                publishPreparedTaskIfVisible(updated)
             } catch {
                 // Offline cached summary remains the source of truth.
             }
@@ -568,10 +721,62 @@ final class AppFlowModel: ObservableObject {
             let filename = try await tasks.saveReference(data, code: task.code)
             var updated = task
             updated.localReferenceFilename = filename
+            updated.referenceSilhouetteStatus = .pending
             try await tasks.save(updated)
-            state = .referenceSummary(updated)
+            await refreshAvailableTasks()
+            publishPreparedTaskIfVisible(updated)
+
+            guard let selectedBox = updated.referenceSelectedBox else {
+                updated.referenceSilhouetteStatus = .extractionFailed
+                try await tasks.save(updated)
+                await refreshAvailableTasks()
+                publishPreparedTaskIfVisible(updated)
+                return
+            }
+            let asset = await Task.detached(priority: .userInitiated) {
+                ReferenceSilhouetteExtractor().extract(data: data, selectedBox: selectedBox)
+            }.value
+            try Task.checkCancellation()
+            let silhouetteFilename = try await tasks.saveSilhouette(asset, code: task.code)
+            updated.referenceSilhouetteFilename = silhouetteFilename
+            updated.referenceSilhouetteStatus = asset.status
+            try await tasks.save(updated)
+            await refreshAvailableTasks()
+            publishPreparedTaskIfVisible(updated)
         } catch {
             // Explicit placeholder in the summary; the ShotPlan remains available.
+        }
+    }
+
+    private func waitForReferencePreparation(
+        _ task: ImportedTask,
+        timeout: TimeInterval
+    ) async -> ImportedTask {
+        guard task.referenceSelectedBox != nil else { return task }
+        let deadline = Date().addingTimeInterval(timeout)
+        var latest = (try? await tasks.load()) ?? task
+        while (latest.referenceSilhouetteStatus == nil || latest.referenceSilhouetteStatus == .pending),
+              referenceCacheTask != nil,
+              Date() < deadline
+        {
+            try? await Task.sleep(for: .milliseconds(100))
+            if Task.isCancelled { return latest }
+            latest = (try? await tasks.load()) ?? latest
+        }
+        if latest.referenceSilhouetteStatus == nil || latest.referenceSilhouetteStatus == .pending {
+            latest.referenceSilhouetteStatus = .extractionFailed
+        }
+        return latest
+    }
+
+    private func publishPreparedTaskIfVisible(_ task: ImportedTask) {
+        switch state {
+        case let .referenceSummary(current) where current.sessionID == task.sessionID:
+            state = .referenceSummary(task)
+        case let .setup(current) where current.sessionID == task.sessionID:
+            state = .setup(task)
+        default:
+            break
         }
     }
 
@@ -659,13 +864,15 @@ final class AppFlowModel: ObservableObject {
             try await captureStore.save(work)
             state = .selectingFrame(task, work)
         } catch is CancellationError {
-            state = .setup(task)
+            if !isAtHome { state = .setup(task) }
         } catch {
-            state = .captureError(
-                task,
-                message: error.localizedDescription,
-                canUsePhotoFallback: method == .shortVideo
-            )
+            if !isAtHome {
+                state = .captureError(
+                    task,
+                    message: error.localizedDescription,
+                    canUsePhotoFallback: method == .shortVideo
+                )
+            }
         }
     }
 
@@ -690,6 +897,15 @@ final class AppFlowModel: ObservableObject {
     private func replace(_ round: CaptureRoundWork, in work: inout CaptureWork) {
         guard let index = work.rounds.firstIndex(where: { $0.roundIndex == round.roundIndex }) else { return }
         work.rounds[index] = round
+    }
+
+    private var isAtHome: Bool {
+        if case .taskImport = state { return true }
+        return false
+    }
+
+    private func refreshAvailableTasks() async {
+        availableTasks = (try? await tasks.loadAll()) ?? []
     }
 
 #if DEBUG

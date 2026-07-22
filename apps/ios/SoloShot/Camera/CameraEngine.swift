@@ -30,7 +30,12 @@ enum CameraPressurePolicy {
 }
 
 enum CameraEvent: Sendable {
-    case observations([PersonObservation], imageSize: CGSize, visionLatencyMilliseconds: Double)
+    case observations(
+        [PersonObservation],
+        silhouette: SilhouetteObservation?,
+        imageSize: CGSize,
+        visionLatencyMilliseconds: Double
+    )
     case interrupted
     case interruptionEnded
     case pressure(CameraPressureLevel)
@@ -48,6 +53,7 @@ final class CameraEngine: NSObject, @unchecked Sendable {
     private let sessionQueue = DispatchQueue(label: "ai.soloshot.camera.session")
     private let outputQueue = DispatchQueue(label: "ai.soloshot.camera.vision", qos: .userInitiated)
     private let vision: VisionEngine
+    private let silhouetteEngine = LiveSilhouetteEngine()
     private let configuration: AlignmentConfiguration
     private let photoOutput = AVCapturePhotoOutput()
     private var continuation: AsyncStream<CameraEvent>.Continuation?
@@ -354,15 +360,31 @@ extension CameraEngine: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         let started = ProcessInfo.processInfo.systemUptime
         do {
+            let observedAt = Date()
             let observations = try vision.observations(
                 pixelBuffer: pixelBuffer,
                 orientation: visionOrientation,
-                observedAt: Date()
+                observedAt: observedAt
             )
+            let credible = observations.filter {
+                $0.confidence >= configuration.crediblePersonConfidence
+            }
+            let silhouette: SilhouetteObservation?
+            if credible.count == 1 {
+                silhouette = try? silhouetteEngine.observation(
+                    pixelBuffer: pixelBuffer,
+                    orientation: visionOrientation,
+                    person: credible[0],
+                    observedAt: observedAt
+                )
+            } else {
+                silhouette = nil
+            }
             let width = CVPixelBufferGetWidth(pixelBuffer)
             let height = CVPixelBufferGetHeight(pixelBuffer)
             continuation?.yield(.observations(
                 observations,
+                silhouette: silhouette,
                 imageSize: CGSize(width: width, height: height),
                 visionLatencyMilliseconds: (ProcessInfo.processInfo.systemUptime - started) * 1_000
             ))
