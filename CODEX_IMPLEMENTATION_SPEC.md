@@ -502,6 +502,15 @@ UNSUPPORTED_MEDIA
 上传参考图/帧 → 圈选 → 用户限制 → Agent → ShotPlan → 上传成片 → Evaluation → Before/After
 ```
 
+**浏览器现场陪拍增强**
+
+```text
+ShotPlan → 设备检查/模型预热 → 本地姿态与构图指导 → 三张候选 → 本地选片
+→ 仅上传所选 JPEG → Evaluation → 单问题复拍 → 第二轮 Evaluation → Before/After
+```
+
+这条路径降低安装门槛，但产品优先级仍是 iOS 原生陪拍。H5 不实现与原生短视频、触觉、后台任务和热压力管理的功能对等。
+
 ### 8.2 页面状态
 
 建议 feature 级状态而非一个巨大页面状态机：
@@ -530,6 +539,10 @@ UNSUPPORTED_MEDIA
 
 - H5 相机是增强能力；
 - 文件上传是可靠后备；
+- 浏览器实时陪拍使用同源、自托管、固定版本并校验摘要的 MediaPipe Pose Landmarker Lite 和 WASM；不得从第三方 CDN 动态加载；
+- 姿态关键点、相机预览帧和未选候选必须留在设备内；只有用户确认的一张 JPEG 可进入既有媒体上传和评价链路；
+- 实时指导沿用共享语义：完整入镜、左右、远近、受控动作、迟滞、稳定窗口和二次手动确认；不能播放模型自由文本；
+- 所选 JPEG、稳定 Idempotency-Key 和上传步骤保存在 IndexedDB，刷新后可恢复；原始视频和未选候选不得持久化；
 - 前端压缩图片时保留方向并限制最大边；
 - 视频格式不兼容时给出可恢复提示；
 - 大文件上传显示进度和取消；
@@ -831,9 +844,9 @@ motion_timing_wrong
 
 ### H5
 
-- unit：坐标映射、状态恢复、埋点去重；
+- unit：坐标映射、MediaPipe 适配、Alignment 状态机、候选排序、状态恢复、埋点去重；
 - component：圈选、错误恢复、任务码；
-- Playwright：极速体验、自定义上传、Handoff、结果页；
+- Playwright：极速体验、自定义上传、浏览器陪拍入口与 IndexedDB 恢复、Handoff、结果页；
 - 浏览器矩阵：iOS Safari、Android Chrome、desktop Chrome。
 
 ### iOS

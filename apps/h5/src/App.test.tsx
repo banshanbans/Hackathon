@@ -271,7 +271,7 @@ describe("W2 H5 flow", () => {
     expect(await screen.findByRole("heading", { name: "你的灵感，已经读懂" })).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "生成我的 ShotPlan" }));
     expect(await screen.findByRole("heading", { name: "你的专属 ShotPlan" })).toBeTruthy();
-    await user.click(screen.getByRole("button", { name: "继续在网页轻量完成" }));
+    await user.click(screen.getByRole("button", { name: "直接拍照或上传" }));
     await user.click(screen.getByRole("button", { name: "查看第一次建议" }));
     expect(await screen.findByRole("heading", { name: "人物比例偏小" })).toBeTruthy();
     expect(screen.getByText("以下结果来自精选样例。")).toBeTruthy();

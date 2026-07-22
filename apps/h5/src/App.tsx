@@ -3,6 +3,10 @@ import { useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { BrandHeader } from "./components/AppChrome";
 import { FlowProvider } from "./flow/FlowProvider";
+import {
+  DeviceCheckScreen,
+  LiveCoachScreen,
+} from "./features/live-coach/screens/LiveCoachScreens";
 import { HandoffLandingScreen, HandoffScreen } from "./screens/HandoffScreens";
 import {
   AnalysisScreen,
@@ -41,6 +45,8 @@ export function App() {
                 <Route path="/session/:id/plan" element={<PlanScreen />} />
                 <Route path="/session/:id/handoff" element={<HandoffScreen />} />
                 <Route path="/session/:id/capture/:round" element={<CaptureScreen />} />
+                <Route path="/session/:id/live-check/:round" element={<DeviceCheckScreen />} />
+                <Route path="/session/:id/live/:round" element={<LiveCoachScreen />} />
                 <Route path="/session/:id/evaluation/:round" element={<EvaluationScreen />} />
                 <Route path="/session/:id/result" element={<ResultScreen />} />
                 <Route path="/handoff/:code" element={<HandoffLandingScreen />} />

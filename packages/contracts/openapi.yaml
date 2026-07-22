@@ -94,11 +94,11 @@ paths:
     post:
       operationId: recordCaptureConsent
       tags: [sessions]
-      summary: Record iOS consent for temporary capture upload and optional external AI evaluation
+      summary: Record capture upload and optional external AI evaluation consent
       parameters:
         - $ref: "#/components/parameters/SessionId"
         - $ref: "#/components/parameters/IdempotencyKey"
-        - $ref: "#/components/parameters/HandoffClaimToken"
+        - $ref: "#/components/parameters/OptionalHandoffClaimToken"
       requestBody:
         required: true
         content:

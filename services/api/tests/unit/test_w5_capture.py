@@ -35,7 +35,7 @@ def jpeg() -> bytes:
     return output.getvalue()
 
 
-def prepare_handoff(api: TestClient) -> tuple[str, str, str]:
+def prepare_h5_session(api: TestClient) -> str:
     created = api.post(
         "/api/v1/sessions",
         headers=key("session"),
@@ -71,6 +71,11 @@ def prepare_handoff(api: TestClient) -> tuple[str, str, str]:
             "intent": "original_replication",
         },
     ).status_code == 202
+    return session_id
+
+
+def prepare_handoff(api: TestClient) -> tuple[str, str, str]:
+    session_id = prepare_h5_session(api)
     handoff = api.post(
         "/api/v1/handoffs",
         headers=key("handoff"),
@@ -269,6 +274,83 @@ def test_ios_capture_requires_completed_handoff_token_and_records_fixture_mode()
         assert "claim-token" not in serialized_events
         assert "media_asset_id" not in serialized_events
         assert "frame_id" not in serialized_events
+
+
+def test_h5_can_record_capture_consent_before_browser_live_capture() -> None:
+    store = MemoryStateStore()
+    app = create_app(store, Settings(model_provider="hybrid"))
+    with TestClient(app) as api:
+        session_id = prepare_h5_session(api)
+        response = api.post(
+            f"/api/v1/sessions/{session_id}/capture-consent",
+            headers=key("h5-browser-consent"),
+            json={
+                "schema_version": "1.0",
+                "capture_upload_consent": True,
+                "external_ai_consent": False,
+            },
+        )
+        assert response.status_code == 200
+        assert response.json()["data"]["capture_upload_consent_at"] is not None
+        assert response.json()["data"]["external_ai_consent_at"] is None
+
+        image = jpeg()
+        ticket = api.post(
+            "/api/v1/media/uploads",
+            headers=key("h5-browser-upload"),
+            json={
+                "schema_version": "1.0",
+                "session_id": session_id,
+                "purpose": "capture",
+                "content_type": "image/jpeg",
+                "byte_size": len(image),
+                "sha256": hashlib.sha256(image).hexdigest(),
+            },
+        )
+        assert ticket.status_code == 201
+        ticket_data = ticket.json()["data"]
+        storage = app.state.object_storage
+        assert isinstance(storage, MemoryObjectStorage)
+        storage.put_for_test(
+            ticket_data["upload_url"].removeprefix("memory://upload/"), image
+        )
+        media_id = ticket_data["asset"]["media_asset_id"]
+        assert api.post(
+            f"/api/v1/media/uploads/{media_id}/complete",
+            headers=key("h5-browser-complete"),
+            json={"schema_version": "1.0", "session_id": session_id},
+        ).status_code == 200
+
+        captured = api.post(
+            "/api/v1/captures",
+            headers=key("h5-browser-capture"),
+            json={
+                "schema_version": "1.0",
+                "session_id": session_id,
+                "round_index": 1,
+                "media_asset_id": media_id,
+                "capture_method": "photo",
+                "frame_selection": {
+                    "frame_id": "frame_h5_browser_recommended",
+                    "timestamp_ms": None,
+                    "selection_source": "local_recommended",
+                },
+            },
+        )
+        assert captured.status_code == 201
+        assert captured.json()["data"]["source_client"] == "h5"
+        assert captured.json()["data"]["selected_frame_id"] == "frame_h5_browser_recommended"
+        evaluated = api.post(
+            "/api/v1/evaluations",
+            headers=key("h5-browser-evaluation"),
+            json={
+                "schema_version": "1.0",
+                "session_id": session_id,
+                "capture_id": captured.json()["data"]["capture_id"],
+            },
+        )
+        assert evaluated.status_code == 202
+        assert evaluated.headers["X-SoloShot-Execution-Mode"] == "fixture"
 
 
 def test_capture_consent_rejects_tampered_token() -> None:

@@ -67,7 +67,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Record iOS consent for temporary capture upload and optional external AI evaluation */
+        /** Record capture upload and optional external AI evaluation consent */
         post: operations["recordCaptureConsent"];
         delete?: never;
         options?: never;
@@ -1727,8 +1727,8 @@ export interface operations {
             header: {
                 /** @description Opaque key used to deduplicate retryable writes */
                 "Idempotency-Key": components["parameters"]["IdempotencyKey"];
-                /** @description Opaque claimant capability bound to one client instance */
-                "X-Handoff-Claim-Token": components["parameters"]["HandoffClaimToken"];
+                /** @description Required for capture writes after a Handoff has been completed by iOS */
+                "X-Handoff-Claim-Token"?: components["parameters"]["OptionalHandoffClaimToken"];
             };
             path: {
                 session_id: components["parameters"]["SessionId"];

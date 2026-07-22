@@ -73,6 +73,7 @@ async function installApiRoutes(
 ) {
   const now = new Date().toISOString();
   let counter = 0;
+  let adaptRequestCount = 0;
   let remainingAdaptFailures = options.adaptFailures ?? 0;
   let session: Json = {};
   const media = new Map<string, Json>();
@@ -219,6 +220,7 @@ async function installApiRoutes(
       return;
     }
     if (url.pathname === "/api/v1/references/adapt") {
+      adaptRequestCount += 1;
       if ((options.adaptDelayMs ?? 0) > 0) {
         await new Promise((resolveDelay) => setTimeout(resolveDelay, options.adaptDelayMs));
       }
@@ -341,7 +343,13 @@ async function installApiRoutes(
     }
     await route.abort("failed");
   });
-  return { mediaUploadCount: () => counter };
+  return {
+    mediaUploadCount: () => counter,
+    adaptRequestCount: () => adaptRequestCount,
+    allowAdapt: () => {
+      remainingAdaptFailures = 0;
+    },
+  };
 }
 
 async function selectPreset(page: Page) {
@@ -377,7 +385,7 @@ test("public preset completes the honest two-round flow with refresh recovery", 
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
   await page.reload();
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
-  await page.getByRole("button", { name: "继续在网页轻量完成" }).click();
+  await page.getByRole("button", { name: "直接拍照或上传" }).click();
   await page.getByRole("button", { name: "查看第一次建议" }).click();
   await expect(page.getByRole("heading", { name: "人物比例偏小" })).toBeVisible();
   await page.reload();
@@ -392,13 +400,115 @@ test("public preset completes the honest two-round flow with refresh recovery", 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
 
+test("ShotPlan exposes browser live coaching while preserving upload fallback", async ({ page }) => {
+  await installApiRoutes(page);
+  await page.goto("/");
+  await selectPreset(page);
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.getByRole("button", { name: "浏览器免安装陪拍" }).click();
+  await expect(page.getByRole("heading", { name: "浏览器现场陪拍" })).toBeVisible();
+  await expect(page.getByText("只有你最终确认的一张 JPEG 会被上传用于评价。")).toBeVisible();
+  await page.getByRole("button", { name: "直接拍照或上传" }).click();
+  await expect(page.getByRole("heading", { name: "第一次，先完整拍下来" })).toBeVisible();
+});
+
+test("browser live coaching restores a selected local JPEG after refresh", async ({ page }) => {
+  await installApiRoutes(page);
+  await page.goto("/");
+  await selectPreset(page);
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.evaluate(async () => {
+    const database = await new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open("soloshot-live-coach", 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains("capture-drafts")) {
+          request.result.createObjectStore("capture-drafts");
+        }
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () =>
+        reject(new Error(request.error?.message ?? "Could not open live-coach test database"));
+    });
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction("capture-drafts", "readwrite");
+      transaction.objectStore("capture-drafts").put(
+        {
+          sessionId: "ss_e2e",
+          round: 1,
+          blobBytes: new Uint8Array([255, 216, 255, 217]).buffer,
+          blobType: "image/jpeg",
+          width: 720,
+          height: 1280,
+          candidateId: "frame_h5_restored",
+          selectionSource: "local_recommended",
+          localScore: 0.88,
+          reasons: ["站位更接近 ShotPlan"],
+          createdAt: Date.now(),
+          uploadCreateKey: "h5-live-upload-restored",
+          uploadCompleteKey: "h5-live-complete-restored",
+          captureKey: "h5-live-capture-restored",
+          evaluationKey: "h5-live-evaluation-restored",
+          networkStep: "consent",
+          mediaAssetId: null,
+          captureId: null,
+        },
+        "ss_e2e:1",
+      );
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () =>
+        reject(new Error(transaction.error?.message ?? "Could not seed live-coach test draft"));
+    });
+    database.close();
+    sessionStorage.setItem("soloshot:live-coach:ss_e2e", "1");
+  });
+  await page.goto("/session/ss_e2e/live/1");
+  await expect(page.getByRole("heading", { name: "选出第一次成片" })).toBeVisible();
+  await expect(page.getByText("站位更接近 ShotPlan")).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: /确认这一张并开始评价/ })).toBeVisible();
+});
+
+test("versioned MediaPipe model and runtime assets are served locally", async ({ page, browserName }) => {
+  test.skip(browserName !== "chromium", "Static asset delivery is browser-independent.");
+  const manifest = await page.request.get("/models/mediapipe/model-manifest.json");
+  expect(manifest.ok()).toBe(true);
+  expect((await manifest.json()).runtime_version).toBe("0.10.35");
+  const model = await page.request.get("/models/mediapipe/pose-landmarker-lite-v1.task");
+  expect(model.ok()).toBe(true);
+  expect((await model.body()).byteLength).toBeGreaterThan(5_000_000);
+  const wasm = await page.request.get("/mediapipe/0.10.35/wasm/vision_wasm_internal.wasm");
+  expect(wasm.ok()).toBe(true);
+  expect(wasm.headers()["content-type"]).toContain("application/wasm");
+});
+
+test("browser coaching prewarms the self-hosted model without a runtime CDN", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-chromium", "One browser compile smoke is sufficient in CI.");
+  await installApiRoutes(page);
+  const requested: string[] = [];
+  page.on("request", (request) => requested.push(request.url()));
+  await page.goto("/");
+  await selectPreset(page);
+  await page.getByRole("button", { name: "交给 SoloShot" }).click();
+  await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
+  await page.getByRole("button", { name: "浏览器免安装陪拍" }).click();
+  await page.getByRole("button", { name: "开启相机并开始陪拍" }).click();
+  await page.waitForURL(/\/session\/ss_e2e\/live\/1/, { timeout: 30_000 });
+  expect(requested.some((url) => url.includes("/models/mediapipe/pose-landmarker-lite-v1.task"))).toBe(true);
+  expect(requested.some((url) => url.includes("/mediapipe/0.10.35/wasm/"))).toBe(true);
+  expect(
+    requested.filter((url) => /googleapis|gstatic|unpkg|jsdelivr|cdn\.jsdelivr/.test(url)),
+  ).toEqual([]);
+});
+
 test("custom original replication completes a real-media Live mock flow", async ({ page }) => {
   await installApiRoutes(page);
   await page.goto("/");
   await selectCustom(page);
   await page.getByRole("button", { name: "交给 SoloShot" }).click();
   await page.getByRole("button", { name: "生成我的 ShotPlan" }).click();
-  await page.getByRole("button", { name: "继续在网页轻量完成" }).click();
+  await page.getByRole("button", { name: "直接拍照或上传" }).click();
   await uploadCaptureAndEvaluate(page, 1);
   await page.getByRole("button", { name: "带着这条建议再拍一次" }).click();
   await uploadCaptureAndEvaluate(page, 2);
@@ -441,7 +551,7 @@ for (const source of ["preset", "custom"] as const) {
 }
 
 test("scene retry reuses the uploaded image after a model rejection", async ({ page }) => {
-  const diagnostics = await installApiRoutes(page, { adaptFailures: 1 });
+  const diagnostics = await installApiRoutes(page, { adaptFailures: Number.MAX_SAFE_INTEGER });
   await page.goto("/");
   await page.getByRole("button", { name: /灵感迁移/ }).click();
   await selectPreset(page);
@@ -450,6 +560,8 @@ test("scene retry reuses the uploaded image after a model rejection", async ({ p
   await page.getByRole("button", { name: "看看我眼前的现场" }).click();
   await page.getByLabel("从相册选择").setInputFiles(testImagePath);
   await expect(page.getByText("这张画面暂时没有分析完成", { exact: true })).toBeVisible();
+  expect(diagnostics.adaptRequestCount()).toBe(1);
+  diagnostics.allowAdapt();
   await page.getByRole("button", { name: "再试一次" }).click();
   await expect(page.getByRole("heading", { name: "你的专属 ShotPlan" })).toBeVisible();
   expect(diagnostics.mediaUploadCount()).toBe(1);

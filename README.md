@@ -1,6 +1,6 @@
 # SoloShot AI
 
-SoloShot AI is a contract-first monorepo for an end-to-end solo travel shooting coach. W0 establishes the shared contracts, W1 adds the Agent/Skill API, W2 adds the H5 capture/evaluation path, W3 adds secure H5-to-iPhone ShotPlan handoff with offline recovery, W4 adds on-device camera/Vision alignment, and W5 closes the native capture, selected-frame upload, evaluation, and second-shot loop.
+SoloShot AI is a contract-first monorepo for an end-to-end solo travel shooting coach. W0 establishes the shared contracts, W1 adds the Agent/Skill API, W2 adds the H5 capture/evaluation path, W3 adds secure H5-to-iPhone ShotPlan handoff with offline recovery, W4 adds on-device camera/Vision alignment, and W5 closes the native capture, selected-frame upload, evaluation, and second-shot loop. H5 also offers a self-hosted MediaPipe browser coaching path so users can finish the two-round journey without installing the app; iOS remains the primary and most capable capture experience.
 
 ## Prerequisites
 
@@ -57,5 +57,7 @@ Generated contract code lives below a `generated/` directory and must not be edi
 W2 provides an explicitly labeled preset Fixture path plus Volcengine Ark Live paths for custom media and scene adaptation. W3 adds a ten-minute QR/code handoff, atomic single-device claim, Keychain capability storage, app-owned 24-hour task cache, and offline task summary. W4 adds a portrait rear-1× AVFoundation preview, local Vision body pose, centralized coordinate mapping, a native 2D overlay, controlled Chinese instructions, speech/haptics, and explicit composition-only/manual fallbacks.
 
 W5 adds three-photo capture or a 5–8 second silent 720p clip, deterministic on-device candidate selection, explicit selected-JPEG upload consent, a resumable ordered outbox, result evaluation, one controlled retake instruction, a second round, and cross-device H5 result recovery. Original video, discarded candidates, Vision coordinates, and camera preview frames are never uploaded. Preset results remain clearly marked as Fixture fixed scores; custom and scene-adaptation results require Live Ark and never silently fall back to Fixture.
+
+The H5 browser enhancement serves a pinned MediaPipe Pose Landmarker Lite model and WASM from the same H5 origin. It performs pose inference, alignment guidance, countdown and three-photo candidate ranking locally, persists only the selected JPEG for refresh recovery, and uploads only that user-confirmed JPEG through the existing consent/media/capture/evaluation APIs. It always keeps direct photo upload available. It does not claim parity with iOS short-video capture, haptics, offline coaching or device-pressure handling.
 
 W3 is not closed until an HTTPS test deployment and its documented real-iPhone handoff run pass. W4 and W5 are likewise only locally/CI/Simulator complete until their real-device camera, Vision, recording, thermal, interruption, offline-resume, and latency checklists pass. Real Ark quality is a separate paid smoke/data acceptance item. The Chinese runbook and current acceptance reports live under `docs/`.

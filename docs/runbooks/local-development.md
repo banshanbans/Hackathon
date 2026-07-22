@@ -24,6 +24,32 @@ make dev-h5
 
 `make dev-infra` 会启动 PostgreSQL、Redis、MinIO，并创建私有的 `soloshot-media` 存储桶。`make migrate` 会应用 W1、W2 和 W3 迁移；应用启动时不会自动修改数据库结构。
 
+## H5 MediaPipe 现场陪拍
+
+H5 的 ShotPlan 页面保留三个出口：“在 iPhone 继续”为主入口，“浏览器免安装陪拍”为增强入口，“直接拍照或上传”为可靠后备。浏览器入口会按需加载 `@mediapipe/tasks-vision@0.10.35`，并从当前 H5 域名下载固定版本的 Pose Landmarker Lite 与 WASM；首屏 bundle 不包含 MediaPipe。
+
+模型和运行时位于：
+
+```text
+apps/h5/public/models/mediapipe/pose-landmarker-lite-v1.task
+apps/h5/public/models/mediapipe/model-manifest.json
+apps/h5/public/mediapipe/0.10.35/wasm/
+```
+
+运行 `npm run assets:mediapipe --workspace @soloshot/h5` 会从已安装 npm 包同步 WASM，并校验模型 SHA-256；`npm run build` 会自动执行该检查。模型文件不由构建脚本在线下载，升级时应单独审核来源、版本、摘要、许可和浏览器矩阵，再提交新的版本化路径。生产 Nginx 对这些路径使用一年 immutable 缓存，对 SPA HTML 使用 `no-cache`，因此升级时不能覆盖旧版本 URL。
+
+实时推理只处理本地相机帧。关键点、预览帧和未选候选不写入 API、analytics 或日志；连拍三张只在内存中排序，用户确认后将所选 JPEG 字节和稳定操作键写入 IndexedDB，再沿 `consent → upload ticket → signed PUT → complete → Capture → Evaluation` 恢复执行。短视频 ShotPlan 在 H5 当前明确使用照片降级，iOS 仍负责原生 6 秒视频、触觉、弱网本地陪拍和设备压力管理。
+
+本地 `http://127.0.0.1` 可调用相机；其他设备必须通过 HTTPS 访问。验证时至少覆盖：
+
+```bash
+npm run typecheck --workspace @soloshot/h5
+npm test --workspace @soloshot/h5
+make e2e-h5
+```
+
+自动化覆盖模型/WASM 同源分发、Alignment 迟滞与稳定、坐标映射、MediaPipe 关键点适配、候选排序、WebKit IndexedDB 恢复和上传后两轮路由。自动化不能关闭真实手机验收：发布前仍需在 HTTPS 环境用目标 iPhone Safari 和 Android Chrome 检查首次模型下载、权限拒绝、多人、弱光、旋转、前后台、内存压力、第二轮恢复及文件上传降级。
+
 ## W3 接力配置与本地验证
 
 - `HANDOFF_TTL_SECONDS=600` 控制任务码有效期；认领凭据和 iOS 本地缓存默认保留 24 小时。
@@ -110,6 +136,7 @@ make e2e-w5
 - API 每小时清理过期媒体；删除 Session 会立即清理其媒体和关联记录。
 - 刷新后以服务端 Session 为准恢复路由、ShotPlan 和两轮评价。现场图已上传时会恢复 `sceneAssetId`、阶段和稳定操作键，并继续未完成的适配或规则生成；尚未上传的本地文件不能跨刷新恢复。
 - localStorage 只保存 Session ID、路由草稿和非敏感选项，不保存媒体、Base64 或签名 URL。
+- 浏览器现场陪拍只在用户确认候选后将这一张 JPEG 的字节写入 IndexedDB，用于刷新恢复；评价完成后立即删除。
 
 ## 完整验证
 

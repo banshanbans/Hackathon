@@ -27,6 +27,7 @@ export type EventBatchReceipt = ContractData<components["schemas"]["EventBatchRe
 export type HandoffTask = ContractData<components["schemas"]["HandoffTask"]>;
 export type HandoffCreateResult = ContractData<components["schemas"]["HandoffCreateResult"]>;
 export type HandoffClaimResult = ContractData<components["schemas"]["HandoffClaimResult"]>;
+export type CaptureConsentReceipt = ContractData<components["schemas"]["CaptureConsentReceipt"]>;
 
 export type ExecutionMode = "fixture" | "mock" | "live" | "cache" | "fallback" | "error";
 
@@ -98,6 +99,14 @@ function isEventReceipt(value: unknown): value is EventBatchReceipt {
     isRecord(value) &&
     typeof value.accepted_count === "number" &&
     typeof value.duplicate_count === "number"
+  );
+}
+
+function isCaptureConsentReceipt(value: unknown): value is CaptureConsentReceipt {
+  return (
+    isRecord(value) &&
+    hasString(value, "session_id") &&
+    hasString(value, "capture_upload_consent_at")
   );
 }
 
@@ -320,6 +329,27 @@ export const soloShotApi = {
     );
   },
 
+  recordCaptureConsent(
+    sessionId: string,
+    externalAiConsent: boolean,
+    stableIdempotencyKey?: string,
+  ): Promise<ApiEnvelope<CaptureConsentReceipt>> {
+    return request(
+      `/api/v1/sessions/${encodeURIComponent(sessionId)}/capture-consent`,
+      jsonRequest(
+        "capture-consent",
+        {
+          schema_version: "1.0",
+          capture_upload_consent: true,
+          external_ai_consent: externalAiConsent,
+        },
+        undefined,
+        stableIdempotencyKey,
+      ),
+      isCaptureConsentReceipt,
+    );
+  },
+
   createHandoff(
     sessionId: string,
     stableIdempotencyKey: string,
@@ -491,15 +521,41 @@ export const soloShotApi = {
     sessionId: string,
     mediaAssetId: string,
     roundIndex: 1 | 2,
+    options: {
+      captureMethod?: "photo" | "short_video" | "photo_fallback";
+      frameSelection?: {
+        frameId: string;
+        timestampMs: number | null;
+        selectionSource: "local_recommended" | "user_selected";
+      };
+      stableIdempotencyKey?: string;
+    } = {},
   ): Promise<ApiEnvelope<Capture>> {
     return request(
       "/api/v1/captures",
-      jsonRequest(`capture-${roundIndex}`, {
-        schema_version: "1.0",
-        session_id: sessionId,
-        round_index: roundIndex,
-        media_asset_id: mediaAssetId,
-      }),
+      jsonRequest(
+        `capture-${roundIndex}`,
+        {
+          schema_version: "1.0",
+          session_id: sessionId,
+          round_index: roundIndex,
+          media_asset_id: mediaAssetId,
+          ...(options.captureMethod === undefined
+            ? {}
+            : { capture_method: options.captureMethod }),
+          ...(options.frameSelection === undefined
+            ? {}
+            : {
+                frame_selection: {
+                  frame_id: options.frameSelection.frameId,
+                  timestamp_ms: options.frameSelection.timestampMs,
+                  selection_source: options.frameSelection.selectionSource,
+                },
+              }),
+        },
+        undefined,
+        options.stableIdempotencyKey,
+      ),
       isCapture,
     );
   },
@@ -515,14 +571,20 @@ export const soloShotApi = {
   createEvaluation(
     sessionId: string,
     captureId: string,
+    stableIdempotencyKey?: string,
   ): Promise<ApiEnvelope<ResultEvaluation>> {
     return request(
       "/api/v1/evaluations",
-      jsonRequest("evaluation", {
-        schema_version: "1.0",
-        session_id: sessionId,
-        capture_id: captureId,
-      }),
+      jsonRequest(
+        "evaluation",
+        {
+          schema_version: "1.0",
+          session_id: sessionId,
+          capture_id: captureId,
+        },
+        undefined,
+        stableIdempotencyKey,
+      ),
       isEvaluation,
     );
   },

@@ -108,8 +108,8 @@ async def record_capture_consent(
     session_id: str,
     body: CaptureConsentRequest,
     idempotency_key: IdempotencyKey,
-    claim_token: ClaimToken,
     w1: ServiceDep,
+    claim_token: OptionalClaimToken = None,
 ) -> JSONResponse:
     return response(
         request,

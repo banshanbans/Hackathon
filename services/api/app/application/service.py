@@ -212,13 +212,18 @@ class W1Service:
         session_id: str,
         payload: JsonObject,
         key: str,
-        claim_token: str,
+        claim_token: str | None,
     ) -> ServiceResult:
-        await self.capture_authorization.authorize_ios(session_id, claim_token)
+        source_client = await self.capture_authorization.authorize_write(
+            session_id, claim_token
+        )
 
         async def action() -> ServiceResult:
             session = await self.require_session(session_id)
-            if session.state not in {"handoff_ready", "capturing", "coaching"}:
+            allowed_states = {"shot_plan_ready", "capturing", "coaching"}
+            if source_client == "ios":
+                allowed_states.add("handoff_ready")
+            if session.state not in allowed_states:
                 raise DomainError(
                     "INVALID_STATE",
                     "Capture consent is unavailable in the current Session state",

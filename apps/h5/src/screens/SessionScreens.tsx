@@ -51,6 +51,10 @@ import {
   roundLabel,
 } from "../productCopy";
 import { buildResultComparisonItems, type ResultComparisonItem } from "../resultComparison";
+import {
+  prefersLiveCoach,
+  setLiveCoachPreference,
+} from "../features/live-coach/screens/LiveCoachScreens";
 
 function useSession() {
   const params = useParams<{ id: string }>();
@@ -207,6 +211,7 @@ export function SceneScreen() {
     if (
       session === undefined ||
       session.mode !== "scene_adaptation" ||
+      state.sceneMedia !== null ||
       runningRef.current ||
       (state.sceneStage !== "recognizing" && state.sceneStage !== "generating")
     ) {
@@ -222,7 +227,14 @@ export function SceneScreen() {
     }
     const keys = state.sceneOperationKeys ?? createSceneOperationKeys();
     void runSceneFlow(session, null, assetId, keys);
-  }, [query.data, sessionId, state.sceneAssetId, state.sceneOperationKeys, state.sceneStage]);
+  }, [
+    query.data,
+    sessionId,
+    state.sceneAssetId,
+    state.sceneMedia,
+    state.sceneOperationKeys,
+    state.sceneStage,
+  ]);
 
   if (query.isLoading) {
     return <Loading />;
@@ -700,9 +712,20 @@ export function PlanScreen() {
         type="button"
         className="secondary-button"
         disabled={session.state === "handoff_ready"}
+        onClick={() => {
+          setLiveCoachPreference(sessionId, true);
+          navigate(`/session/${sessionId}/live-check/1`);
+        }}
+      >
+        浏览器免安装陪拍 <Camera size={20} aria-hidden="true" />
+      </button>
+      <button
+        type="button"
+        className="tertiary-button"
+        disabled={session.state === "handoff_ready"}
         onClick={() => navigate(`/session/${sessionId}/capture/1`)}
       >
-        继续在网页轻量完成 <ArrowRight size={20} aria-hidden="true" />
+        直接拍照或上传 <ArrowRight size={20} aria-hidden="true" />
       </button>
       {session.state === "handoff_ready" ? (
         <p className="handoff-plan-note">任务已交给 iPhone；取消接力后可回到网页继续。</p>
@@ -945,19 +968,27 @@ export function EvaluationScreen() {
     );
   }
   const mode = modeForSession(session, state.executionMode);
+  const liveCoach = prefersLiveCoach(sessionId);
   const capture = session.capture_rounds.find((item) => item.round_index === round);
+  const hasRealCapture = capture !== undefined && !capture.media_asset_id.startsWith("media_fixture_");
   return (
     <section className="page evaluation-page">
       <PageHeader
         title={evaluation.goal_satisfied ? "这一次，你拍到了" : "这一拍，可以更好"}
-        backTo={`/session/${sessionId}/capture/${round}`}
+        backTo={
+          liveCoach
+            ? `/session/${sessionId}/live-check/${round}`
+            : `/session/${sessionId}/capture/${round}`
+        }
       />
       <StateNotice mode={mode}>
         {mode === "fixture"
-          ? "以下结果来自精选样例。"
+          ? hasRealCapture
+            ? "照片来自本次浏览器拍摄；作品就绪度为精选样例参考，不代表 AI 对照片的判断。"
+            : "以下结果来自精选样例。"
           : "这条建议来自本次成片。"}
       </StateNotice>
-      {mode === "live" && capture !== undefined ? (
+      {(mode === "live" || hasRealCapture) && capture !== undefined ? (
         <div className="capture-result-image">
           <MediaImage
             sessionId={sessionId}
@@ -977,7 +1008,9 @@ export function EvaluationScreen() {
           navigate(
             evaluation.goal_satisfied || round === 2
               ? `/session/${sessionId}/result`
-              : `/session/${sessionId}/capture/2`,
+              : liveCoach
+                ? `/session/${sessionId}/live-check/2`
+                : `/session/${sessionId}/capture/2`,
           )
         }
       >
