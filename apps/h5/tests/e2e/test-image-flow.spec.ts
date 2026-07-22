@@ -478,13 +478,19 @@ test("versioned MediaPipe model and runtime assets are served locally", async ({
   const model = await page.request.get("/models/mediapipe/pose-landmarker-lite-v1.task");
   expect(model.ok()).toBe(true);
   expect((await model.body()).byteLength).toBeGreaterThan(5_000_000);
+  const segmenter = await page.request.get("/models/mediapipe/selfie-segmenter-float16-v1.tflite");
+  expect(segmenter.ok()).toBe(true);
+  expect((await segmenter.body()).byteLength).toBeGreaterThan(200_000);
   const wasm = await page.request.get("/mediapipe/0.10.35/wasm/vision_wasm_internal.wasm");
   expect(wasm.ok()).toBe(true);
   expect(wasm.headers()["content-type"]).toContain("application/wasm");
 });
 
 test("browser coaching prewarms the self-hosted model without a runtime CDN", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile-chromium", "One browser compile smoke is sufficient in CI.");
+  test.skip(
+    !["mobile-chromium", "mobile-webkit"].includes(testInfo.project.name),
+    "One mobile compile smoke per browser engine is sufficient in CI.",
+  );
   await installApiRoutes(page);
   const requested: string[] = [];
   page.on("request", (request) => requested.push(request.url()));
@@ -495,7 +501,21 @@ test("browser coaching prewarms the self-hosted model without a runtime CDN", as
   await page.getByRole("button", { name: "浏览器免安装陪拍" }).click();
   await page.getByRole("button", { name: "开启相机并开始陪拍" }).click();
   await page.waitForURL(/\/session\/ss_e2e\/live\/1/, { timeout: 30_000 });
+  const cachedReference = await page.evaluate(() => {
+    const raw = sessionStorage.getItem("soloshot:reference-silhouette:1:ss_e2e");
+    return raw === null ? null : JSON.parse(raw) as { status?: string; contour?: { loops?: unknown[] } };
+  });
+  expect(cachedReference?.status).toBe("ready");
+  expect(cachedReference?.contour?.loops?.length).toBeGreaterThan(0);
+  const outer = cachedReference?.contour?.loops?.[0] as Array<{ x: number; y: number }> | undefined;
+  const outerArea = outer?.reduce((sum, point, index) => {
+    const next = outer[(index + 1) % outer.length] ?? point;
+    return sum + point.x * next.y - next.x * point.y;
+  }, 0) ?? 0;
+  expect(Math.abs(outerArea / 2)).toBeGreaterThan(0.1);
+  expect(Math.abs(outerArea / 2)).toBeLessThan(0.9);
   expect(requested.some((url) => url.includes("/models/mediapipe/pose-landmarker-lite-v1.task"))).toBe(true);
+  expect(requested.some((url) => url.includes("/models/mediapipe/selfie-segmenter-float16-v1.tflite"))).toBe(true);
   expect(requested.some((url) => url.includes("/mediapipe/0.10.35/wasm/"))).toBe(true);
   expect(
     requested.filter((url) => /googleapis|gstatic|unpkg|jsdelivr|cdn\.jsdelivr/.test(url)),

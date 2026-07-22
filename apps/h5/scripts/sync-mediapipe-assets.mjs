@@ -9,7 +9,13 @@ const runtimeVersion = "0.10.35";
 const source = path.join(repositoryRoot, "node_modules/@mediapipe/tasks-vision/wasm");
 const destination = path.join(appRoot, `public/mediapipe/${runtimeVersion}/wasm`);
 const model = path.join(appRoot, "public/models/mediapipe/pose-landmarker-lite-v1.task");
+const segmentationModel = path.join(
+  appRoot,
+  "public/models/mediapipe/selfie-segmenter-float16-v1.tflite",
+);
 const expectedModelSha256 = "59929e1d1ee95287735ddd833b19cf4ac46d29bc7afddbbf6753c459690d574a";
+const expectedSegmentationModelSha256 =
+  "191ac9529ae506ee0beefa6b2c945a172dab9d07d1e802a290a4e4038226658b";
 
 await mkdir(destination, { recursive: true });
 for (const filename of await readdir(source)) {
@@ -21,4 +27,11 @@ for (const filename of await readdir(source)) {
 const digest = createHash("sha256").update(await readFile(model)).digest("hex");
 if (digest !== expectedModelSha256) {
   throw new Error(`Pose model checksum mismatch: ${digest}`);
+}
+
+const segmentationDigest = createHash("sha256")
+  .update(await readFile(segmentationModel))
+  .digest("hex");
+if (segmentationDigest !== expectedSegmentationModelSha256) {
+  throw new Error(`Segmentation model checksum mismatch: ${segmentationDigest}`);
 }

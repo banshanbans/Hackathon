@@ -16,6 +16,7 @@ const ALLOWED_PROPERTIES = new Set([
   "reference_source",
   "status",
   "error_code",
+  "reference_silhouette_status",
 ]);
 
 function readQueue(): PendingEvent[] {

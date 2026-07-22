@@ -30,6 +30,7 @@ function decision(overrides: Partial<AlignmentDecision> = {}): AlignmentDecision
       observedAt: 0,
     },
     overlapRatio: 0.88,
+    silhouetteScore: 0.84,
     countdownStillValid: true,
     stableDuration: 1_300,
     completionMode: "verified",

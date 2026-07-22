@@ -142,6 +142,10 @@ export function findTestImageCase(caseId: string | null): TestImageCase | null {
   return testImageDataset.cases.find((item) => item.caseId === caseId) ?? null;
 }
 
+export function findTestImageCaseByReferenceId(referenceId: string | null): TestImageCase | null {
+  return testImageDataset.cases.find((item) => item.referenceId === referenceId) ?? null;
+}
+
 export const tagLabels: Readonly<Record<string, string>> = {
   full_body: "全身",
   three_quarter: "半身构图",

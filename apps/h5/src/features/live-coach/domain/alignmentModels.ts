@@ -71,6 +71,7 @@ export type AlignmentDecision = {
   stabilityScore: number;
   selectedPerson: PersonObservation | null;
   overlapRatio: number;
+  silhouetteScore: number | null;
   countdownStillValid: boolean;
   stableDuration: number;
   completionMode: CompletionMode | null;

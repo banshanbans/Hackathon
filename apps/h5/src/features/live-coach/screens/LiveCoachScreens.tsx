@@ -21,6 +21,7 @@ import {
 } from "../../../apiClient";
 import { analytics } from "../../../analytics";
 import { PageHeader } from "../../../components/AppChrome";
+import { findTestImageCaseByReferenceId } from "../../../dataset";
 import type { PreparedImage } from "../../../media/processing";
 import { sha256 } from "../../../media/processing";
 import { CameraController, checkCameraSupport } from "../camera/cameraController";
@@ -46,6 +47,11 @@ import {
   type CaptureDraft,
 } from "../persistence/captureDraftStore";
 import { CoachRuntime, type CoachRuntimeStats } from "../runtime/coachRuntime";
+import {
+  cachePreparedPoseRuntime,
+  loadReferenceSilhouette,
+  takePreparedPoseRuntime,
+} from "../runtime/preparedPoseCache";
 
 type Round = 1 | 2;
 type LivePhase =
@@ -63,6 +69,50 @@ const LIVE_PREFERENCE_PREFIX = "soloshot:live-coach:";
 async function loadPoseRuntime() {
   const module = await import("../pose/poseLandmarker");
   return module.createPoseRuntime();
+}
+
+async function loadReferenceImage(session: SoloShotSession): Promise<HTMLImageElement> {
+  const reference = session.reference_asset;
+  if (reference === null || reference === undefined) throw new Error("REFERENCE_IMAGE_UNAVAILABLE");
+  const preset = findTestImageCaseByReferenceId(reference.reference_id);
+  let source: string;
+  if (reference.source_type === "preset" && preset !== null) {
+    source = preset.publicAssets.detail;
+  } else if (reference.media_asset_id !== null && reference.media_asset_id !== undefined) {
+    const access = await soloShotApi.getMediaAccess(session.session_id, reference.media_asset_id);
+    source = access.data.download_url;
+  } else {
+    throw new Error("REFERENCE_IMAGE_UNAVAILABLE");
+  }
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  image.decoding = "async";
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("REFERENCE_IMAGE_LOAD_FAILED"));
+    image.src = source;
+  });
+  return image;
+}
+
+async function preparePoseRuntime(session: SoloShotSession) {
+  const module = await import("../pose/poseLandmarker");
+  const selected = session.reference_asset?.selected_box;
+  if (selected === undefined || selected === null) {
+    return {
+      runtime: await module.createPoseRuntime(),
+      reference: { status: "extraction_failed" as const, contour: null },
+    };
+  }
+  try {
+    const image = await loadReferenceImage(session);
+    return await module.createPreparedPoseRuntime(image, selected);
+  } catch {
+    return {
+      runtime: await module.createPoseRuntime(),
+      reference: { status: "extraction_failed" as const, contour: null },
+    };
+  }
 }
 
 export function setLiveCoachPreference(sessionId: string, enabled: boolean): void {
@@ -89,12 +139,16 @@ function useLiveSession() {
 function targetFor(session: SoloShotSession): CoachTarget | null {
   const layout = session.shot_plan?.target_layout;
   if (layout === undefined || layout === null) return null;
+  const left = Math.max(0, Math.min(1, layout.center_x - layout.width / 2));
+  const top = Math.max(0, Math.min(1, layout.center_y - layout.height / 2));
+  const right = Math.max(left, Math.min(1, layout.center_x + layout.width / 2));
+  const bottom = Math.max(top, Math.min(1, layout.center_y + layout.height / 2));
   return {
     rect: {
-      x: Math.max(0, layout.center_x - layout.width / 2),
-      y: Math.max(0, layout.center_y - layout.height / 2),
-      width: layout.width,
-      height: layout.height,
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
     },
     bodyDirection: layout.body_direction,
     poseTemplate: layout.pose_template,
@@ -147,6 +201,7 @@ export function DeviceCheckScreen() {
       />
     );
   }
+  const readySession = session;
 
   async function prepare(): Promise<void> {
     if (!support.supported) {
@@ -157,13 +212,18 @@ export function DeviceCheckScreen() {
     setError(null);
     const started = performance.now();
     try {
-      const runtime = await loadPoseRuntime();
-      runtime.close();
+      const prepared = await preparePoseRuntime(readySession);
+      cachePreparedPoseRuntime(sessionId, prepared);
       setLoadMs(performance.now() - started);
       setLiveCoachPreference(sessionId, true);
       analytics.track(
         "h5_capture_start",
-        { source: "live_camera", round_index: round, latency_ms: Math.round(performance.now() - started) },
+        {
+          source: "live_camera",
+          round_index: round,
+          latency_ms: Math.round(performance.now() - started),
+          reference_silhouette_status: prepared.reference.status,
+        },
         sessionId,
       );
       void analytics.flush(sessionId);
@@ -192,7 +252,7 @@ export function DeviceCheckScreen() {
       <div className="device-check-list">
         <CheckRow ok={support.secureContext} label="HTTPS 安全连接" />
         <CheckRow ok={support.mediaDevices} label="浏览器相机能力" />
-        <CheckRow ok label="本地姿态检测，不上传关键点和预览帧" />
+        <CheckRow ok label="本地姿态与人形检测，不上传关键点、Mask 和预览帧" />
         <CheckRow ok label="拍摄失败时可随时切换为照片上传" />
       </div>
       <div className="privacy-card">
@@ -438,12 +498,13 @@ export function LiveCoachScreen() {
       try {
         if (!checkCameraSupport().supported) throw new Error("INSECURE_CONTEXT");
         await camera.start(video);
-        const pose = await loadPoseRuntime();
+        const pose = takePreparedPoseRuntime(sessionId) ?? await loadPoseRuntime();
         if (cancelled) {
           pose.close();
           return;
         }
-        const runtime = new CoachRuntime(video, canvas, pose, target, (nextDecision, nextStats) => {
+        const reference = loadReferenceSilhouette(sessionId);
+        const runtime = new CoachRuntime(video, canvas, pose, target, reference.contour, (nextDecision, nextStats) => {
           latestDecisionRef.current = nextDecision;
           setDecision(nextDecision);
           setStats(nextStats);
@@ -681,6 +742,7 @@ export function LiveCoachScreen() {
     composition_only: "构图已验证，动作使用简化判断",
     manual: "手动确认，未经姿态验证",
   };
+  const referenceSilhouette = loadReferenceSilhouette(sessionId);
   return (
     <section className="live-camera-page">
       <video ref={videoRef} className="live-video" autoPlay playsInline muted aria-label="后置相机预览" />
@@ -704,7 +766,11 @@ export function LiveCoachScreen() {
         <strong>{decision === null ? "正在寻找人物…" : instructionCopy[decision.instructionCode]}</strong>
         <small>
           {decision?.completionMode === null || decision?.completionMode === undefined
-            ? `轮廓匹配度 ${Math.round((decision?.overlapRatio ?? 0) * 100)}% · 目标 80%`
+            ? decision?.silhouetteScore === null || decision?.silhouetteScore === undefined
+              ? referenceSilhouette.status === "ready"
+                ? "正在识别人形…"
+                : "构图辅助已启用"
+              : `轮廓匹配度 ${Math.round(decision.silhouetteScore * 100)}% · 建议 80%`
             : completionLabel[decision.completionMode]}
         </small>
       </div>
@@ -712,6 +778,7 @@ export function LiveCoachScreen() {
       {phase === "capturing" ? <div className="live-countdown capture-flash">拍摄中</div> : null}
       <div className="live-camera-controls">
         {stats !== null && stats.inferenceP95 > 350 ? <small>设备性能有限，已自动降低检测频率</small> : null}
+        {referenceSilhouette.status !== "ready" ? <small>参考轮廓不可用，已改用构图辅助</small> : null}
         {decision?.manualReadyAvailable === true && phase === "coaching" ? (
           <button
             type="button"

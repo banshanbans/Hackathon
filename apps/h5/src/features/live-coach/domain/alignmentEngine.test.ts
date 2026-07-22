@@ -72,6 +72,9 @@ describe("H5 AlignmentEngine", () => {
     expect(result.overlapRatio).toBeCloseTo(0.8, 6);
     expect(result.readyToCapture).toBe(true);
     expect(result.completionMode).toBe("verified");
+    const lowSilhouetteFeedback = { ...result, silhouetteScore: 0.2 };
+    expect(lowSilhouetteFeedback.readyToCapture).toBe(true);
+    expect(lowSilhouetteFeedback.countdownStillValid).toBe(true);
   });
 
   it("uses the 70% boundary to cancel countdown", () => {
